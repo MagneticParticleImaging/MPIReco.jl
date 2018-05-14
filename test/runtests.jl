@@ -1,5 +1,11 @@
-using MPIReco
-using Base.Test
+using Requests
 
-# write your own tests here
-@test 1 == 2
+if !isdir("dataMP01")
+  streamSM = get("http://media.tuhh.de/ibi/mpireco/data.zip")
+  save(streamSM, "data.zip")
+  run(`unzip data.zip`)
+end
+
+include("MultiPatch.jl")
+include("Regular.jl")
+include("Sparse.jl")
