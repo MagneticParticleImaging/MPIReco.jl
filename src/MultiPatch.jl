@@ -10,7 +10,7 @@ end
 
 # Necessary for Multi-System-Matrix FF reconstruction
 voxelSize(bSF::Vector{T}) where T<:MPIFile = voxelSize(bSF[1])
-sfGradient(bSF::Vector{T},dim) where T<:MPIFile = gradient(bSF[1],dim)
+sfGradient(bSF::Vector{T},dim) where T<:MPIFile = sfGradient(bSF[1],dim)
 generateHeaderDict(bSF::Vector{T},bMeas::MPIFile) where T<:MPIFile =
    generateHeaderDict(bSF[1],bMeas)
 
@@ -31,6 +31,10 @@ function reconstructionFFJoint(bSF, bMeas::MPIFile, freq;
 
   FFOp = FFOperator(bSF,bMeas,freq,bgcorrection,OverscanSF=OverscanSF,
                     OffsetFF=OffsetFF,denoiseWeight=denoiseWeight,FFPos=FFPos,indFFPos=periodsSortedbyFFPos[:,1])
+
+  println(FFOp.PixelSizeC)
+  println(FFOp.CSize_mm)
+
 
   L = numScans(bMeas)
   (frames==nothing) && (frames=collect(1:L))
@@ -62,17 +66,9 @@ end
 type FFOperator{V<:AbstractMatrix}
   S::Vector{V}
   PixelSizeC::Vector{Int}
-  PixelSizeSF::Vector{Int}
-  SFIndex::Matrix{Int}
-  CIndex::Matrix{Int}
-  Length::Matrix{Int}
-  Listc::Vector{Int}
-  Lists::Vector{Int}
   CSize_mm::Matrix{Float64}
-  freq::Vector{Int}
   N::Int
   M::Int
-  ProdL::Matrix{Int}
   RowToPatch::Vector{Int}
   xcc::Vector{Vector{Int}}
   xss::Vector{Vector{Int}}
@@ -180,9 +176,49 @@ function FFOperator(SF::MPIFile, bMeas,freq::Vector{Int64},bgcorrection::Bool;
 
   patchToSMIdx = ones(Int, numPatches)
 
-  FFOperator([S],PixelSizeC,PixelSizeSF, SFIndex, CIndex, Length, Listc, Lists, CSize_mm,freq,
-      prod(PixelSizeC), M*(size(SFIndex)[1]), ProdL, RowToPatch, xcc, xss, numPatches, patchToSMIdx)
+  FFOperator([S],PixelSizeC, #PixelSizeSF, #SFIndex, CIndex, Length, Listc, Lists,
+             CSize_mm,#freq,
+             prod(PixelSizeC), M*(size(SFIndex)[1]), #ProdL,
+             RowToPatch, xcc, xss, numPatches, patchToSMIdx)
 end
+
+
+function FFOperator(SFs::Vector, bMeas, freq::Vector{Int64}, bgcorrection::Bool;
+                    OverscanSF=nothing, OffsetFF=nothing, denoiseWeight=0,
+                    FFPos=ffPos(bMeas),indFFPos=nothing, kargs...)
+
+  println("Load SF")
+  S = [getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection) for SF in SFs]
+  numPatches = length(SFs)
+  M = size(S[1],1)
+  RowToPatch = kron(collect(1:numPatches), ones(Int,M))
+
+  println("Calc Grids")
+  positions = [CartesianGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF))  for SF in SFs]
+  recoPos = CartesianGridPositions(positions)
+
+  println("Calc LUT")
+  xss = Vector{Int}[]
+  xcc = Vector{Int}[]
+  for k=1:numPatches
+    N = size(S[k],2)
+    push!(xss, collect(1:N))
+    xc = zeros(Int64,N)
+    for n=1:N
+      xc[n] = posToLinIdx(recoPos,positions[k][n])
+    end
+    push!(xcc, xc)
+  end
+
+  patchToSMIdx = collect(1:numPatches)
+
+  println("Finished")
+  FFOperator(S,shape(recoPos),
+             cat(2,recoPos.center.-0.5*recoPos.fov,recoPos.center.+0.5*recoPos.fov),
+             prod(shape(recoPos)), M*numPatches,
+             RowToPatch, xcc, xss, numPatches, patchToSMIdx)
+end
+
 
 function size(FFOp::FFOperator,i::Int)
   if i==2
