@@ -1,5 +1,6 @@
 export consistenceCheck
 import Base: ndims, squeeze
+import MPIFiles: calibSize, calibFov
 
 squeeze(A) = squeeze(A,tuple(find(([size(A)...].==1))...))
 
@@ -96,10 +97,12 @@ measPath(b::MDFFile) = b.filename
 gridSize(b::MPIFile) = squeeze(calibSize(b))
 measPath{T<:MPIFile}(bs::Vector{T}) = [measPath(b) for b in bs]
 gridSize{T<:MPIFile}(bs::Vector{T}) = [gridSize(b) for b in bs]
+calibSize{T<:MPIFile}(bs::Vector{T}) = [calibSize(b) for b in bs]
 gridSizeCommon{T<:MPIFile}(bs::Vector{T}) = gridSize(bs[1])
 gridSizeCommon(bs::MPIFile) = gridSize(bs)
 fov(b::MPIFile) = calibFov(b)
 fov{T<:MPIFile}(b::Vector{T}) = fov(b[1])
+calibFov{T<:MPIFile}(b::Vector{T}) = calibFov(b[1])
 sfGradient(b::MPIFile) = diag(acqGradient(b)[:,:,1,1])
 sfGradient(b::MPIFile,dim) = sfGradient(b)[dim]
 numFreq(b::MPIFile) = rxNumFrequencies(b)
