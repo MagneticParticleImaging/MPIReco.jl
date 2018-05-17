@@ -71,49 +71,28 @@ type FFOperator{V<:AbstractMatrix, T<:Positions}
 end
 
 
-function FFOperator(SF::MPIFile, bMeas, freq::Vector{Int64}, bgcorrection::Bool;
-                    denoiseWeight=0, FFPos=zeros(0,0), kargs...)
-
-  println("Load SF")
-  # Maybe introduce interpolation here ( if grids do not fit )
-  S = getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection)
-  numPatches = size(FFPos,2)
-  M = size(S,1)
-  RowToPatch = kron(collect(1:numPatches), ones(Int,M))
-
-
-  positions = CartesianGridPositions[]
-  patchToSMIdx = ones(Int,numPatches) 
-    
-  for k=1:numPatches
-    diffFFPos = ffPos(SF) .- FFPos[:,k]
-    push!(positions, CartesianGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos))
-  end
-  
-  println("Calc Grids")
-  recoGrid = CartesianGridPositions(positions)
-
-  println("Calc LUT")
-  xss = Vector{Int}[]
-  xcc = Vector{Int}[]
-  for k=1:numPatches
-    N = size(S,2)
-    push!(xss, collect(1:N))
-    xc = zeros(Int64,N)
-    for n=1:N
-      xc[n] = posToLinIdx(recoGrid,positions[k][n])
-    end
-    push!(xcc, xc)
-  end
-
-  println("Finished")
-  return FFOperator([S], recoGrid, length(recoGrid), M*numPatches,
-             RowToPatch, xcc, xss, numPatches, patchToSMIdx)
+function FFOperator(SF::MPIFile, bMeas, freq::Vector{Int64}, bgcorrection::Bool; kargs...)
+  return FFOperator([SF], bMeas, freq, bgcorrection; kargs...)
 end
 
+function findNearestPatch(ffPosSF, FFPos)
+  idx = -1
+  minDist = 1e20
+  for (l,FFPSF) in enumerate(ffPosSF)
+    dist = norm(FFPSF.-FFPos)
+    if dist < minDist
+      minDist = dist
+      idx = l
+    end
+  end
+  if idx < 0
+    error("Something went wrong")
+  end
+  return idx
+end
 
 function FFOperator(SFs::Vector, bMeas, freq::Vector{Int64}, bgcorrection::Bool;
-                    denoiseWeight=0, FFPos=zeros(0,0), kargs...)
+                    denoiseWeight=0, FFPos=zeros(0,0), patchMirroring = false, kargs...)
 
   println("Load SF")
   # Maybe introduce interpolation here ( if grids do not fit )
@@ -122,32 +101,22 @@ function FFOperator(SFs::Vector, bMeas, freq::Vector{Int64}, bgcorrection::Bool;
   M = size(S[1],1)
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
 
-  if length(SFs) == numPatches
+  if !patchMirroring
+    ffPosSF = [vec(ffPos(SF)) for SF in SFs]
+    ffPosSFAbs = [vec(abs.(ffPos(SF))) for SF in SFs]
+    
+    positions = CartesianGridPositions[]
+    patchToSMIdx = zeros(Int,numPatches) 
+    
     for k=1:numPatches
-      if vec(ffPos(SFs[k])) != FFPos[:,k]
-        warn("FFPos does not match: $(ffPos(SFs[k])) vs $(FFPos[:,k])!")
-      end
-    end  
-  
-    println("Calc Grids")
-    positions = [CartesianGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF))  for SF in SFs]
-    recoGrid = CartesianGridPositions(positions)
-
-    println("Calc LUT")
-    xss = Vector{Int}[]
-    xcc = Vector{Int}[]
-    for k=1:numPatches
-      N = size(S[k],2)
-      push!(xss, collect(1:N))
-      xc = zeros(Int64,N)
-      for n=1:N
-        xc[n] = posToLinIdx(recoGrid,positions[k][n])
-      end
-      push!(xcc, xc)
-    end
-
-    patchToSMIdx = collect(1:numPatches)
-  else
+      idx = findNearestPatch(ffPosSF, FFPos[:,k])
+      SF = SFs[idx]
+      diffFFPos = ffPosSF[idx] .- FFPos[:,k]
+          
+      push!(positions, CartesianGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos))
+      patchToSMIdx[k] = idx
+    end 
+  else # patchMirroring
     ffPosSF = [vec(ffPos(SF)) for SF in SFs]
     ffPosSFAbs = [vec(abs.(ffPos(SF))) for SF in SFs]
     
@@ -170,35 +139,34 @@ function FFOperator(SFs::Vector, bMeas, freq::Vector{Int64}, bgcorrection::Bool;
       else
         error("Did not find a suitable Calibration Scan!  $(FFPos[:,k]) \n $(ffPosSFAbs)")
       end
-
-    
     end  
-  
-    println("Calc Grids")
-    recoGrid = CartesianGridPositions(positions)
-
-    println("Calc LUT")
-    xss = Vector{Int}[]
-    xcc = Vector{Int}[]
-    for k=1:numPatches
-      N = size(S[patchToSMIdx[k]],2)
-      push!(xss, collect(1:N))
-      xc = zeros(Int64,N)
-      for n=1:N
-        xc[n] = posToLinIdx(recoGrid,positions[k][n])
-      end
-      push!(xcc, xc)
-    end
-
-        
   end
 
+  println("Calc Grids")
+  recoGrid = CartesianGridPositions(positions)
+
+  println("Calc LUT")
+  xcc, xss = calculateLUT(S, patchToSMIdx, positions, recoGrid, numPatches)  
+  
   println("Finished")
   return FFOperator(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, numPatches, patchToSMIdx)
 end
 
-
+function calculateLUT(S, patchToSMIdx, positions, recoGrid, numPatches)
+  xss = Vector{Int}[]
+  xcc = Vector{Int}[]
+  for k=1:numPatches
+    N = size(S[patchToSMIdx[k]],2)
+    push!(xss, collect(1:N))
+    xc = zeros(Int64,N)
+    for n=1:N
+      xc[n] = posToLinIdx(recoGrid,positions[k][n])
+    end
+    push!(xcc, xc)
+  end
+  return xcc, xss
+end
 
 function size(FFOp::FFOperator,i::Int)
   if i==2
