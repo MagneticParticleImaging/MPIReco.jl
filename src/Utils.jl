@@ -128,3 +128,90 @@ import MPIFiles: filterFrequencies
 function filterFrequencies{T<:MPIFile}(bSFs::Vector{T}; kargs...)
   return intersect([filterFrequencies(bSF; kargs...) for bSF in bSFs]...)
 end
+
+
+
+
+
+function rowEnergy{T}(A::AbstractMatrix{Complex{T}})
+  M = size(A,1)
+  energy = zeros(T, M)
+  for m=1:M
+    energy[m] = sqrt(rownorm²(A,m))
+  end
+
+  return energy
+end
+
+function rowEnergy{T<:Real}(A::AbstractMatrix{T})
+  M = size(A,1)
+  energy = zeros(T, M)
+  for m=1:M
+    energy[m] = sqrt(rownorm²(A,m))
+  end
+
+  return energy
+end
+
+function normalizeRows!(A::AbstractMatrix, u)
+  energy = rowEnergy(A)
+  for m=1:length(energy)
+    if energy[m] > 0
+      A[:,m] /= energy[m]
+      u[m,:] /= energy[m]
+    end
+  end
+
+  return energy
+end
+
+function calculateNoise(x; sizeRegion = 5)
+  xHat = fft(x)
+
+  multIdx = UnitRange{Int64}[]
+  for d=1:ndims(x)
+    sr = floor(Int, min(size(xHat,d)/2-1, sizeRegion) )
+    push!(multIdx, floor(Int,size(xHat,d)/2-sr):floor(Int,size(xHat,d)/2+sr))
+  end
+
+  xHatSub = (xHat[multIdx...])[:]
+
+  noise = norm(xHatSub, 2) / sqrt(length(xHatSub)*length(xHat) )
+
+  # sigma = weight*sqrt(1/(N-1))*norm(S,2); from Alex code
+
+  return noise
+end
+
+
+function calculateSNR(x)
+  signal = norm(x[:],Inf)
+  noise = calculateNoise(x)
+
+  if noise == 0 || signal == 0
+    SNR = 0
+  else
+    SNR = signal/noise
+  end
+  return SNR
+end
+
+
+function calculateTraceOfNormalMatrix(A::AbstractMatrix, weights::Vector)
+  energy = rowEnergy(A)
+
+  trace = norm(weights[1:size(A)[1]] .* energy)^2
+  return trace
+end
+
+function calculateTraceOfNormalMatrix(A::AbstractMatrix, weights::Void)
+  energy = rowEnergy(A)
+  return  norm(energy)^2
+end
+
+function constraint!(x, enforcePositive, enforceReal)
+  enforceReal ? enfReal!(x) : nothing
+  enforcePositive ? enfPos!(x) : nothing
+end
+
+softThreshold(x,sigma) = (abs(x) > sigma)*sign(x)*(abs(x)-sigma)
