@@ -7,5 +7,6 @@ if !isdir("dataMP01")
 end
 
 include("MultiPatch.jl")
+include("MultiGradient.jl")
 include("Regular.jl")
 include("Sparse.jl")
