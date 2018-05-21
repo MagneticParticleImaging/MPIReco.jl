@@ -16,11 +16,11 @@ b = MultiMPIFile(["dataMP01", "dataMP02", "dataMP03", "dataMP04"])
 
 figure(2)
 imshow(c1[:,:,1,1])
- 
+
 
 
 # MultiPatch MultiSF
-bSFs = MPIFile(["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"])
+bSFs = MultiMPIFile(["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"])
 
 @time c2 = reconstruction(bSFs, b;
                    SNRThresh=5, frames=1, minFreq=80e3, OffsetSF=0,OffsetFF=[0.0001,0.0001,0.0005],

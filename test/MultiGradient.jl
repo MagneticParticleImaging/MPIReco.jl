@@ -8,7 +8,7 @@ using PyPlot
 
 # low gradient with patch no 3
 b = MultiMPIFile(["dataMG_G1", "dataMG_G2_03"])
-bSFs = MPIFile(["SF_MG_G1", "SF_MG_G2"])
+bSFs = MultiMPIFile(["SF_MG_G1", "SF_MG_G2"])
 
 @time c1 = reconstruction(bSFs, b;
                    SNRThresh=2, frames=1, lambd=0.003, minFreq=80e3,

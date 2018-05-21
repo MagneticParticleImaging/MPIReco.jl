@@ -463,7 +463,7 @@ Returns a MPI image.
 
 * `Array`: Returns Array or stack containing Arrays depending on the number of reconstructed frames.
 """->
-function reconstruction{T<:MPIFile, U<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::Union{U,Vector{U}};
+function reconstructionSinglePatch{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
   bEmpty = nothing, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, kargs...)
 
@@ -478,14 +478,21 @@ function reconstruction{T<:MPIFile, U<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::
     freq = intersect(freq, freqVarMean)
   end
 
+  println("Frequency Selection: ", length(freq), " frequencies")
+
   # Ensure that no frequencies are used that are not present in the measurement
   freq = intersect(freq, filterFrequencies(bMeas))
 
   println("Frequency Selection: ", length(freq), " frequencies")
 
-  if acqNumPeriodsPerFrame(bMeas) > 1 #We cannot rely on multiple dispatch in the future anymore
-    return reconstructionFFJoint(bSF, bMeas, freq; bEmpty=bEmpty, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
+  return reconstruction(bSF, bMeas, freq; bEmpty=bEmpty, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
+end
+
+function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...)
+
+  if acqNumPeriodsPerFrame(bMeas) > 1
+    return reconstructionMultiPatch(bSF, bMeas; kargs...)
   else
-    return reconstruction(bSF, bMeas, freq; bEmpty=bEmpty, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
+    return reconstructionSinglePatch(bSF, bMeas;  kargs...)
   end
 end

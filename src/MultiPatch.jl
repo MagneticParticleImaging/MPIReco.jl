@@ -1,20 +1,29 @@
 import Base: size
 import LinearSolver: initkaczmarz, dot_with_matrix_row, kaczmarz_update!
 
-export reconstructionSeparate, reconstructionFFJoint, FFOperator
+export reconstructionMultiPatch, FFOperator
 
-# this wrapper should maybe be removed
-function reconstruction{T<:MPIFile}(bSF::MPIFile, bMeas::Vector{T}, freq; kargs...)
-  reconstructionFFJoint(bSF, bMeas, freq; kargs...)
-end
 
 # Necessary for Multi-System-Matrix FF reconstruction
-voxelSize(bSF::Vector{T}) where T<:MPIFile = voxelSize(bSF[1])
-sfGradient(bSF::Vector{T},dim) where T<:MPIFile = sfGradient(bSF[1],dim)
-generateHeaderDict(bSF::Vector{T},bMeas::MPIFile) where T<:MPIFile =
+voxelSize(bSF::MultiMPIFile) = voxelSize(bSF[1])
+sfGradient(bSF::MultiMPIFile,dim) = sfGradient(bSF[1],dim)
+generateHeaderDict(bSF::MultiMPIFile,bMeas::MPIFile) =
    generateHeaderDict(bSF[1],bMeas)
 
-function reconstructionFFJoint(bSF, bMeas::MPIFile, freq;
+
+ function reconstructionMultiPatch(bSF, bMeas::MPIFile;
+   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
+   kargs...)
+
+   freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh,
+                            numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
+
+   println("Frequency Selection: ", length(freq), " frequencies")
+
+   return reconstructionMultiPatch(bSF, bMeas, freq; kargs...)
+ end
+
+function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
             frames=nothing, bEmpty=nothing,
             nAverages=1, loadas32bit=false, FFPos = ffPos(bMeas),
             spectralLeakageCorrection=true, kargs...)
@@ -23,11 +32,10 @@ function reconstructionFFJoint(bSF, bMeas::MPIFile, freq;
 
   bgcorrection = (bEmpty != nothing)
 
-
   periodsSortedbyFFPos = unflattenOffsetFieldShift(FFPos)
 
   FFPos = FFPos[:,periodsSortedbyFFPos[:,1]]
-  
+
   gradient = acqGradient(bMeas)[:,:,1,periodsSortedbyFFPos[:,1]]
 
 
@@ -36,6 +44,7 @@ function reconstructionFFJoint(bSF, bMeas::MPIFile, freq;
   L = numScans(bMeas)
   (frames==nothing) && (frames=collect(1:L))
   nFrames=length(frames)
+
 
   uTotal = getMeasurementsFD(bMeas,frequencies=freq, frames=frames, numAverages=nAverages,
                              spectralLeakageCorrection=spectralLeakageCorrection)
@@ -73,8 +82,8 @@ type FFOperator{V<:AbstractMatrix, T<:Positions}
 end
 
 
-function FFOperator(SF::MPIFile, bMeas, freq::Vector{Int64}, bgcorrection::Bool; kargs...)
-  return FFOperator([SF], bMeas, freq, bgcorrection; kargs...)
+function FFOperator(SF::MPIFile, bMeas, freq, bgcorrection::Bool; kargs...)
+  return FFOperator(MultiMPIFile([SF]), bMeas, [freq], bgcorrection; kargs...)
 end
 
 function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
@@ -95,29 +104,29 @@ function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
   return idx
 end
 
-function FFOperator(SFs::Vector, bMeas, freq::Vector{Int64}, bgcorrection::Bool; patchMirroring = false, kargs...)
+function FFOperator(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool; patchMirroring = false, kargs...)
   if patchMirroring
     return FFOperatorMirror(SFs,bMeas,freq,bgcorrection; kargs...)
   else
     return FFOperatorRegular(SFs,bMeas,freq,bgcorrection; kargs...)
   end
 end
-                    
-function FFOperatorRegular(SFs::Vector, bMeas, freq::Vector{Int64}, bgcorrection::Bool;
+
+function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
                     denoiseWeight=0, FFPos=zeros(0,0), gradient=zeros(0,0,0), patchMirroring = false, kargs...)
 
   println("Load SF")
   numPatches = size(FFPos,2)
   M = length(freq)
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
-  
+
   S = AbstractMatrix[]
   SOrigIdx = Int[]
   SIsPlain = Bool[]
 
   ffPosSF = [vec(ffPos(SF)) for SF in SFs]
   gradientSF = [acqGradient(SF) for SF in SFs]
-    
+
   grids = CartesianGridPositions[]
   matchingSMIdx = zeros(Int,numPatches)
   patchToSMIdx = zeros(Int,numPatches)
@@ -129,22 +138,22 @@ function FFOperatorRegular(SFs::Vector, bMeas, freq::Vector{Int64}, bgcorrection
     idx = findNearestPatch(ffPosSF, FFPos[:,k], gradientSF, gradient[:,:,k])
     SF = SFs[idx]
     diffFFPos = ffPosSF[idx] .- FFPos[:,k]
-         
+
     push!(grids, CartesianGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos))
     matchingSMIdx[k] = idx
   end
-  
+
   # We now know all the subgrids for each patch, if the corresponding system matrix would be taken as is
   # and if a possible focus field missmatch has been taken into account (by changing the center)
   println("Calc Reco Grid")
   recoGrid = CartesianGridPositions(grids)
-  
-  
+
+
   # Within the next loop we will refine our grid since we now know our reconstruction grid
   for k=1:numPatches
     idx = matchingSMIdx[k]
     SF = SFs[idx]
-    
+
     # if the patch is a true subgrid we don't need to apply interpolation and can load the
     # matrix as is.
     if isSubgrid(recoGrid,grids[k])
@@ -169,33 +178,33 @@ function FFOperatorRegular(SFs::Vector, bMeas, freq::Vector{Int64}, bgcorrection
       # in this case the patch grid does not fit onto the reco grid. Lets derive a subgrid
       # that is very similar to grids[k]
       newGrid = deriveSubgrid(recoGrid, grids[k])
-      
+
       # load the matrix on the new subgrid
       S_ = getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection,
                    gridsize=shape(newGrid),
                    fov=fieldOfView(newGrid),
                    center=fieldOfViewCenter(newGrid).-fieldOfViewCenter(grids[k]))
                    # @TODO: I don't know the sign of aboves statement
-                   
+
       grids[k] = newGrid # we need to change the stored Grid since we now have a true subgrid
       push!(S,S_)
       push!(SOrigIdx,idx)
       push!(SIsPlain,false)
       patchToSMIdx[k] = length(S)
     end
-  end 
+  end
 
   println("Calc LUT")
   # now that we have all grids we can calculate the indices within the recoGrid
-  xcc, xss = calculateLUT(grids, recoGrid)  
-  
+  xcc, xss = calculateLUT(grids, recoGrid)
+
   println("Finished")
   return FFOperator(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, numPatches, patchToSMIdx)
 end
 
 
-function FFOperatorMirror(SFs::Vector, bMeas, freq::Vector{Int64}, bgcorrection::Bool;
+function FFOperatorMirror(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
                     denoiseWeight=0, FFPos=zeros(0,0), gradient=zeros(0,0,0), kargs...)
 error(" TODO")
 
@@ -205,19 +214,19 @@ error(" TODO")
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
   sfLoaded = zeros(Bool,length(SFs))
   sfLoadedIdx = zeros(Int,length(SFs))
-  
+
   S = AbstractMatrix[]
   SOrigIdx = Int[]
   SIsPlain = Bool[]
-  
+
     ffPosSF = [vec(ffPos(SF)) for SF in SFs]
     ffPosSFAbs = [vec(abs.(ffPos(SF))) for SF in SFs]
-    
+
     positions = CartesianGridPositions[]
-    patchToSMLoadedIdx = zeros(Int,numPatches) 
-    
+    patchToSMLoadedIdx = zeros(Int,numPatches)
+
     for k=1:numPatches
-      
+
       idx = findfirst(x -> isapprox(x,FFPos[:,k]),ffPosSF)
       if idx == 0
         idx = findfirst(x -> isapprox(x,abs.(FFPos[:,k])),ffPosSFAbs)
@@ -226,7 +235,7 @@ error(" TODO")
       if idx > 0
         signs = [isapprox(ffPosSF[idx][d],FFPos[d,k]) ? 1 : -1 for d=1:3]
         diffFFPos = ffPosSF[idx] .- FFPos[:,k]
-          
+
         push!(positions, CartesianGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos, abs.(signs)))
         patchToSMLoadedIdx[k] = idx
       else
@@ -240,8 +249,8 @@ error(" TODO")
   println("patchToSMLoadedIdx = $patchToSMLoadedIdx")
 
   println("Calc LUT")
-  xcc, xss = calculateLUT(positions, recoGrid)  
-  
+  xcc, xss = calculateLUT(positions, recoGrid)
+
   println("Finished")
   return FFOperator(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, numPatches, patchToSMLoadedIdx)

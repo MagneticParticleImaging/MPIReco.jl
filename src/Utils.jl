@@ -129,9 +129,10 @@ function filterFrequencies{T<:MPIFile}(bSFs::Vector{T}; kargs...)
   return intersect([filterFrequencies(bSF; kargs...) for bSF in bSFs]...)
 end
 
-
-
-
+# Multi-Patch setting
+function filterFrequencies(bSFs::MultiMPIFile; kargs...)
+  return union([filterFrequencies(bSF; kargs...) for bSF in bSFs]...)
+end
 
 function rowEnergy{T}(A::AbstractMatrix{Complex{T}})
   M = size(A,1)
