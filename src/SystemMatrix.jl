@@ -356,7 +356,7 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
      center != [0.0,0.0,0.0] ||
      fov != calibFov(bSF)
     println("Do SF Interpolation...")
-    println(gridsize, fov, center, calibSize(bSF), calibFov(bSF))
+    #println(gridsize, fov, center, calibSize(bSF), calibFov(bSF))
 
     grid = KartGrid(shape, calibSize(bSF), fov, calibFov(bSF), center, [0.0,0.0,0.0])
     #grid = KartGrid(shape, calibSize(bSF))

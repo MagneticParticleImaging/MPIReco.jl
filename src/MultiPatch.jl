@@ -26,7 +26,8 @@ generateHeaderDict(bSF::MultiMPIFile,bMeas::MPIFile) =
 function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
             frames=nothing, bEmpty=nothing,
             nAverages=1, loadas32bit=false, FFPos = ffPos(bMeas),
-            spectralLeakageCorrection=true, kargs...)
+            spectralLeakageCorrection=true,
+            roundPatches = false, kargs...)
 
   #consistenceCheck(bSF, bMeas)
 
@@ -39,7 +40,10 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   gradient = acqGradient(bMeas)[:,:,1,periodsSortedbyFFPos[:,1]]
 
 
-  FFOp = FFOperator(bSF,bMeas,freq,bgcorrection,FFPos=FFPos,gradient=gradient)
+  FFOp = FFOperator(bSF,bMeas,freq,bgcorrection,
+                    FFPos=FFPos,
+                    gradient=gradient,
+                    roundPatches=roundPatches)
 
   L = numScans(bMeas)
   (frames==nothing) && (frames=collect(1:L))
@@ -83,7 +87,7 @@ end
 
 
 function FFOperator(SF::MPIFile, bMeas, freq, bgcorrection::Bool; kargs...)
-  return FFOperator(MultiMPIFile([SF]), bMeas, [freq], bgcorrection; kargs...)
+  return FFOperator(MultiMPIFile([SF]), bMeas, freq, bgcorrection; kargs...)
 end
 
 function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
@@ -113,7 +117,8 @@ function FFOperator(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool; patchMir
 end
 
 function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
-                    denoiseWeight=0, FFPos=zeros(0,0), gradient=zeros(0,0,0), patchMirroring = false, kargs...)
+                    denoiseWeight=0, FFPos=zeros(0,0), gradient=zeros(0,0,0),
+                    roundPatches = false, kargs...)
 
   println("Load SF")
   numPatches = size(FFPos,2)
@@ -154,9 +159,19 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
     idx = matchingSMIdx[k]
     SF = SFs[idx]
 
+    issubgrid = isSubgrid(recoGrid,grids[k])
+    if !issubgrid &&
+       roundPatches &&
+       spacing(recoGrid) == spacing(grids[k])
+       
+      issubgrid = true
+      grids[k] = deriveSubgrid(recoGrid, grids[k])
+
+    end
+
     # if the patch is a true subgrid we don't need to apply interpolation and can load the
     # matrix as is.
-    if isSubgrid(recoGrid,grids[k])
+    if issubgrid
       # we first check if the matrix is already in memory
       u = -1
       for l=1:length(SOrigIdx)
@@ -193,6 +208,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
       patchToSMIdx[k] = length(S)
     end
   end
+  println("Use $(length(S)) patches")
 
   println("Calc LUT")
   # now that we have all grids we can calculate the indices within the recoGrid
