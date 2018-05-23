@@ -132,7 +132,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
   ffPosSF = [vec(ffPos(SF)) for SF in SFs]
   gradientSF = [acqGradient(SF) for SF in SFs]
 
-  grids = CartesianGridPositions[]
+  grids = RegularGridPositions[]
   matchingSMIdx = zeros(Int,numPatches)
   patchToSMIdx = zeros(Int,numPatches)
 
@@ -144,14 +144,14 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
     SF = SFs[idx]
     diffFFPos = ffPosSF[idx] .- FFPos[:,k]
 
-    push!(grids, CartesianGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos))
+    push!(grids, RegularGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos))
     matchingSMIdx[k] = idx
   end
 
   # We now know all the subgrids for each patch, if the corresponding system matrix would be taken as is
   # and if a possible focus field missmatch has been taken into account (by changing the center)
   println("Calc Reco Grid")
-  recoGrid = CartesianGridPositions(grids)
+  recoGrid = RegularGridPositions(grids)
 
 
   # Within the next loop we will refine our grid since we now know our reconstruction grid
@@ -238,7 +238,7 @@ error(" TODO")
     ffPosSF = [vec(ffPos(SF)) for SF in SFs]
     ffPosSFAbs = [vec(abs.(ffPos(SF))) for SF in SFs]
 
-    positions = CartesianGridPositions[]
+    positions = RegularGridPositions[]
     patchToSMLoadedIdx = zeros(Int,numPatches)
 
     for k=1:numPatches
@@ -252,14 +252,14 @@ error(" TODO")
         signs = [isapprox(ffPosSF[idx][d],FFPos[d,k]) ? 1 : -1 for d=1:3]
         diffFFPos = ffPosSF[idx] .- FFPos[:,k]
 
-        push!(positions, CartesianGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos, abs.(signs)))
+        push!(positions, RegularGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos, abs.(signs)))
         patchToSMLoadedIdx[k] = idx
       else
         error("Did not find a suitable Calibration Scan!  $(FFPos[:,k]) \n $(ffPosSFAbs)")
       end
     end
     println("Calc Grids")
-    recoGrid = CartesianGridPositions(positions)
+    recoGrid = RegularGridPositions(positions)
 
 
   println("patchToSMLoadedIdx = $patchToSMLoadedIdx")
