@@ -7,7 +7,7 @@ makedocs(
     authors = "Tobias Knopp,...",
     pages = [
         "Home" => "index.md"
-        #"Usage" => "usage.md",
+        "Usage" => "usage.md"
         #"Scanners" => "scanners.md",
         #"Tracers" => "tracers.md",
         #"Phantoms" => "phantoms.md",
