@@ -52,3 +52,4 @@ after_success:
   - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'cd(Pkg.dir("MPIReco")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
   # push coverage results to Codecov
   - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'cd(Pkg.dir("MPIReco")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+  - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'cd(Pkg.dir("MPIReco")); ENV["DOCUMENTER_DEBUG"] = "true"; include(joinpath("docs", "make.jl"))'
