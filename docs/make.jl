@@ -6,8 +6,9 @@ makedocs(
     sitename = "MPI Reconstruction",
     authors = "Tobias Knopp,...",
     pages = [
-        "Home" => "index.md"
-        "Usage" => "usage.md"
+        "Home" => "index.md",
+        "Usage" => "usage.md",
+        "Overview" => "overview.md"
         #"Scanners" => "scanners.md",
         #"Tracers" => "tracers.md",
         #"Phantoms" => "phantoms.md",
