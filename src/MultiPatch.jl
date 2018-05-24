@@ -25,10 +25,13 @@ generateHeaderDict(bSF::MultiMPIFile,bMeas::MPIFile) =
 
 function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
             frames=nothing, bEmpty=nothing,
-            nAverages=1, loadas32bit=false, FFPos = ffPos(bMeas),
+            nAverages=1, loadas32bit=false,
             spectralLeakageCorrection=true,
-            roundPatches = false, kargs...)
+            roundPatches = false, 
+            FFPosDiff = zeros(0,0), kargs...)
 
+  FFPos = ffPos(bMeas)
+  
   #consistenceCheck(bSF, bMeas)
 
   bgcorrection = (bEmpty != nothing)
@@ -43,7 +46,8 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   FFOp = FFOperator(bSF,bMeas,freq,bgcorrection,
                     FFPos=FFPos,
                     gradient=gradient,
-                    roundPatches=roundPatches)
+                    roundPatches=roundPatches,
+                    FFPosDiff=FFPosDiff)
 
   L = numScans(bMeas)
   (frames==nothing) && (frames=collect(1:L))
@@ -118,7 +122,7 @@ end
 
 function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
                     denoiseWeight=0, FFPos=zeros(0,0), gradient=zeros(0,0,0),
-                    roundPatches = false, kargs...)
+                    roundPatches = false, FFPosDiff = zeros(0,0), kargs...)
 
   println("Load SF")
   numPatches = size(FFPos,2)
@@ -135,6 +139,10 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
   grids = RegularGridPositions[]
   matchingSMIdx = zeros(Int,numPatches)
   patchToSMIdx = zeros(Int,numPatches)
+  
+  FFPosDiff_ = length(FFPosDiff) == 0 ? zeros(3,numPatches) : FFPosDiff
+  
+  #FFPos .-= 
 
   # We first check which system matrix fits best to each patch. Here we use only
   # those system matrices where the gradient matches. If the gradient matches, we take
@@ -142,8 +150,11 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
   for k=1:numPatches
     idx = findNearestPatch(ffPosSF, FFPos[:,k], gradientSF, gradient[:,:,k])
     SF = SFs[idx]
-    diffFFPos = ffPosSF[idx] .- FFPos[:,k]
-
+    if isapprox(ffPosSF[idx],FFPos[:,k])
+      diffFFPos = zeros(3)
+    else
+      diffFFPos = ffPosSF[idx] .- FFPos[:,k] .- FFPosDiff_[:,k]
+    end
     push!(grids, RegularGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos))
     matchingSMIdx[k] = idx
   end
