@@ -225,7 +225,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
     if isapprox(FFPosSF[idx],FFPos[:,k])
       diffFFPos = zeros(3)
     else
-      diffFFPos = FFPosSF[idx] .- FFPos[:,k] .- FFPosDiff_[:,k]
+      diffFFPos = FFPosSF[idx] .- FFPos[:,k]
     end
     push!(grids, RegularGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos))
     matchingSMIdx[k] = idx
