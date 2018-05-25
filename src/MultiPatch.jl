@@ -45,7 +45,7 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   end
   
   if length(FFPosSF) == 0
-    FFPosSF_ = [vec(ffPos(SF)) for SF in SFs]
+    FFPosSF_ = [vec(ffPos(SF)) for SF in bSF]
   else
     FFPosSF_ = [vec(FFPosSF[:,l]) for l=1:size(FFPosSF,2)]
   end
