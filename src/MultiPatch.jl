@@ -216,7 +216,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
   # those system matrices where the gradient matches. If the gradient matches, we take
   # the system matrix with the closes focus field shift
   for k=1:numPatches
-    idx = findNearestPatch(FFPosSF, FFPos[:,k], gradientSF, gradient[:,:,k], stretch)
+    idx = findNearestPatch(FFPosSF, FFPos[:,k], gradientSF, gradient[:,:,k])
     
     SF = SFs[idx]
     
