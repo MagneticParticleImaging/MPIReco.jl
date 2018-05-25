@@ -176,6 +176,10 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
     SF = SFs[idx]
     
     diffFFPos = mirror[:,k].*FFPosSF[idx] .- FFPos[:,k] 
+    
+    if any(mirror .< 0) # in case of mirroring we do not allow shifting
+      diffFFPos[:] = 0
+    end
 
     push!(grids, RegularGridPositions(calibSize(SF),calibFov(SF),
           mirror[:,k].*calibFovCenter(SF).-diffFFPos, mirror[:,k]))
@@ -189,17 +193,17 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
         my = mixFactors[l,2]
         mz = mixFactors[l,3]
         
-        if mirror[1]<0 && mirror[3]<0
+        if mirror[1,k]<0 && mirror[3,k]<0
          a = mx+mz+1
          if chan == 2
            a -= 1
          end
-        elseif mirror[1]<0 && mirror[3]>0
+        elseif mirror[1,k]<0 && mirror[3,k]>0
          a = mx
          if chan == 1
            a += 1
          end        
-        elseif mirror[1]>0 && mirror[3]<0
+        elseif mirror[1,k]>0 && mirror[3,k]<0
          a = mz
          if chan == 3
            a += 1
@@ -207,7 +211,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
         else
           a = 0
         end
-        sign[l,k] = (-1)^a
+        sign[l,k] =  (-1)^a
     #ChnX        (-1)^(mx+1)        (-1)^mz            (-1)^(mx+1+mz)
     #ChnY        (-1)^(mx)            (-1)^mz             (-1)^(mx+mz)
     #ChnZ        (-1)^(mx)            (-1)^(mz+1)      (-1)^(mx+mz+1)
@@ -228,9 +232,11 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
 
     issubgrid = isSubgrid(recoGrid,grids[k])
     println(" issubgrid = $issubgrid")
+    println(grids[k])
     if !issubgrid 
       grids[k] = deriveSubgrid(recoGrid, grids[k])
     end
+    println(grids[k])
   end
   println("Use $(length(S)) patches")
 
@@ -427,12 +433,12 @@ function kaczmarz_update!(Op::FFOperator, x::AbstractArray, k::Integer, beta)
   A = Op.S[Op.patchToSMIdx[p]]
   sign = Op.sign[j,Op.patchToSMIdx[p]]
 
-  kaczmarz_update_!(A,x,beta*sign,xs,xc,j)
+  kaczmarz_update_!(A,x,beta,xs,xc,j,sign)
 end
 
-function kaczmarz_update_!(A,x,beta,xs,xc,j)
+function kaczmarz_update_!(A,x,beta,xs,xc,j,sign)
   @simd for i = 1:length(xs)
-    @inbounds x[xc[i]] += beta* conj(A[j,xs[i]])
+    @inbounds x[xc[i]] += beta* conj(sign*A[j,xs[i]])
   end
 end
 
