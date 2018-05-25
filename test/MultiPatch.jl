@@ -5,7 +5,7 @@ using PyPlot
 
 
 # MultiPatch
-bSF = MPIFile("SF_MP")
+bSF = MultiMPIFile(["SF_MP"])
 
 b = MultiMPIFile(["dataMP01", "dataMP02", "dataMP03", "dataMP04"])
 figure(7)
