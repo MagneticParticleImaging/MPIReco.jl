@@ -1,5 +1,6 @@
 export consistenceCheck
 import Base: ndims, squeeze
+import Compat: squeeze
 import MPIFiles: calibSize, calibFov
 
 squeeze(A) = squeeze(A,tuple(find(([size(A)...].==1))...))

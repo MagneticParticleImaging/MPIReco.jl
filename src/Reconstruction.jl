@@ -278,6 +278,7 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
   frames = nothing, bEmpty = nothing, bgFrames = 1, nAverages = 1, sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
   weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz", spectralCleaning=true, fgFrames=1:10,
   noiseFreqThresh=0.0, gridsize = gridSizeCommon(bSF), kargs...)
+
   shape = getSFGridSize(bSF, sparseTrafo, gridsize)
   # (typeof(bgFrames) <: Range && bEmpty==nothing) && (bEmpty = bMeas)
   bgcorrection = bEmpty != nothing ? true : false
@@ -304,7 +305,7 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
 
     noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bgFrames=bgFrames, bMeas = bMeas, bgFrames=bgFrames)
 
-    c = reconstruction(S, u, gridsize; sparseTrafo=sparseTrafo, progress=p, weights=weights,
+    c = reconstruction(S, u, shape; sparseTrafo=sparseTrafo, progress=p, weights=weights,
                        reshapesolution=false, solver=solver, kargs...)
     #maskDFFOV && (c .*= trustedFOVMask(bSF))
     #c = reshape(c,prod(shape),size(c)[end])
