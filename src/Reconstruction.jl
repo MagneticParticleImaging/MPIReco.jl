@@ -317,10 +317,6 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
   return im
 end
 
-function getImageGridSize(bSF, sparseTrafo)
-  return getshape( sparseTrafo == nothing ? gridSize(bSF) : dfGrid(bSF))
-end
-
 getshape(shapes::Array{Int64,1}) = shapes#[ find(shapes .> 1)]
 getshape(shapes::Array) = [length(shapes), shapes[1]...] #This was wrong: sum([prod(s) for s in shapes])
 

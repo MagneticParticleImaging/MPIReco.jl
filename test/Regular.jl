@@ -25,14 +25,14 @@ imshow(c2[1,:,:,1,1])
 
 # with interpolation
 c3 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-                   recChannels=1:2, gridsize=(100,100,1),iterations=1)
+                   recChannels=1:2, gridsize=[100,100,1],iterations=1)
 
 figure(3)
 imshow(c3[1,:,:,1,1])
 
 # with fov adpation and center shift
 c4 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-                   recChannels=1:2, gridsize=(50,50,1),fov=[0.04,0.04,1],
+                   recChannels=1:2, gridsize=[50,50,1],fov=[0.04,0.04,1],
                    center=[0.0,-0.01,0], iterations=1)
 
 figure(4)

@@ -1,8 +1,15 @@
 export getSparseSF
 
+# calc grid of dfFov
+function dfGrid(bSF::MPIFile)
+    dfFovSize=dfFov(bSF)
+    fovSize=calibFov(bSF)
+    gridSF=calibSize(bSF)
+    # adding one and floor afterwards to avoid zeros in the grid
+    return floor.(Int,gridSF.*dfFovSize./fovSize+1)
+end
 
 ##### Sparse getSF #########
-
 function getSF(bSF::MPIFile, frequencies, sparseTrafo::AbstractString;
                redFactor=0.1,  kargs...)
 
@@ -72,7 +79,6 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
 
     return sparse, grid
 end
-
 
 function loadsparsedata(f,data,indices,l,nPos,numCoeff,loadasreal::Bool)
   N = nPos

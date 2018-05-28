@@ -1,30 +1,6 @@
 import Base.length, Base.size
 
-export getSF, getSFGridSize, deltaSampleConcentration,
-       deltaSampleVolume, SVD, tikhonovLU, setlambda,
-       idxToPos, posToIdx
-
-using Interpolations
-
-###############################
-# delta sample functions
-###############################
-
-function deltaSampleConcentration(b::BrukerFile)
-  tmp = b["PVM_MPI_TracerConcentration"]
-  if tmp != nothing
-    return parse(Float64, tmp)
-  else
-    return 1.0
-  end
-end
-
-deltaSampleConcentration{T<:BrukerFile}(b::Array{T,1}) = map(deltaSampleConcentration, b)
-
-function deltaSampleVolume(b::BrukerFile)
-  V = parse(Float64, b["PVM_MPI_TracerVolume"] )*1e-6 # mu l
-  return V
-end
+export getSF, SVD, tikhonovLU, setlambda
 
 function converttoreal{T}(S::AbstractArray{Complex{T}},f)
   N = prod(calibSize(f))
@@ -56,7 +32,7 @@ function converttoreal{T}(S::AbstractArray{Complex{T},2})
 end
 
 # Systemfunction types for better inversion algorithms
-@compat abstract type Systemfunction end
+abstract type Systemfunction end
 
 #type for singular value decomposition
 @doc "This Type stores the singular value decomposition of a Matrix" ->
@@ -116,17 +92,6 @@ function getSF(bSF, frequencies, sparseTrafo, solver; kargs...)
   end
 end
 
-
-# calc grid of dfFov
-function dfGrid(bSF::MPIFile)
-    dfFovSize=dfFov(bSF)
-    fovSize=calibFov(bSF)
-    gridSF=calibSize(bSF)
-    # adding one and floor afterwards to avoid zeros in the grid
-    return floor.(Int,gridSF.*dfFovSize./fovSize+1)
-end
-dfGrid{T<:MPIFile}(bs::Vector{T}) = [dfGrid(b) for b in bs]
-
 getSF{T<:MPIFile}(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Void; kargs...) = getSF(bSF, frequencies; kargs...)
 
 # TK: The following is a hack since colored and sparse trafo are currently not supported
@@ -160,12 +125,11 @@ function repairDeadPixels(S, shape, deadPixels)
       end
     end
   end
-
 end
 
 function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer=1,
                bgcorrection=false, loadasreal=false, loadas32bit=true,
-               gridsize=calibSize(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0],
+               gridsize=collect(calibSize(bSF)), fov=calibFov(bSF), center=[0.0,0.0,0.0],
                deadPixels=Int[], kargs...)
 
   nFreq = rxNumFrequencies(bSF)
@@ -187,7 +151,7 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
 
     SInterp = zeros(eltype(S),prod(gridsize),length(frequencies))
     for k=1:length(frequencies)
-      SInterp[:,k] = vec(interpolate(reshape(S[:,k],calibSize(bSF)...), origin, target))
+      SInterp[:,k] = vec(MPIFiles.interpolate(reshape(S[:,k],calibSize(bSF)...), origin, target))
     end
     S = SInterp
     grid = target
