@@ -216,7 +216,7 @@ function findCenterOfDfFov(bSF::MPIFile;dispRes::Bool=false,combine::Bool=false,
         # calculates initial value by center of mass
         center,=calcCenterOfMass_AE(abs.(SFres),4,0.3)
         c0=mean(center,2)
-        c=calcWithZero!(bSF,depth,c0,maxFreq,combine)
+        c=c0#calcWithZero!(bSF,depth,c0,maxFreq,combine)
     else
         c=calcWithCOM!(bSF,depth,grid,maxFreq)
     end

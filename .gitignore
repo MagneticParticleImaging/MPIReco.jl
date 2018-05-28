@@ -3,3 +3,4 @@
 *.jl.mem
 test/data*
 test/SF*
+test/*.mdf
