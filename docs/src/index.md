@@ -11,6 +11,14 @@ is implemented in the programming language Julia and contains algorithms for
 * multi-patch and multi-gradient reconstruction for data the has been acquired
   using a focus field sequence
 * multi-colored image reconstruction
+* matrix-compression techniques
+
+Key features are
+
+* frequency filtering for memory efficient reconstruction. Only frequencies used
+  during reconstructions are loaded into memory.
+* spectral leakage correction (implemented in MPIFiles.jl)
+
 
 ## License / Terms of Usage
 
