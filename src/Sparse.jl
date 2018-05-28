@@ -1,31 +1,39 @@
-export getSparseSF, getSFGridSize, basisTrafo, CompressionAnalysis
+export getSparseSF
 
 
 ##### Sparse getSF #########
 
 function getSF(bSF::MPIFile, frequencies, sparseTrafo::AbstractString;
-               redFactor=0.1,procno::Integer=1,  kargs...)
+               redFactor=0.1,  kargs...)
 
-	return transformAndGetSparseSF(bSF, frequencies, sparseTrafo; procno=procno,
+	return transformAndGetSparseSF(bSF, frequencies, sparseTrafo;
      redFactor=redFactor, kargs...)
 end
 
 # transforms selected frequencies, do compression end return sparse matrix
 # parameter globalComp: if true, each frequency gets the same number of non-zero entries
 #						if false, the number of non-zero entries is determined by a changing threshold
-function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;voxels::Array=dfGrid(bSF),
-  globalComp::Bool=true,redFactor=0.1,procno::Integer=1,bgcorrection=false, loadas32bit=true,
-     loadasreal=false, compAna=nothing, combine=true, useCOM=false, depth=4, kargs...)
+function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
+  voxels::Array=dfGrid(bSF),
+  globalComp::Bool=true,redFactor=0.1,bgcorrection=false, loadas32bit=true,
+    loadasreal=false, compAna=nothing, combine=true, useCOM=false, depth=4, useDFFoV=false, kargs...)
 
-    basisTrafo = linearOperator(sparseTrafo,voxels)
-    z = findCenterOfDfFov(bSF;dispRes=false,combine=combine,useCOM=useCOM,depth=depth)
-    println("Found center at $z")
+    if useDFFoV
+      z = findCenterOfDfFov(bSF;dispRes=false,combine=combine,useCOM=useCOM,depth=depth)
+      println("Found center at $z")
 
-    grid = calcGrid(bSF,z,voxels,basisTrafo)
+      grid = calcGrid(bSF,z,voxels,basisTrafo)
+
+      origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
+      grid = RegularGridPositions(voxels,fov,z)
+    else
+      grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
+    end
+
+    basisTrafo = linearOperator(sparseTrafo,shape(grid))
 
     nFreq = rxNumFrequencies(bSF)*rxNumChannels(bSF)
-    Nfull = prod(calibSize(bSF))
-    N = grid.Nx*grid.Ny*grid.Nz
+    N = length(grid)
     NRed = max(1,floor(Int,redFactor*N))
     l = length(frequencies)
 
@@ -38,10 +46,14 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;vo
 
     p = Progress(nFreq, 1, "Applying basis trafo...")
     for k = 1:l
-        SF = map(Complex64, systemMatrix(bSF, frequencies[k], bgcorrection) )
+        SF = vec(map(Complex64, systemMatrix(bSF, frequencies[k], bgcorrection) ))
 
+        if useDFFoV
+          buffer = onGrid(SF,gridSF,grid)
+        else
+          buffer = SF
+        end
 
-        buffer = onGrid(SF,gridSF,grid)
         A_mul_B!(basisTrafo,buffer)
         # compression
         if globalComp
@@ -53,19 +65,19 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;vo
         end
         numCoeff[k] = length(indices[k])
         data[k] = map(Complex64,(buffer[indices[k]]))
-        calcSigmaStep(compAna,buffer,indices[k],k)
+        #calcSigmaStep(compAna,buffer,indices[k],k)
     end
 
-    sparse = loadsparsedata(bSF,data,indices,l,N,numCoeff,loadas32bit,loadasreal)
-    doEvaluation(compAna,sparse,nFreq,Nfull)
-    return sparse
+    sparse = loadsparsedata(bSF,data,indices,l,N,numCoeff,loadasreal)
+
+    return sparse, grid
 end
 
 
-function loadsparsedata(f,data,indices,l,nPos,numCoeff,loadas32bit::Bool,loadasreal::Bool)
+function loadsparsedata(f,data,indices,l,nPos,numCoeff,loadasreal::Bool)
   N = nPos
   M = l
-  S = loadas32bit ? map(Complex64, cat(1,data...)) : map(Complex128, cat(1,data...))
+  S = map(Complex64, cat(1,data...))
   I = round.(Int64, cat(1,indices...))
   if loadasreal
     S = reshape(S,sum(numCoeff),1)

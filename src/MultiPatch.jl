@@ -26,12 +26,12 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
             frames=nothing, bEmpty=nothing,
             nAverages=1, loadas32bit=false,
             spectralLeakageCorrection=true,
-            roundPatches = false, 
-            FFPos = zeros(0,0), FFPosSF = zeros(0,0), 
+            roundPatches = false,
+            FFPos = zeros(0,0), FFPosSF = zeros(0,0),
             mapping=zeros(0), mirror=zeros(0,0), kargs...)
 
   FFPos_ = ffPos(bMeas)
-  
+
   #consistenceCheck(bSF, bMeas)
 
   bgcorrection = (bEmpty != nothing)
@@ -39,11 +39,11 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   periodsSortedbyFFPos = unflattenOffsetFieldShift(FFPos_)
 
   FFPos_ = FFPos_[:,periodsSortedbyFFPos[:,1]]
-  
-  if length(FFPos) > 0 
+
+  if length(FFPos) > 0
     FFPos_[:] = FFPos
   end
-  
+
   if length(FFPosSF) == 0
     FFPosSF_ = [vec(ffPos(SF)) for SF in bSF]
   else
@@ -83,8 +83,8 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   y=Axis{:y}(range(offset[2],pixspacing[2],shape_[2]))
   z=Axis{:z}(range(offset[3],pixspacing[3],shape_[3]))
   t=Axis{:time}(range(0.0,dfCycle(bMeas),L))
-  im = AxisArray(c,x,y,z,t)  
-  
+  im = AxisArray(c,x,y,z,t)
+
   #im = AxisArray(c, (:x,:y,:z,:time), tuple(pixspacing...,dfCycle(bMeas)),
   #                                    tuple(offset...,0.0))
 
@@ -132,7 +132,7 @@ function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
   return idx
 end
 
-function FFOperator(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool; 
+function FFOperator(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
         mapping=zeros(0), kargs...)
   if length(mapping) > 0
     return FFOperatorExpliciteMapping(SFs,bMeas,freq,bgcorrection; mapping=mapping, kargs...)
@@ -144,7 +144,7 @@ end
 function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
                     denoiseWeight=0, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
                     gradient=zeros(0,0,0),
-                    roundPatches = false, 
+                    roundPatches = false,
                     mapping=zeros(0), mirror=zeros(0,0), kargs...)
 
   println("Load SF")
@@ -152,38 +152,38 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
   M = length(freq)
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
 
-  S = [getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection) for SF in SFs]
+  S = [getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection)[1] for SF in SFs]
 
   gradientSF = [acqGradient(SF) for SF in SFs]
 
   grids = RegularGridPositions[]
   patchToSMIdx = mapping
-  
+
   mirroring = length(mirror) > 0
   if !mirroring
     mirror = ones(Int,3,numPatches)
   else
     mixFactors = mixingFactors(SFs[1])
   end
-  
+
   sign = ones(Int, M, numPatches)
-   
+
   # We first check which system matrix fits best to each patch. Here we use only
   # those system matrices where the gradient matches. If the gradient matches, we take
   # the system matrix with the closes focus field shift
   for k=1:numPatches
     idx = mapping[k]
     SF = SFs[idx]
-    
-    diffFFPos = mirror[:,k].*FFPosSF[idx] .- FFPos[:,k] 
-    
+
+    diffFFPos = mirror[:,k].*FFPosSF[idx] .- FFPos[:,k]
+
     if any(mirror .< 0) # in case of mirroring we do not allow shifting
       diffFFPos[:] = 0
     end
 
     push!(grids, RegularGridPositions(calibSize(SF),calibFov(SF),
           mirror[:,k].*calibFovCenter(SF).-diffFFPos, mirror[:,k]))
-          
+
     if mirroring
       numAllFreq = rxNumFrequencies(SF)
       for l=1:length(freq)
@@ -192,7 +192,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
         mx = mixFactors[l,1]
         my = mixFactors[l,2]
         mz = mixFactors[l,3]
-        
+
         if mirror[1,k]<0 && mirror[3,k]<0
          a = mx+mz+1
          if chan == 2
@@ -202,7 +202,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
          a = mx
          if chan == 1
            a += 1
-         end        
+         end
         elseif mirror[1,k]>0 && mirror[3,k]<0
          a = mz
          if chan == 3
@@ -233,7 +233,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
     issubgrid = isSubgrid(recoGrid,grids[k])
     println(" issubgrid = $issubgrid")
     println(grids[k])
-    if !issubgrid 
+    if !issubgrid
       grids[k] = deriveSubgrid(recoGrid, grids[k])
     end
     println(grids[k])
@@ -243,7 +243,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
   println("Calc LUT")
   # now that we have all grids we can calculate the indices within the recoGrid
   xcc, xss = calculateLUT(grids, recoGrid)
-  
+
   println("Finished")
   return FFOperator(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
@@ -268,17 +268,17 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
   grids = RegularGridPositions[]
   matchingSMIdx = zeros(Int,numPatches)
   patchToSMIdx = zeros(Int,numPatches)
-  
+
   # We first check which system matrix fits best to each patch. Here we use only
   # those system matrices where the gradient matches. If the gradient matches, we take
   # the system matrix with the closes focus field shift
   for k=1:numPatches
     idx = findNearestPatch(FFPosSF, FFPos[:,k], gradientSF, gradient[:,:,k])
-    
+
     SF = SFs[idx]
-    
+
     println("For patch $k at position $(FFPos[:,k]) I will use SM $idx with FFP $(FFPosSF[idx]) ")
-    
+
     if isapprox(FFPosSF[idx],FFPos[:,k])
       diffFFPos = zeros(3)
     else
@@ -303,7 +303,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
     if !issubgrid &&
        roundPatches &&
        spacing(recoGrid) == spacing(grids[k])
-       
+
       issubgrid = true
       grids[k] = deriveSubgrid(recoGrid, grids[k])
 
@@ -323,7 +323,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
       if u > 0 # its already in memory
         patchToSMIdx[k] = u
       else     # not yet in memory  -> load it
-        S_ = getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection)
+        S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection)
         push!(S,S_)
         push!(SOrigIdx,idx)
         push!(SIsPlain,true) # mark this as a plain system matrix (without interpolation)
@@ -335,7 +335,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
       newGrid = deriveSubgrid(recoGrid, grids[k])
 
       # load the matrix on the new subgrid
-      S_ = getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection,
+      S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection,
                    gridsize=shape(newGrid),
                    fov=fieldOfView(newGrid),
                    center=fieldOfViewCenter(newGrid).-fieldOfViewCenter(grids[k]))
@@ -353,7 +353,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
   println("Calc LUT")
   # now that we have all grids we can calculate the indices within the recoGrid
   xcc, xss = calculateLUT(grids, recoGrid)
-  
+
   sign = ones(Int, M, numPatches)
 
   println("Finished")

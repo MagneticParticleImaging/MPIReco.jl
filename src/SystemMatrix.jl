@@ -101,132 +101,21 @@ end
 setlambda(S::AbstractMatrix, λ::Real) = nothing
 
 function getSF(bSF, frequencies, sparseTrafo, solver; kargs...)
+  SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
   if solver == "kaczmarz"
-    # We now use a transpose type to simulate a row major array
-    return transp(getSF(bSF, frequencies, sparseTrafo; kargs...))
+    return transp(SF), grid
   elseif solver == "pseudoinverse"
-    return SVD(svd(getSF(bSF, frequencies, sparseTrafo; kargs...).')...)
+    return SVD(svd(SF.')...), grid
   elseif solver == "cgnr" || solver == "lsqr" || solver == "fusedlasso"
     println("solver = $solver")
-    return getSF(bSF, frequencies, sparseTrafo; kargs...).'
+    return SF.', grid
   elseif solver == "direct"
-    return tikhonovLU(getSF(bSF, frequencies, sparseTrafo; kargs...).')
+    return tikhonovLU(SF.'), grid
   else
-    return getSF(bSF, frequencies, sparseTrafo; kargs...)
+    return SF, grid
   end
 end
 
-# type for grid
-# constructors only initializes grid
-# for correct calculation call calcGrid
-
-@compat abstract type AbstractGrid end
-
-type KartGrid <: AbstractGrid
-    Nx::Int
-    Ny::Int
-    Nz::Int
-    X::Array{Float64,1}
-    Y::Array{Float64,1}
-    Z::Array{Float64,1}
-end
-
-KartGrid(g::Array{Int}) = KartGrid(g[1],g[2],g[3],0:g[1]-1,0:g[2]-1,0:g[3]-1)
-
-function KartGrid(g::Array{Int},targetGridSize::Array{Int})
-  return KartGrid(g[1],g[2],g[3],linspace(1,targetGridSize[1],g[1]),
-                            linspace(1,targetGridSize[2],g[2]),
-                            linspace(1,targetGridSize[3],g[3]))
-end
-
-
-function KartGrid(calibSize::Vector{Int},targetGridSize,
-                  fov, targetFov,
-                  center, targetCenter)
-
-  minIdx = posToIdx(idxToPos([1,1,1], calibSize, fov, center),
-                    targetGridSize, targetFov, targetCenter)
-
-  maxIdx = posToIdx(idxToPos(calibSize, calibSize, fov, center),
-                    targetGridSize, targetFov, targetCenter)
-
-  for d=1:3
-    if calibSize[d] == 1
-      minIdx[d] = maxIdx[d] = 1
-    end
-  end
-
-  grid =  KartGrid(calibSize[1],calibSize[2],calibSize[3],linspace(minIdx[1],maxIdx[1],calibSize[1]),
-                            linspace(minIdx[2],maxIdx[2],calibSize[2]),
-                            linspace(minIdx[3],maxIdx[3],calibSize[3]))
-
-  return grid
-end
-
-function idxToPos(idx, size, fov, center)
-  return 0.5.*fov.*(-1 + (2.*idx .- 1) ./ size) .+ center
-end
-
-
-function posToIdx(pos, size, fov, center)
-  return 0.5*(size.* ((pos .- center) ./ ( 0.5.*fov ) + 1) + 1)
-end
-
-
-type ChebGrid <: AbstractGrid
-    Nx::Int
-    Ny::Int
-    Nz::Int
-    X::Array{Float64,1}
-    Y::Array{Float64,1}
-    Z::Array{Float64,1}
-    ChebGrid(g::Array{Int})=new(g[1],g[2],g[3],0:g[1]-1,0:g[2]-1,0:g[3]-1)
-end
-
-function calcGrid(bSF::MPIFile,center::Array,voxels::Array,basisTrafo)
-    pixelsDfFov=dfGrid(bSF)
-    if typeof(basisTrafo)==LinearSolver.DSTOperator
-        g=ChebGrid(voxels)
-        g.X=cos((g.X+0.5).*pi./g.Nx)
-        g.Y=cos((g.Y+0.5).*pi./g.Ny)
-        g.Z=cos((g.Z+0.5).*pi./g.Nz)
-    else
-        g=KartGrid(voxels)
-        g.X=(2.*g.X+1)./g.Nx-1
-        g.Y=(2.*g.Y+1)./g.Ny-1
-        g.Z=(2.*g.Z+1)./g.Nz-1
-    end
-    g.X=g.X.*pixelsDfFov[1]./2.+center[1]
-    g.Y=g.Y.*pixelsDfFov[2]./2.+center[2]
-    g.Z=g.Z.*pixelsDfFov[3]./2.+center[3]
-    return g
-end
-
-# type for analysis of compression
-
-type CompressionAnalysis
-    sigma::Float64
-    elements::Float64
-    sigmaFreq::Array{Float64}
-    CompressionAnalysis(l::Int)=new(0,0,zeros(Float64,l))
-end
-
-# this function has to be called at end of compression
-function doEvaluation(compAna,sparse,nFreq,Nfull)
-    if compAna!=nothing
-        compAna.elements=nnz(sparse)/(nFreq*Nfull)
-        compAna.sigma=mean(compAna.sigmaFreq)
-    end
-end
-
-# this function has to be called in each step of compression
-function calcSigmaStep(compAna,buffer,ind,n)
-    if compAna!=nothing
-        full=1:length(buffer)
-        ind=setdiff(full,ind)
-        compAna.sigmaFreq[n]=(norm(buffer[ind]))/norm(buffer)
-    end
-end
 
 # calc grid of dfFov
 function dfGrid(bSF::MPIFile)
@@ -238,80 +127,16 @@ function dfGrid(bSF::MPIFile)
 end
 dfGrid{T<:MPIFile}(bs::Vector{T}) = [dfGrid(b) for b in bs]
 
-# TODO TK: move this to Image Processing / Registration.jl file
-# evaluates SF on the given grid
-# to do the interpolation correctly a reshape on the calibSize of the systemfunction is needed (given by gridSF)
-function onGrid(SF::Array,gridSF::Array{Int},grid::AbstractGrid)
-  A=reshape(SF,gridSF[1],gridSF[2],gridSF[3])
-  tmp = ( gridSF[1]==1 ? NoInterp() : BSpline(Linear()),
-          gridSF[2]==1 ? NoInterp() : BSpline(Linear()),
-          gridSF[3]==1 ? NoInterp() : BSpline(Linear()) )
-
-  itp = interpolate(A,tmp,OnCell())
-
-  AInterp = zeros(eltype(SF),grid.Nx,grid.Ny,grid.Nz)
-  for nz=1:grid.Nz
-    for ny=1:grid.Ny
-      for nx=1:grid.Nx
-        if grid.X[nx] >=1 && grid.X[nx] <= gridSF[1] &&
-           grid.Y[ny] >=1 && grid.Y[ny] <= gridSF[2] &&
-           grid.Z[nz] >=1 && grid.Z[nz] <= gridSF[3]
-          AInterp[nx,ny,nz] = itp[grid.X[nx],grid.Y[ny],grid.Z[nz]]
-          #if isnan(AInterp[nx,ny,nz])
-          #  println("$nx $ny $nz")
-          #end
-        end
-      end
-    end
-  end
-
-  return reshape(AInterp,grid.Nx*grid.Ny*grid.Nz)
-end
-
-function onGridReverse(SF::Array,voxels)
-	g=ChebGrid(voxels)
-	# revert order of chebychev grid points to make them ascending
-  g.X=(cos((g.X+0.5).*pi./g.Nx))[g.Nx:-1:1]
-  g.Y=(cos((g.Y+0.5).*pi./g.Ny))[g.Ny:-1:1]
-  g.Z=(cos((g.Z+0.5).*pi./g.Nz))[g.Nz:-1:1]
-	SF=SF[g.Nx*g.Ny*g.Nz:-1:1]
-	A=reshape(SF,g.Nx,g.Ny,g.Nz)
-  itp=interpolate((g.X,g.Y,g.Z),A,Gridded(Linear()))
-  return reshape(itp[linspace(-1,1,g.Nx),linspace(-1,1,g.Ny),linspace(-1,1,g.Nz)],g.Nx*g.Ny*g.Nz)
-end
-
-function getSFGridSize(bSF::MPIFile, sparseTrafo::Void, gridsize) #non sparse case
-  return collect(gridsize)
-end
-
-function getSFGridSize(bSF::MPIFile, sparseTrafo, gridsize)
-  return dfGrid(bSF)
-end
-
-function getSFGridSize{T<:MPIFile}(bSF::Vector{T}, sparseTrafo, gridsize)
-  return Int64[length(bSF), getSFGridSize(bSF[1],sparseTrafo, gridsize)...]
-end
-
-function getSFVoxelSize(bSF::MPIFile, sparseTrafo::Void, gridsize) #non sparse case
-  return calibFov(bSF)./collect(gridsize)
-end
-
-function getSFVoxelSize(bSF::MPIFile, sparseTrafo, gridsize)
-  return voxelSize(bSF) #???
-end
-
-function getSFVoxelSize{T<:MPIFile}(bSF::Vector{T}, sparseTrafo, gridsize)
-  return getSFVoxelSize(bSF[1],sparseTrafo,gridsize)
-end
-
-
 getSF{T<:MPIFile}(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Void; kargs...) = getSF(bSF, frequencies; kargs...)
 
 # TK: The following is a hack since colored and sparse trafo are currently not supported
 getSF{T<:MPIFile}(bSF::Vector{T}, frequencies, sparseTrafo::AbstractString; kargs...) = getSF(bSF[1],
    frequencies, sparseTrafo; kargs...)
 
-getSF{T<:MPIFile}(bSFs::Vector{T}, frequencies; kargs...) = cat(1,[getSF(bSF, frequencies; kargs...) for bSF in bSFs]...)
+function getSF{T<:MPIFile}(bSFs::Vector{T}, frequencies; kargs...)
+  data = [getSF(bSF, frequencies; kargs...) for bSF in bSFs]
+  return cat(1,[d[1] for d in data]...), data[1][2] # grid of the first SF
+end
 
 getSF(f::MPIFile; recChannels=1:numReceivers(f), kargs...) = getSF(f, filterFrequencies(f, recChannels=recChannels); kargs...)
 
@@ -344,12 +169,11 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
                deadPixels=Int[], kargs...)
 
   nFreq = rxNumFrequencies(bSF)
-  shape = getSFGridSize(bSF,nothing,gridsize)
 
   S = getSystemMatrix(bSF, frequencies, loadas32bit=loadas32bit, bgCorrection=bgcorrection)
 
   if !isempty(deadPixels)
-    repairDeadPixels(S,shape,deadPixels)
+    repairDeadPixels(S,gridsize,deadPixels)
   end
 
   if collect(gridsize) != collect(calibSize(bSF)) ||
@@ -358,27 +182,30 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
     println("Do SF Interpolation...")
     #println(gridsize, fov, center, calibSize(bSF), calibFov(bSF))
 
-    grid = KartGrid(shape, calibSize(bSF), fov, calibFov(bSF), center, [0.0,0.0,0.0])
-    #grid = KartGrid(shape, calibSize(bSF))
+    origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
+    target = RegularGridPositions(gridsize,fov,center)
 
-    SInterp = zeros(eltype(S),prod(shape),length(frequencies))
+    SInterp = zeros(eltype(S),prod(gridsize),length(frequencies))
     for k=1:length(frequencies)
-      SInterp[:,k] = onGrid(S[:,k],calibSize(bSF),grid)
+      SInterp[:,k] = vec(interpolate(reshape(S[:,k],calibSize(bSF)...), origin, target))
     end
     S = SInterp
+    grid = target
+  else
+    grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
   end
 
   if loadasreal
     S = converttoreal(S,bSF)
-    resSize = [shape..., 2*length(frequencies)]
+    resSize = [gridsize..., 2*length(frequencies)]
   else
-    resSize = [shape..., length(frequencies)]
+    resSize = [gridsize..., length(frequencies)]
   end
 
   if returnasmatrix
-    return reshape(S,prod(resSize[1:end-1]),resSize[end])
+    return reshape(S,prod(resSize[1:end-1]),resSize[end]), grid
   else
-    return squeeze(reshape(S,resSize...))
+    return squeeze(reshape(S,resSize...)), grid
   end
 end
 

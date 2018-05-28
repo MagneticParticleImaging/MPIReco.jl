@@ -156,6 +156,42 @@ function reconstruction(filenameSF::AbstractString, filenameMeas::AbstractString
   reconstruction(bSF,bMeas,freq; kargs...)
 end
 
+
+function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...)
+
+  if acqNumPeriodsPerFrame(bMeas) > 1
+    return reconstructionMultiPatch(bSF, bMeas; kargs...)
+  else
+    return reconstructionSinglePatch(bSF, bMeas;  kargs...)
+  end
+end
+
+function reconstructionSinglePatch{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
+  minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
+  bEmpty = nothing, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, kargs...)
+
+  freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
+
+  if varMeanThresh > 0
+    bEmptyTmp = (bEmpty == nothing) ? bMeas : bEmpty
+
+    freqVarMean = filterFrequenciesVarMean(bMeas, bEmptyTmp, fgFrames, bgFrames;
+                                        thresh=varMeanThresh, minAmplification=minAmplification,
+                                        minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels)
+    freq = intersect(freq, freqVarMean)
+  end
+
+  println("Frequency Selection: ", length(freq), " frequencies")
+
+  # Ensure that no frequencies are used that are not present in the measurement
+  freq = intersect(freq, filterFrequencies(bMeas))
+
+  println("Frequency Selection: ", length(freq), " frequencies")
+
+  return reconstruction(bSF, bMeas, freq; bEmpty=bEmpty, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
+end
+
+
 @doc """
 Returns a MPI image.
 
@@ -165,20 +201,14 @@ Returns a MPI image.
 * `u::Array´: Array containing measurements.
 * `shape`: Array/Tuple containing the grid size of the system matrix.
 
-**Optional keyword arguments**
-
-* `weightingLimit::Float64`: Limit the range of the weights.
-* `solver::AbstractString`: Algorithm used to solve the imaging equation (currently "kaczmarz" or "cgnr").
-* `lambd::Float64`: The regularization parameter, relative to the matrix trace.
-* `progress::Progress`: If progress is provided it is increased by one after each reconstructed image.
-* `kargs`: Additional arguments to be passed to low level reconstruction.
-
 **Returns**
 
 * `Array`: Returns Array or stack containing Arrays depending on the number of reconstructed frames.
 """->
 function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
-                                            lambd=0, progress=nothing, solver = "kaczmarz", weights=nothing, profileName="", profiling=nothing, reshapesolution = true, kargs...)
+                        lambd=0, progress=nothing, solver = "kaczmarz",
+                        weights=nothing, profileName="", profiling=nothing,
+                        reshapesolution = true, kargs...)
 
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
@@ -221,47 +251,19 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
 end
 
 
-@doc """
-Returns a MPI image.
 
-**Arguments**
-
-* `bSF::BrukerFile`: Handle to first system matrix.
-* `bMeas::BrukerFile`: Handle to measurement.
-* `frequencies::Array`: indices of frequencies to be used for reconstruction.
-
-**Optional keyword arguments**
-
-* `frames::Range{Int64}`: Index set of frames to be reconstructed .
-* `bEmpty::BrukerFile`: Handle of background measurement to be subtracted from measurement prior to reconstruction.
-* `denoiseWeight::Float64`: ???
-* `bgFrames::Union(Range{Int64},Int64)`: Index set of frames used for background correction.
-* `nAverages::Int`: ???
-* `sparseTrafo::AbstractString`: Sparse transformation (e.g. DCT, FFT) used for matrix compression.
-* `redFactor::Real`: Compression rate of sparse transformation.
-* `thresh::Real`: Compression cuts off elements based on there realtive energy. Disables `redFactor`!
-* `loadasreal:: Bool`: Load system matrix as real matrix.
-* `loadas32bit:: Bool` Load system matrix with single precicion float.
-* `maxload::Int`: delimits the number of measurements loaded into memory at a time.
-* `kargs`: Additional arguments to be passed to low level reconstruction.
-
-**Returns**
-
-* `Array`: Returns Array or stack containing Arrays depending on the number of reconstructed frames.
-"""->
 function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
   loadasreal = false, loadas32bit = true, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0],
   deadPixels=Int[], kargs...)
 
-  shape = getSFGridSize(bSF, sparseTrafo, gridsize)
   (typeof(bgFrames) <: Range && bEmpty==nothing) && (bEmpty = bMeas)
   bgcorrection = bEmpty != nothing ? true : false
 
   consistenceCheck(bSF, bMeas)
 
-  S = getSF(bSF, freq, sparseTrafo, solver; bgcorrection=bgcorrection, loadasreal=loadasreal,
+  S, grid = getSF(bSF, freq, sparseTrafo, solver; bgcorrection=bgcorrection, loadasreal=loadasreal,
             thresh=thresh, redFactor=redFactor, saveTrafo=saveTrafo,
             gridsize=gridsize, fov=fov, center=center, deadPixels=deadPixels)
 
@@ -269,17 +271,16 @@ function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile, fre
     denoiseSF!(S, shape, weight=denoiseWeight)
   end
 
-  return reconstruction(S, bSF, bMeas, freq, bEmpty=bEmpty, bgFrames=bgFrames,
+  return reconstruction(S, bSF, bMeas, freq, grid, bEmpty=bEmpty, bgFrames=bgFrames,
                         sparseTrafo=sparseTrafo, loadasreal=loadasreal,
-                        solver=solver, gridsize=gridsize; kargs...)
+                        solver=solver; kargs...)
 end
 
-function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
+function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
   frames = nothing, bEmpty = nothing, bgFrames = 1, nAverages = 1, sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
   weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz", spectralCleaning=true, fgFrames=1:10,
-  noiseFreqThresh=0.0, gridsize = gridSizeCommon(bSF), kargs...)
+  noiseFreqThresh=0.0, kargs...)
 
-  shape = getSFGridSize(bSF, sparseTrafo, gridsize)
   # (typeof(bgFrames) <: Range && bEmpty==nothing) && (bEmpty = bMeas)
   bgcorrection = bEmpty != nothing ? true : false
 
@@ -295,7 +296,7 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
   p = Progress(L, 1, "Reconstructing data...")
 
   #initialize output
-  image = initImage(bSF,bMeas,L,true,sparseTrafo,false,gridsize)
+  image = initImage(bSF,bMeas,L,grid,false)
 
   index = initIndex(bSF)
   iterator = nAverages == 1 ? splitrange(frames,maxload) : splitrange(frames,nAverages*maxload)
@@ -305,15 +306,11 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
 
     noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bgFrames=bgFrames, bMeas = bMeas, bgFrames=bgFrames)
 
-    c = reconstruction(S, u, shape; sparseTrafo=sparseTrafo, progress=p, weights=weights,
+    c = reconstruction(S, u, shape(grid); sparseTrafo=sparseTrafo, progress=p, weights=weights,
                        reshapesolution=false, solver=solver, kargs...)
     #maskDFFOV && (c .*= trustedFOVMask(bSF))
-    #c = reshape(c,prod(shape),size(c)[end])
-    if size(c,1) != prod(shape)
-      println("This code does not look correct")
-      c = c[1:prod(shape),:]
-    end
-    index = writePartToImage(c, image, index, partframes, nAverages, bSF, sparseTrafo, gridsize)
+
+    index = writePartToImage(c, image, index, partframes, nAverages, shape(grid))
   end
 
   im = vecImToIm(image)
@@ -327,18 +324,18 @@ end
 getshape(shapes::Array{Int64,1}) = shapes#[ find(shapes .> 1)]
 getshape(shapes::Array) = [length(shapes), shapes[1]...] #This was wrong: sum([prod(s) for s in shapes])
 
-function initImage(bSFFF::MPIFile, bMeas::MPIFile, L::Int, loadas32bit::Bool,
-                   sparseTrafo, loadOnlineParams=false, gridsize=gridSizeCommon(bSFFF))
-  shape = getSFGridSize(bSFFF, sparseTrafo, gridsize)
+function initImage(bSFFF::MPIFile, bMeas::MPIFile, L::Int, grid::RegularGridPositions,
+                    loadOnlineParams=false)
+  shp = shape(grid)
   T = Float32
-  pixspacing = getSFVoxelSize(bSFFF, sparseTrafo, gridsize) ./ acqGradient(bMeas)[1] .* acqGradient(bSFFF)[1]
+  pixspacing = spacing(grid) ./ acqGradient(bMeas)[1] .* acqGradient(bSFFF)[1]
   offset = ffPos(bMeas) .- 0.5.*calibFov(bSFFF) .+ 0.5.*pixspacing
 
-  Arr=Array{T}(shape...,L)
+  Arr=Array{T}(shp...,L)
 
-  x=Axis{:x}(range(offset[1],pixspacing[1],shape[1]))
-  y=Axis{:y}(range(offset[2],pixspacing[2],shape[2]))
-  z=Axis{:z}(range(offset[3],pixspacing[3],shape[3]))
+  x=Axis{:x}(range(offset[1],pixspacing[1],shp[1]))
+  y=Axis{:y}(range(offset[2],pixspacing[2],shp[2]))
+  z=Axis{:z}(range(offset[3],pixspacing[3],shp[3]))
   t=Axis{:time}(range(0.0,dfCycle(bMeas),L))
   im = AxisArray(Arr,x,y,z,t)
 
@@ -352,20 +349,15 @@ function initImage(bSFFF::MPIFile, bMeas::MPIFile, L::Int, loadas32bit::Bool,
   return imMeta
 end
 
-function initImage{T<:MPIFile}(bSFs::Vector{T}, bMeas::MPIFile, L::Int,
-                               loadas32bit::Bool,sparseTrafo,loadOnlineParams=false, gridsize=gridSize(bSFs[1]))
-  return Images.ImageMeta[initImage(bSF,bMeas,L,loadas32bit,sparseTrafo,loadOnlineParams, gridsize) for bSF in bSFs]
+function initImage{T<:MPIFile}(bSFs::Vector{T}, bMeas::MPIFile, L::Int, grid::RegularGridPositions,
+                               loadOnlineParams=false)
+  return Images.ImageMeta[initImage(bSF,bMeas,L,grid,loadOnlineParams) for bSF in bSFs]
 end
 
 initIndex(bSF::MPIFile) = 1
 initIndex{T<:MPIFile}(bSFs::Vector{T}) = Int[1 for bSF in bSFs]
 
-function writePartToImage(c, image, index::Int, partframes, nAverages,
-                          bSF::MPIFile, sparseTrafo, gridsize)
-  #if deltaSampleConcentration(bSF) > 0  # this is usually not helpful
-  #  scale!(c,1/deltaSampleConcentration(bSF))
-  #end
-  shape = getSFGridSize(bSF, sparseTrafo, gridsize)
+function writePartToImage(c, image, index::Int, partframes, nAverages, shape)
   inc = -fld(-length(partframes),nAverages)*prod(shape)
   image[index:index+inc-1] = c[:]
   index += inc
@@ -373,36 +365,28 @@ function writePartToImage(c, image, index::Int, partframes, nAverages,
 end
 
 function writePartToImage(c, image, bSF::MPIFile)
-  #if deltaSampleConcentration(bSF) > 0
-  #  scale!(c,1/deltaSampleConcentration(bSF))
-  #end
   image[:] = c[:]
 end
-
 
 function writePartToImage{T<:MPIFile}(c, image, bSFs::Vector{T})
   #error("Where am I called")
   split = 1
   for (i,bSF) in enumerate(bSFs)
     ctemp = vec(c[split:split-1+prod(gridSize(bSF)),:])
-    #if deltaSampleConcentration(bSF) > 0
-    #  scale!(ctemp,1/deltaSampleConcentration(bSF))
-    #end
+
     image[i][:] = ctemp
     split += prod(gridSize(bSF))
   end
 end
 
-function writePartToImage{T<:MPIFile}(c, image, index::Vector{Int}, partframes,
-                     nAverages, bSFs::Vector{T}, sparseTrafo, gridsize)
-  shape = getSFGridSize(bSFs[1], sparseTrafo, gridsize)
+function writePartToImage(c, image, index::Vector{Int}, partframes,
+                     nAverages, shape)
   inc = -fld(-length(partframes),nAverages)*prod(shape)
   split = 1
-  for (i,bSF) in enumerate(bSFs)
+  L = div(size(c,1),prod(shape))
+  for i=1:L
     ctemp = c[split:split-1+prod(shape),:][:]
-    #if deltaSampleConcentration(bSF) > 0
-    #  scale!(ctemp,1/deltaSampleConcentration(bSF))
-    #end
+
     image[i][index[i]:index[i]+inc-1] = ctemp
     split += prod(shape)
     index[i] += inc
@@ -440,60 +424,5 @@ function splitrange(r::Array{Int,1}, maxlength::Int)
     return res
   else
     return Any[r]
-  end
-end
-
-@doc """
-Returns a MPI image.
-
-**Arguments**
-
-* `bSF::BrukerFile´: Handle to system matrix.
-* `bMeas::BrukerFile´: Handle to measurement.
-
-**Optional keyword arguments**
-
-* `minFreq::Real`: Lower frequency used for cut off.
-* `maxFreq::Real`: Higher frequency used for cut off.
-* `SNRThresh::Real`: Signal to noise threshold used to filter out frequency components.
-* `sortBySNR::Bool`: ???
-* `recChannels::Range`: Specify recieving channels to use for reconstruction.
-* `kargs`: Additional arguments to be passed to lower level reconstruction.
-
-**Returns**
-
-* `Array`: Returns Array or stack containing Arrays depending on the number of reconstructed frames.
-"""->
-function reconstructionSinglePatch{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
-  minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
-  bEmpty = nothing, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, kargs...)
-
-  freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
-
-  if varMeanThresh > 0
-    bEmptyTmp = (bEmpty == nothing) ? bMeas : bEmpty
-
-    freqVarMean = filterFrequenciesVarMean(bMeas, bEmptyTmp, fgFrames, bgFrames;
-                                        thresh=varMeanThresh, minAmplification=minAmplification,
-                                        minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels)
-    freq = intersect(freq, freqVarMean)
-  end
-
-  println("Frequency Selection: ", length(freq), " frequencies")
-
-  # Ensure that no frequencies are used that are not present in the measurement
-  freq = intersect(freq, filterFrequencies(bMeas))
-
-  println("Frequency Selection: ", length(freq), " frequencies")
-
-  return reconstruction(bSF, bMeas, freq; bEmpty=bEmpty, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
-end
-
-function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...)
-
-  if acqNumPeriodsPerFrame(bMeas) > 1
-    return reconstructionMultiPatch(bSF, bMeas; kargs...)
-  else
-    return reconstructionSinglePatch(bSF, bMeas;  kargs...)
   end
 end
