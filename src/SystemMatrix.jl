@@ -247,7 +247,7 @@ function onGrid(SF::Array,gridSF::Array{Int},grid::AbstractGrid)
           gridSF[2]==1 ? NoInterp() : BSpline(Linear()),
           gridSF[3]==1 ? NoInterp() : BSpline(Linear()) )
 
-  itp=interpolate(A,tmp,OnCell())
+  itp = interpolate(A,tmp,OnCell())
 
   AInterp = zeros(eltype(SF),grid.Nx,grid.Ny,grid.Nz)
   for nz=1:grid.Nz

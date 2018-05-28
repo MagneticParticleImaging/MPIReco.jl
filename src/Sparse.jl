@@ -35,9 +35,12 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;vo
     numCoeff = zeros(Int32,l)
     gridSF = calibSize(bSF)
 
+
     p = Progress(nFreq, 1, "Applying basis trafo...")
     for k = 1:l
         SF = map(Complex64, systemMatrix(bSF, frequencies[k], bgcorrection) )
+
+
         buffer = onGrid(SF,gridSF,grid)
         A_mul_B!(basisTrafo,buffer)
         # compression
@@ -63,7 +66,7 @@ function loadsparsedata(f,data,indices,l,nPos,numCoeff,loadas32bit::Bool,loadasr
   N = nPos
   M = l
   S = loadas32bit ? map(Complex64, cat(1,data...)) : map(Complex128, cat(1,data...))
-  I = round(Int64, cat(1,indices...))
+  I = round.(Int64, cat(1,indices...))
   if loadasreal
     S = reshape(S,sum(numCoeff),1)
     S = converttoreal(S)
