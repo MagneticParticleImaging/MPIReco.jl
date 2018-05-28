@@ -255,7 +255,7 @@ end
 function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
   loadasreal = false, loadas32bit = true, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
-  gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0],
+  gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
   deadPixels=Int[], kargs...)
 
   (typeof(bgFrames) <: Range && bEmpty==nothing) && (bEmpty = bMeas)
@@ -264,7 +264,7 @@ function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile, fre
   consistenceCheck(bSF, bMeas)
 
   S, grid = getSF(bSF, freq, sparseTrafo, solver; bgcorrection=bgcorrection, loadasreal=loadasreal,
-            thresh=thresh, redFactor=redFactor, saveTrafo=saveTrafo,
+            thresh=thresh, redFactor=redFactor, saveTrafo=saveTrafo, useDFFoV=useDFFoV,
             gridsize=gridsize, fov=fov, center=center, deadPixels=deadPixels)
 
   if denoiseWeight > 0 && sparseTrafo == nothing

@@ -1,13 +1,5 @@
 export getSparseSF
 
-# calc grid of dfFov
-function dfGrid(bSF::MPIFile)
-    dfFovSize=dfFov(bSF)
-    fovSize=calibFov(bSF)
-    gridSF=calibSize(bSF)
-    # adding one and floor afterwards to avoid zeros in the grid
-    return floor.(Int,gridSF.*dfFovSize./fovSize+1)
-end
 
 ##### Sparse getSF #########
 function getSF(bSF::MPIFile, frequencies, sparseTrafo::AbstractString;
@@ -21,18 +13,21 @@ end
 # parameter globalComp: if true, each frequency gets the same number of non-zero entries
 #						if false, the number of non-zero entries is determined by a changing threshold
 function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
-  voxels::Array=dfGrid(bSF),
-  globalComp::Bool=true,redFactor=0.1,bgcorrection=false, loadas32bit=true,
+    globalComp::Bool=true,redFactor=0.1,bgcorrection=false,
     loadasreal=false, compAna=nothing, combine=true, useCOM=false, depth=4, useDFFoV=false, kargs...)
 
     if useDFFoV
-      z = findCenterOfDfFov(bSF;dispRes=false,combine=combine,useCOM=useCOM,depth=depth)
-      println("Found center at $z")
+      #z = findCenterOfDfFov(bSF;dispRes=false,combine=combine,useCOM=useCOM,depth=depth)
+      #println("Found center at $z")
 
-      grid = calcGrid(bSF,z,voxels,basisTrafo)
+      dfFovSize=dfFov(bSF)
+      fovSize=calibFov(bSF)
+      gridSF=calibSize(bSF)
+      # adding one and floor afterwards to avoid zeros in the grid
+      dfGridSize = floor.(Int,gridSF.*dfFovSize./fovSize+1)
 
       origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
-      grid = RegularGridPositions(voxels,fov,z)
+      grid = RegularGridPositions(dfGridSize, dfFovSize, [0.0,0.0,0.0])
     else
       grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
     end
@@ -56,7 +51,8 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
         SF = vec(map(Complex64, systemMatrix(bSF, frequencies[k], bgcorrection) ))
 
         if useDFFoV
-          buffer = onGrid(SF,gridSF,grid)
+          A = MPIFiles.interpolate(reshape(SF,shape(origin)...), origin, grid)
+          buffer = vec(A)
         else
           buffer = SF
         end

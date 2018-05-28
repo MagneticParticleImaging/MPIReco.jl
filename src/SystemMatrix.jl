@@ -151,7 +151,8 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
 
     SInterp = zeros(eltype(S),prod(gridsize),length(frequencies))
     for k=1:length(frequencies)
-      SInterp[:,k] = vec(MPIFiles.interpolate(reshape(S[:,k],calibSize(bSF)...), origin, target))
+      A = MPIFiles.interpolate(reshape(S[:,k],calibSize(bSF)...), origin, target)
+      SInterp[:,k] = vec(A)
     end
     S = SInterp
     grid = target
