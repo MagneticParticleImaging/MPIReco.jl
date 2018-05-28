@@ -13,7 +13,7 @@ end
 # parameter globalComp: if true, each frequency gets the same number of non-zero entries
 #						if false, the number of non-zero entries is determined by a changing threshold
 function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
-    globalComp::Bool=true,redFactor=0.1,bgcorrection=false,
+    globalComp=true,redFactor=0.1, bgcorrection=false,
     loadasreal=false, compAna=nothing, combine=true, useCOM=false, depth=4, useDFFoV=false, kargs...)
 
     if useDFFoV

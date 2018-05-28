@@ -254,7 +254,7 @@ end
 
 function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
-  loadasreal = false, loadas32bit = true, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
+  loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
   deadPixels=Int[], kargs...)
 
