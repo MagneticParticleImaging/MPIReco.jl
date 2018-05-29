@@ -43,8 +43,6 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
     indices = [zeros(Int32,1) for i=1:l]
     data = [zeros(Complex64,1) for i=1:l]
     numCoeff = zeros(Int32,l)
-    gridSF = calibSize(bSF)
-
 
     p = Progress(nFreq, 1, "Applying basis trafo...")
     for k = 1:l
@@ -57,7 +55,7 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
           buffer = SF
         end
 
-        A_mul_B!(basisTrafo,buffer)
+        buffer[:] = At_mul_B(basisTrafo,buffer)
         # compression
         if globalComp
             indices[k] = round.(Int32,flipdim(sortperm(abs.(buffer)),1)[1:NRed])
@@ -67,7 +65,7 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
             indices[k] = find(x->x>t,abs.(buffer))
         end
         numCoeff[k] = length(indices[k])
-        data[k] = map(Complex64,(buffer[indices[k]]))
+        data[k] = buffer[indices[k]]
         #calcSigmaStep(compAna,buffer,indices[k],k)
     end
 

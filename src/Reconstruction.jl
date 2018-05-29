@@ -235,10 +235,13 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
 
     d = solve(solv, u[:,l])
 
-    A_mul_B!(B, d) #backtrafo from dual space
-    if typeof(B)==LinearSolver.DSTOperator
-    	d=onGridReverse(d,shape)
+    if B != nothing
+      d[:] = B*d #backtrafo from dual space
     end
+    
+    #if typeof(B)==LinearSolver.DSTOperator
+    #	d=onGridReverse(d,shape)
+    #end
     c[:,l] = real( d ) # this one is allocating
     next!(p)
     sleep(0.001)

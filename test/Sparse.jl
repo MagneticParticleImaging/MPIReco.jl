@@ -16,7 +16,7 @@ c1 = reconstruction(bSF, b; lambd=0.1,
 
 
 figure(1)
-subplot(3,2,1)
+subplot(5,2,1)
 imshow(c1[1,:,:,1,1])
 
 
@@ -26,10 +26,10 @@ c2 = reconstruction(bSF, b; lambd=0.1,
                    recChannels =1:2,
                    iterations = 3,
                    spectralLeakageCorrection=false,
-                   redFactor = 0.1,
+                   redFactor = 1.0,
                    useDFFoV = false)
 
-subplot(3,2,3)
+subplot(5,2,3)
 imshow(c2[1,:,:,1,1])
 
 
@@ -39,33 +39,58 @@ c3 = reconstruction(bSF, b; lambd=0.1,
                    recChannels =1:2,
                    iterations = 3,
                    spectralLeakageCorrection=false,
-                   redFactor = 0.1,
+                   redFactor = 1.0,
                    useDFFoV = true)
 
-subplot(3,2,4)
+subplot(5,2,4)
 imshow(c3[1,:,:,1,1])
 
-c2 = reconstruction(bSF, b; lambd=0.1,
-                   SNRThresh = 1.5, frames=1:100, minFreq=80e3, nAverages=100,
+c2 = reconstruction(bSF, b; lambd=0.01,
+                   SNRThresh = 3, frames=1:100, minFreq=80e3, nAverages=100,
                    sparseTrafo="DCT",
                    recChannels =1:2,
-                   iterations = 3,
+                   iterations = 1,
+                   spectralLeakageCorrection=false,
+                   redFactor = 1.0,
+                   useDFFoV = false)
+
+subplot(5,2,5)
+imshow(c2[1,:,:,1,1])
+
+
+c3 = reconstruction(bSF, b; lambd=0.01,
+                   SNRThresh = 3, frames=1:100, minFreq=80e3, nAverages=100,
+                   sparseTrafo="DCT",
+                   recChannels =1:2,
+                   iterations = 1,
+                   spectralLeakageCorrection=true,
+                   redFactor = 1.0,
+                   useDFFoV = true)
+
+subplot(5,2,6)
+imshow(c3[1,:,:,1,1])
+
+c2 = reconstruction(bSF, b; lambd=0.01,
+                   SNRThresh = 3, frames=1:100, minFreq=80e3, nAverages=100,
+                   sparseTrafo="DST",
+                   recChannels =1:2,
+                   iterations = 1,
                    spectralLeakageCorrection=false,
                    redFactor = 0.1,
                    useDFFoV = false)
 
-subplot(3,2,5)
+subplot(5,2,7)
 imshow(c2[1,:,:,1,1])
 
 
-c3 = reconstruction(bSF, b; lambd=0.1,
-                   SNRThresh = 1.5, frames=1:100, minFreq=80e3, nAverages=100,
-                   sparseTrafo="DCT",
+c3 = reconstruction(bSF, b; lambd=0.01,
+                   SNRThresh = 3, frames=1:100, minFreq=80e3, nAverages=100,
+                   sparseTrafo="DST",
                    recChannels =1:2,
-                   iterations = 3,
-                   spectralLeakageCorrection=false,
+                   iterations = 1,
+                   spectralLeakageCorrection=true,
                    redFactor = 0.1,
                    useDFFoV = true)
 
-subplot(3,2,6)
+subplot(5,2,8)
 imshow(c3[1,:,:,1,1])
