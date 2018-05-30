@@ -8,6 +8,8 @@ bSF = MPIFile("systemMatrix.mdf")
 b = MPIFile("measurement.mdf")
 
 
+redFactor = 0.01
+
 c1 = reconstruction(bSF, b; lambd=0.1,
                    SNRThresh = 2, frames=1:100, minFreq=80e3, nAverages=100,
                    recChannels =1:2,
@@ -26,7 +28,7 @@ c2 = reconstruction(bSF, b; lambd=0.1,
                    recChannels =1:2,
                    iterations = 3,
                    spectralLeakageCorrection=false,
-                   redFactor = 1.0,
+                   redFactor = redFactor,
                    useDFFoV = false)
 
 subplot(5,2,3)
@@ -39,7 +41,7 @@ c3 = reconstruction(bSF, b; lambd=0.1,
                    recChannels =1:2,
                    iterations = 3,
                    spectralLeakageCorrection=false,
-                   redFactor = 1.0,
+                   redFactor = redFactor,
                    useDFFoV = true)
 
 subplot(5,2,4)
@@ -51,7 +53,7 @@ c2 = reconstruction(bSF, b; lambd=0.01,
                    recChannels =1:2,
                    iterations = 1,
                    spectralLeakageCorrection=false,
-                   redFactor = 1.0,
+                   redFactor = redFactor,
                    useDFFoV = false)
 
 subplot(5,2,5)
@@ -64,7 +66,7 @@ c3 = reconstruction(bSF, b; lambd=0.01,
                    recChannels =1:2,
                    iterations = 1,
                    spectralLeakageCorrection=true,
-                   redFactor = 1.0,
+                   redFactor = redFactor,
                    useDFFoV = true)
 
 subplot(5,2,6)
@@ -76,7 +78,7 @@ c2 = reconstruction(bSF, b; lambd=0.01,
                    recChannels =1:2,
                    iterations = 1,
                    spectralLeakageCorrection=false,
-                   redFactor = 0.1,
+                   redFactor = redFactor,
                    useDFFoV = false)
 
 subplot(5,2,7)
@@ -89,7 +91,7 @@ c3 = reconstruction(bSF, b; lambd=0.01,
                    recChannels =1:2,
                    iterations = 1,
                    spectralLeakageCorrection=true,
-                   redFactor = 0.1,
+                   redFactor = redFactor,
                    useDFFoV = true)
 
 subplot(5,2,8)
