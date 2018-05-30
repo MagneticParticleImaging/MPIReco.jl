@@ -1,4 +1,4 @@
-export reconstruction, reconstructionSFCutOff, imToVecIm, vecImToIm, getshape
+export reconstruction, imToVecIm, vecImToIm, getshape
 export writePartToImage, initImage
 
 function imToVecIm(image::ImageMeta)
@@ -238,7 +238,7 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
     if B != nothing
       d[:] = B*d #backtrafo from dual space
     end
-    
+
     #if typeof(B)==LinearSolver.DSTOperator
     #	d=onGridReverse(d,shape)
     #end
