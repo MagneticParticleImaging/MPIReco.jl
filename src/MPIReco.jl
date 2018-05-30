@@ -18,6 +18,7 @@ using Compat
 using ProgressMeter
 
 include("Utils.jl")
+include("RecoParameters.jl")
 include("SystemMatrixCenter.jl")
 include("SystemMatrix.jl")
 include("Weighting.jl")

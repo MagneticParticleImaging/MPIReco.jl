@@ -1,4 +1,4 @@
-export reconstruction, imToVecIm, vecImToIm, getshape
+export reconstruction, imToVecIm, vecImToIm
 export writePartToImage, initImage
 
 function imToVecIm(image::ImageMeta)
@@ -70,92 +70,27 @@ function reconstruction(recoParams::Dict)
   return c
 end
 
-
-
-
-@doc """
-This file contains MPI reconstruction algorithms. Different forms of the
-reconstruction function are available.
-
-**Optional keyword arguments**
-
-* `lambd::Float64`: The regularization parameter, relative to the matrix trace.
-* `iterations::Int`: Number of iterations of the iterative solver.
-* `solver::AbstractString`: Algorithm used to solve the imaging equation (currently "kaczmarz" or "cgnr").
-* `normWeights::Bool`: Enable row normalization (true/false).
-* `denoiseWeight::Float`: Denoise the system matrix prior to reconstrution. Disabled if denoiseWeight=0.
-* `sparseTrafo::AbstractString/Nothing`: Enable sparseTrafo if set to "DCT" or "FFT". Disable sparseTrafo if set to nothing.
-""" ->
 function reconstruction(bMeas::MPIFile; kargs...)
   bSF = MPIFile(sfPath(bMeas) )
   reconstruction(bSF, bMeas; kargs...)
 end
 
-@doc """
-Returns a MPI image.
-
-**Arguments**
-
-* `filenameMeas::AbstractString´: file path to measurement.
-
-**Optional keyword arguments**
-
-* `kargs`: Additional arguments to be passed to low level reconstruction.
-
-**Returns**
-
-* `Array`: Returns Array or stack containing Arrays depending on the number of reconstructed frames.
-"""->
 function reconstruction(filenameMeas::AbstractString; kargs...)
   bMeas = MPIFile(filenameMeas)
   reconstruction(bMeas; kargs...)
 end
 
-@doc """
-Returns a MPI image.
-
-**Arguments**
-
-* `filenameSF::AbstractString´: file path to system matrix.
-* `filenameMeas::AbstractString´: file path to measurement.
-
-**Optional keyword arguments**
-
-* `kargs`: Additional arguments to be passed to low level reconstruction.
-
-**Returns**
-
-* `Array`: Returns Array or stack containing Arrays depending on the number of reconstructed frames.
-"""->
 function reconstruction(filenameSF::AbstractString, filenameMeas::AbstractString; kargs...)
   bSF = MPIFile(filenameSF)
   bMeas = MPIFile(filenameMeas)
   reconstruction(bSF,bMeas; kargs...)
 end
 
-@doc """
-Returns a MPI image.
-
-**Arguments**
-
-* `filenameSF::AbstractString´: file path to system matrix.
-* `filenameMeas::AbstractString´: file path to measurement.
-* `frequencies::Array´: indices of frequencies to be used for reconstruction.
-
-**Optional keyword arguments**
-
-* `kargs`: Additional arguments to be passed to low level reconstruction.
-
-**Returns**
-
-* `Array`: Returns Array or stack containing Arrays depending on the number of reconstructed frames.
-"""->
 function reconstruction(filenameSF::AbstractString, filenameMeas::AbstractString, freq::Array; kargs...)
   bSF = MPIFile(filenameSF)
   bMeas = MPIFile(filenameMeas)
   reconstruction(bSF,bMeas,freq; kargs...)
 end
-
 
 function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...)
 
@@ -191,20 +126,6 @@ function reconstructionSinglePatch{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::M
   return reconstruction(bSF, bMeas, freq; bEmpty=bEmpty, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
 end
 
-
-@doc """
-Returns a MPI image.
-
-**Arguments**
-
-* `S::AbstractArray´: Array containing system matrix.
-* `u::Array´: Array containing measurements.
-* `shape`: Array/Tuple containing the grid size of the system matrix.
-
-**Returns**
-
-* `Array`: Returns Array or stack containing Arrays depending on the number of reconstructed frames.
-"""->
 function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
                         lambd=0, progress=nothing, solver = "kaczmarz",
                         weights=nothing, profileName="", profiling=nothing,
@@ -252,8 +173,6 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
   end
   return c
 end
-
-
 
 function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
@@ -319,9 +238,6 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
   im = vecImToIm(image)
   return im
 end
-
-getshape(shapes::Array{Int64,1}) = shapes#[ find(shapes .> 1)]
-getshape(shapes::Array) = [length(shapes), shapes[1]...] #This was wrong: sum([prod(s) for s in shapes])
 
 function initImage(bSFFF::MPIFile, bMeas::MPIFile, L::Int, grid::RegularGridPositions,
                     loadOnlineParams=false)

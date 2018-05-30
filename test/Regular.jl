@@ -49,3 +49,24 @@ subplot(2,1,1)
 imshow(c5[1,:,:,1,1])
 subplot(2,1,2)
 imshow(c5[2,:,:,1,1])
+
+
+# dict based reco
+r = defaultRecoParams()
+r[:measPath] = filepath(b)
+r[:SFPath] = filepath(bSF)
+r[:frames] =  1
+r[:minFreq] = 80e3
+r[:SNRThresh] = 4
+r[:lambd] = 0.001
+r[:iterations] = 1
+
+c6 = reconstruction(r)
+
+figure(6)
+imshow(c6[1,:,:,1,1])
+
+
+###########  reconstruction without storage  ###########
+
+# this is an "in memor
