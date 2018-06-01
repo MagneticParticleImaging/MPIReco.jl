@@ -17,20 +17,6 @@ function converttoreal{T}(S::AbstractArray{Complex{T}},f)
   return S
 end
 
-function converttoreal{T}(S::AbstractArray{Complex{T},2})
-  N = size(S,1)
-  M = size(S,2)
-  S = reinterpret(T,S,(2*N,M))
-  p = Progress(M, 1, "Converting system matrix to real...")
-  for l=1:M
-    tmp = S[:,l]
-    S[1:N,l] = tmp[1:2:end]
-    S[N+1:end,l] = tmp[2:2:end]
-    next!(p)
-  end
-  return S
-end
-
 # Systemfunction types for better inversion algorithms
 abstract type Systemfunction end
 
