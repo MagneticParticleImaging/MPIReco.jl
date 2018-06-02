@@ -23,27 +23,36 @@ function findCenterOfDfFov(bSF::MPIFile)
 
   center = ones(3)
   if size(S1,1) > 1
+    println("xdir")
     u = floor.(Int, centerOfMass(abs.(S1)))
     println(u)
-    y_0 = real(S1[u[1]-1,u[2],u[3]])
-    y_1 = real(S1[u[1]+1,u[2],u[3]])
+    x = indmin(abs.(vec((S1[(u[1]-5):(u[1]+5),u[2],u[3]]))))+u[1]-6
+    println(x)
+    y_0 = real(S1[x-1,u[2],u[3]])
+    y_1 = real(S1[x+1,u[2],u[3]])
     xdiff = -y_0 / (y_1-y_0) *2
-    center[1] = u[1]+xdiff-1
+    center[1] = x#+xdiff-1
   end
   if size(S2,2) > 1
+    println("ydir")
     u = floor.(Int, centerOfMass(abs.(S2)))
     println(u)
-    y_0 = real(S2[u[1],u[2]-1,u[3]])
-    y_1 = real(S2[u[1],u[2]+1,u[3]])
+    x = indmin(abs.(vec((S2[u[1],(u[2]-5):(u[2]+5),u[3]]))))+u[2]-6
+    println(x)
+    y_0 = real(S2[u[1],x-1,u[3]])
+    y_1 = real(S2[u[1],x+1,u[3]])
     xdiff = -y_0 / (y_1-y_0) *2
-    center[2] = u[2]+xdiff-1
+    center[2] = x#+xdiff-1
   end
   if size(S3,3) > 1
+    println("zdir")
     u = floor.(Int, centerOfMass(abs.(S3)))
-    y_0 = real(S3[u[1],u[2],u[3]-1])
-    y_1 = real(S3[u[1],u[2],u[3]+1])
+    x = indmin(abs.(vec((S3[u[1],u[2],(u[3]-5):(u[3]+5)]))))+u[3]-6
+    println(x)
+    y_0 = real(S3[u[1],u[2],x-1])
+    y_1 = real(S3[u[1],u[2],x+1])
     xdiff = -y_0 / (y_1-y_0) *2
-    center[3] = u[3]+xdiff-1
+    center[3] = x#+xdiff-1
   end
   return center
 end
@@ -52,7 +61,7 @@ end
 function centerOfMass{T}(data::Array{T,3})
   data = abs.(data)
   maxData = maximum(data)
-  data[ data .< maxData*0.1] = 0
+  data[ data .< maxData*0.5] = 0
 
   lx=0
   ly=0

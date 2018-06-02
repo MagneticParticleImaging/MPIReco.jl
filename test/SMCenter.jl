@@ -24,7 +24,7 @@ for (l,SF) in enumerate(SFs)
   bSF = MPIFile(SF)
   a = findCenterOfDfFov(bSF)
   println(a)
-  S = MPIReco.readSF(bSF,0,2,0,1);
+  S = MPIReco.readSF(bSF,5,6,0,1);
   imshow(abs.(S)[:,:,1]);
   plot([a[2]-1],[a[1]-1],"gx",lw=4)
 end
