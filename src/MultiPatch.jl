@@ -206,12 +206,12 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
     SF = SFs[idx]
 
     issubgrid = isSubgrid(recoGrid,grids[k])
-    println(" issubgrid = $issubgrid")
-    println(grids[k])
+    #println(" issubgrid = $issubgrid")
+    #println(grids[k])
     if !issubgrid
       grids[k] = deriveSubgrid(recoGrid, grids[k])
     end
-    println(grids[k])
+    #println(grids[k])
   end
   println("Use $(length(S)) patches")
 
@@ -252,7 +252,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
 
     SF = SFs[idx]
 
-    println("For patch $k at position $(FFPos[:,k]) I will use SM $idx with FFP $(FFPosSF[idx]) ")
+    #println("For patch $k at position $(FFPos[:,k]) I will use SM $idx with FFP $(FFPosSF[idx]) ")
 
     if isapprox(FFPosSF[idx],FFPos[:,k])
       diffFFPos = zeros(3)
