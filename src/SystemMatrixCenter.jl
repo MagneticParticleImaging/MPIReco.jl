@@ -1,25 +1,10 @@
 export findCenterOfDfFov
 
-"""This function reads the component belonging to the given mixing-factors und chanal from the given MPIfile.\n
-In the case of a 2D systemfunction, the third dimension is added."""
-function readSF(bSF,mx::Int,my::Int,mz::Int,recChan::Int)
-  maxFreq  = rxNumFrequencies(bSF)
-	freq = mixFactorToFreq(bSF, mx, my, mz)
-	freq = clamp(freq,0,maxFreq-1)
-	k = freq + (recChan-1)*maxFreq
-  println("k = $k")
-	SF, grid = getSF(bSF,[k+1],returnasmatrix = true, bgcorrection=true)
-  N = calibSize(bSF)
-  SF = reshape(SF,N[1],N[2],N[3])
-
-  return SF
-end
-
 """This function calculates the center of the DfFov of the given MPIFile bSF"""
 function findCenterOfDfFov(bSF::MPIFile)
-	S1 = readSF(bSF,0,2,0,1) #xdir
-  S2 = readSF(bSF,2,0,0,2) #ydir
-  S3 = readSF(bSF,0,0,2,3) #zdir
+	S1 = getSF(bSF,0,2,0,1) #xdir
+  S2 = getSF(bSF,2,0,0,2) #ydir
+  S3 = getSF(bSF,0,0,2,3) #zdir
 
   center = ones(3)
   if size(S1,1) > 1
