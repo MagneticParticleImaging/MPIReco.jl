@@ -41,7 +41,8 @@ function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoP
   if numReco > 0
     println("Reco found")
     reco = getReco(d,study,exp, numReco)
-    c = loaddata(reco.path)
+    #c = loaddata(reco.path)
+    c = loadRecoDataMDF(reco.path)
   else
     println("Reco not found")
     c = reconstruction(recoParams)
