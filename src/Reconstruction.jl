@@ -36,6 +36,7 @@ end
 function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoParams)
 
   !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( MPIFile( recoParams[:measPath] ) ))
+  haskey(recoParams,:emptyMeasPath) && (recoParams[:bEmpty] = MPIFile( recoParams[:emptyMeasPath] ) )
 
   numReco = findReco(d,study,exp,recoParams)
   if numReco > 0
@@ -186,9 +187,11 @@ function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile, fre
 
   consistenceCheck(bSF, bMeas)
 
+  println("Loading System matrix ...")
   S, grid = getSF(bSF, freq, sparseTrafo, solver; bgcorrection=bgcorrection, loadasreal=loadasreal,
             thresh=thresh, redFactor=redFactor, saveTrafo=saveTrafo, useDFFoV=useDFFoV,
             gridsize=gridsize, fov=fov, center=center, deadPixels=deadPixels)
+  println("Loading System matrix done!")
 
   if denoiseWeight > 0 && sparseTrafo == nothing
     denoiseSF!(S, shape, weight=denoiseWeight)
@@ -207,6 +210,7 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
   # (typeof(bgFrames) <: Range && bEmpty==nothing) && (bEmpty = bMeas)
   bgcorrection = bEmpty != nothing ? true : false
 
+  println("Loading emptymeas ...")
   bEmpty!=nothing && (uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
                                                  loadasreal=loadasreal,spectralLeakageCorrection=spectralCleaning))
 
@@ -224,14 +228,17 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
   index = initIndex(bSF)
   iterator = nAverages == 1 ? splitrange(frames,maxload) : splitrange(frames,nAverages*maxload)
   for partframes in iterator
+    println("Loading measurements ...")
     u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=nAverages, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
     bEmpty!=nothing && (u = u .- uEmpty)
 
     noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bgFrames=bgFrames, bMeas = bMeas, bgFrames=bgFrames)
 
+    println("Reconstruction ...")
     c = reconstruction(S, u, shape(grid); sparseTrafo=sparseTrafo, progress=p, weights=weights,
                        reshapesolution=false, solver=solver, kargs...)
     #maskDFFOV && (c .*= trustedFOVMask(bSF))
+    println("Reconstruction done")
 
     index = writePartToImage(c, image, index, partframes, nAverages, shape(grid))
   end
