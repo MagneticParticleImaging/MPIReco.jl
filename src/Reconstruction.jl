@@ -36,7 +36,7 @@ end
 function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoParams)
 
   !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( MPIFile( recoParams[:measPath] ) ))
-  haskey(recoParams,:emptyMeasPath) && (recoParams[:bEmpty] = MPIFile( recoParams[:emptyMeasPath] ) )
+  haskey(recoParams,:emptyMeasPath) && recoParams[:emptyMeasPath]!=nothing && (recoParams[:emptyMeasPath] = MPIFile( recoParams[:emptyMeasPath] ) )
 
   numReco = findReco(d,study,exp,recoParams)
   if numReco > 0
