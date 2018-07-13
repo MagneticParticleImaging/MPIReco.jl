@@ -1,3 +1,4 @@
+__precompile__(true)
 module MPIReco
 
 if !isdir(Pkg.dir("LinearSolver"))
