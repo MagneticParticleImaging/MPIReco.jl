@@ -148,9 +148,9 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
 
   if loadasreal
     S = converttoreal(S,bSF)
-    resSize = [gridsize..., 2*length(frequencies)]
+    resSize = [gridsize..., 2*length(frequencies)*acqNumPeriodsPerFrame(bSF)]
   else
-    resSize = [gridsize..., length(frequencies)]
+    resSize = [gridsize..., length(frequencies)*acqNumPeriodsPerFrame(bSF)]
   end
 
   if returnasmatrix
