@@ -211,8 +211,15 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
   bgcorrection = bEmpty != nothing ? true : false
 
   println("Loading emptymeas ...")
-  bEmpty!=nothing && (uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
-                                                 loadasreal=loadasreal,spectralLeakageCorrection=spectralCleaning))
+  if bEmpty!=nothing
+    if acqNumBGFrames(bEmpty) > 0
+      uEmpty = getMeasurementsFD(bEmpty, false, frequencies=freq, frames=measBGFrameIdx(bEmpty),
+           numAverages=acqNumBGFrames(bEmpty), bgCorrection=false, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
+    else
+      uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
+           loadasreal=loadasreal,spectralLeakageCorrection=spectralCleaning)
+    end
+  end
 
   frames == nothing && (frames = 1:acqNumFrames(bMeas))
 
