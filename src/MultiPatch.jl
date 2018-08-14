@@ -11,36 +11,25 @@ generateHeaderDict(bSF::MultiMPIFile,bMeas::MPIFile) =
    generateHeaderDict(bSF[1],bMeas)
 
 
- function reconstructionMultiPatch(bSF, bMeas::MPIFile;
-   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
-   kargs...)
+function reconstructionMultiPatch(bSF, bMeas::MPIFile;
+  minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas), kargs...)
 
-   freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
+  freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
 
-   println("Frequency Selection: ", length(freq), " frequencies")
+  println("Frequency Selection: ", length(freq), " frequencies")
 
-   return reconstructionMultiPatch(bSF, bMeas, freq; kargs...)
- end
+  return reconstructionMultiPatch(bSF, bMeas, freq; kargs...)
+end
 
 function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
             frames=nothing, bEmpty=nothing,
             nAverages=1, loadas32bit=false,
             spectralLeakageCorrection=true,
-            roundPatches = false,
-            FFPos = zeros(0,0), FFPosSF = zeros(0,0),
-            mapping = zeros(0), systemMatrices = nothing,
-            SFGridCenter = zeros(0,0),
-             kargs...)
+            kargs...)
   bgcorrection = (bEmpty != nothing)
 
-  FFOp = FFOperatorHighLevel(bSF, bMeas, freq, bgcorrection,
-                    FFPos = FFPos,
-                    roundPatches = roundPatches,
-                    FFPosSF = FFPosSF,
-                    mapping = mapping,
-                    systemMatrices = systemMatrices,
-                    SFGridCenter = SFGridCenter
-                    )
+  FFOp = FFOperatorHighLevel(bSF, bMeas, freq, bgcorrection;
+                    kargs... )
 
   L = numScans(bMeas)
   (frames==nothing) && (frames=collect(1:L))
@@ -60,11 +49,12 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   offset = fieldOfViewCenter(FFOp.grid)  .- 0.5.*fieldOfView(FFOp.grid) .+ 0.5.*spacing(FFOp.grid)
 
   shape_ = size(c)
+  color = AxisArrays.Axis{:color}(1:1)
   x=Axis{:x}(range(offset[1],pixspacing[1],shape_[1]))
   y=Axis{:y}(range(offset[2],pixspacing[2],shape_[2]))
   z=Axis{:z}(range(offset[3],pixspacing[3],shape_[3]))
   t=Axis{:time}(range(0.0,dfCycle(bMeas),L))
-  im = AxisArray(c,x,y,z,t)
+  im = AxisArray(reshape(c,1,size(c,1),size(c,2),size(c,3),size(c,4)),color,x,y,z,t)
 
 
   imMeta = ImageMeta(im,generateHeaderDict(bSF,bMeas))
@@ -140,7 +130,7 @@ function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
 end
 
 function FFOperator(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
-        mapping=zeros(0), systemMatrices=nothing, kargs...)
+        mapping=zeros(0), kargs...)
   if length(mapping) > 0
     return FFOperatorExpliciteMapping(SFs,bMeas,freq,bgcorrection; mapping=mapping, kargs...)
   else
@@ -154,7 +144,8 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
                     roundPatches = false,
                     SFGridCenter = zeros(0,0),
                     systemMatrices = nothing,
-                    mapping=zeros(0), kargs...)
+                    mapping=zeros(0), 
+                    grid = nothing, kargs...)
 
   println("Load SF")
   numPatches = size(FFPos,2)
@@ -197,8 +188,12 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
   # We now know all the subgrids for each patch, if the corresponding system matrix would be taken as is
   # and if a possible focus field missmatch has been taken into account (by changing the center)
   println("Calc Reco Grid")
-  recoGrid = RegularGridPositions(grids)
-
+  if grid == nothing
+    recoGrid = RegularGridPositions(grids)
+    println(recoGrid)
+  else
+    recoGrid = grid
+  end 
 
   # Within the next loop we will refine our grid since we now know our reconstruction grid
   for k=1:numPatches
