@@ -2,11 +2,11 @@ import Base.length, Base.size
 
 export getSF, SVD, tikhonovLU, setlambda
 
-function converttoreal{T}(S::AbstractArray{Complex{T}},f)
+function converttoreal(S::AbstractArray{Complex{T}},f) where T
   N = prod(calibSize(f))
   M = div(length(S),N)
   S = reshape(S,N,M)
-  S = reinterpret(T,S,(2*N,M))
+  S = reshape(reinterpret(T,vec(S)),(2*N,M))
   p = Progress(M, 1, "Converting system matrix to real...")
   for l=1:M
     tmp = S[:,l]
@@ -21,20 +21,20 @@ end
 abstract type Systemfunction end
 
 #type for singular value decomposition
-@doc "This Type stores the singular value decomposition of a Matrix" ->
-type SVD <: Systemfunction
+"This Type stores the singular value decomposition of a Matrix"
+mutable struct SVD <: Systemfunction
   U::Matrix
   Σ::Vector
   V::Matrix
   D::Vector
 end
 
-SVD(U::Matrix,Σ::Vector,V::Matrix) = SVD(U,Σ,V,1./Σ)
+SVD(U::Matrix,Σ::Vector,V::Matrix) = SVD(U,Σ,V,1 ./ Σ)
 
 size(A::SVD) = (size(A.U,1),size(A.V,1))
 length(A::SVD) = prod(size(A))
 
-@doc "This function can be used to calculate the singular values used for Tikhonov regularization." ->
+"This function can be used to calculate the singular values used for Tikhonov regularization."
 function setlambda(A::SVD, λ::Real)
   for i=1:length(A.Σ)
     σi = A.Σ[i]
@@ -44,7 +44,7 @@ function setlambda(A::SVD, λ::Real)
 end
 
 #type for Gauß elimination
-type tikhonovLU <: Systemfunction
+mutable struct tikhonovLU <: Systemfunction
   S::Matrix
   LUfact
 end
@@ -54,7 +54,7 @@ tikhonovLU(S::AbstractMatrix) = tikhonovLU(S, lufact(S'*S))
 size(A::tikhonovLU) = size(A.S)
 length(A::tikhonovLU) = length(A.S)
 
-@doc "This function can be used to calculate the singular values used for Tikhonov regularization." ->
+"This function can be used to calculate the singular values used for Tikhonov regularization."
 function setlambda(A::tikhonovLU, λ::Real)
   A.LUfact = lufact(A.S'*A.S + λ*speye(size(A,2),size(A,2)))
   return nothing
@@ -67,26 +67,27 @@ function getSF(bSF, frequencies, sparseTrafo, solver; kargs...)
   if solver == "kaczmarz"
     return transp(SF), grid
   elseif solver == "pseudoinverse"
-    return SVD(svd(SF.')...), grid
+    return SVD(svd(transpose(SF))...), grid
   elseif solver == "cgnr" || solver == "lsqr" || solver == "fusedlasso"
     println("solver = $solver")
-    return SF.', grid
+    return copy(transpose(SF)), grid
   elseif solver == "direct"
-    return tikhonovLU(SF.'), grid
+    return tikhonovLU(copy(transpose(SF))), grid
   else
     return SF, grid
   end
 end
 
-getSF{T<:MPIFile}(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Void; kargs...) = getSF(bSF, frequencies; kargs...)
+getSF(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Nothing; kargs...) where {T<:MPIFile} =
+   getSF(bSF, frequencies; kargs...)
 
 # TK: The following is a hack since colored and sparse trafo are currently not supported
-getSF{T<:MPIFile}(bSF::Vector{T}, frequencies, sparseTrafo::AbstractString; kargs...) = getSF(bSF[1],
-   frequencies, sparseTrafo; kargs...)
+getSF(bSF::Vector{T}, frequencies, sparseTrafo::AbstractString; kargs...) where {T<:MPIFile} =
+  getSF(bSF[1], frequencies, sparseTrafo; kargs...)
 
-function getSF{T<:MPIFile}(bSFs::Vector{T}, frequencies; kargs...)
+function getSF(bSFs::Vector{T}, frequencies; kargs...) where {T<:MPIFile}
   data = [getSF(bSF, frequencies; kargs...) for bSF in bSFs]
-  return cat(1,[d[1] for d in data]...), data[1][2] # grid of the first SF
+  return cat([d[1] for d in data]..., dims=1), data[1][2] # grid of the first SF
 end
 
 getSF(f::MPIFile; recChannels=1:numReceivers(f), kargs...) = getSF(f, filterFrequencies(f, recChannels=recChannels); kargs...)

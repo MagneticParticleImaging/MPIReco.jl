@@ -35,8 +35,8 @@ function getWeights(weightType, freq, S; weightingLimit=0.0, bEmpty = nothing, b
 
     stdDevU = sqrt(abs(var(u,3 )))
     stdDevUEmpty = sqrt(abs(var(uEmpty,3 )))
-    meanU = abs(mean(u,3).-mean(uEmpty,3 ))
-    meanUEmpty = abs(mean(uEmpty,3 ))
+    meanU = abs(mean(u,dims=3).-mean(uEmpty,dims=3))
+    meanUEmpty = abs(mean(uEmpty, dims=3))
 
     for k=1:nFreq
       for r=1:nReceivers
@@ -80,8 +80,8 @@ function setNoiseFreqToZero(uMeas, freq, noiseFreqThresh; bEmpty = nothing, bgFr
     uEmpty = getMeasurementsFT(bEmpty,frames=bgFrames)
 
     stdDevU = sqrt(abs(var(u,3 )))
-    meanU = abs(mean(u,3).-mean(uEmpty,3 ))
-    meanUEmpty = abs(mean(uEmpty,3 ))
+    meanU = abs(mean(u,dims=3).-mean(uEmpty,dims=3))
+    meanUEmpty = abs(mean(uEmpty,dims=3))
 
     for k=1:nFreq
       for r=1:nReceivers

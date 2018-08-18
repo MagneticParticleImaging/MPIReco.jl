@@ -11,7 +11,7 @@ function findCenterOfDfFov(bSF::MPIFile)
     println("xdir")
     u = floor.(Int, centerOfMass(abs.(S1)))
     println(u)
-    x = indmin(abs.(vec((S1[(u[1]-5):(u[1]+5),u[2],u[3]]))))+u[1]-6
+    x = argmin(abs.(vec((S1[(u[1]-5):(u[1]+5),u[2],u[3]]))))+u[1]-6
     println(x)
     y_0 = real(S1[x-1,u[2],u[3]])
     y_1 = real(S1[x+1,u[2],u[3]])
@@ -22,7 +22,7 @@ function findCenterOfDfFov(bSF::MPIFile)
     println("ydir")
     u = floor.(Int, centerOfMass(abs.(S2)))
     println(u)
-    x = indmin(abs.(vec((S2[u[1],(u[2]-5):(u[2]+5),u[3]]))))+u[2]-6
+    x = argmin(abs.(vec((S2[u[1],(u[2]-5):(u[2]+5),u[3]]))))+u[2]-6
     println(x)
     y_0 = real(S2[u[1],x-1,u[3]])
     y_1 = real(S2[u[1],x+1,u[3]])
@@ -43,10 +43,10 @@ function findCenterOfDfFov(bSF::MPIFile)
 end
 
 
-function centerOfMass{T}(data::Array{T,3})
+function centerOfMass(data::Array{T,3}) where T
   data = abs.(data)
   maxData = maximum(data)
-  data[ data .< maxData*0.5] = 0
+  data[ data .< maxData*0.5] .= 0
 
   lx=0
   ly=0

@@ -1,12 +1,14 @@
 __precompile__(true)
 module MPIReco
 
-if !isdir(Pkg.dir("LinearSolver"))
+using Pkg
+
+if !haskey(Pkg.installed(),"LinearSolver")
   println("Installing LinearSolver...")
   Pkg.clone("https://github.com/tknopp/LinearSolver.jl.git")
 end
 
-if !isdir(Pkg.dir("MPIFiles"))
+if !haskey(Pkg.installed(),"MPIFiles")
   println("Installing MPIFiles...")
   Pkg.clone("https://github.com/MagneticParticleImaging/MPIFiles.jl.git")
 end
@@ -15,8 +17,15 @@ using Reexport
 @reexport using MPIFiles
 @reexport using LinearSolver
 @reexport using Images
+using AxisArrays
+const axes = Base.axes
 using Compat
 using ProgressMeter
+using LinearAlgebra
+using Statistics
+using Random
+using SparseArrays
+using Dates
 
 include("Utils.jl")
 include("RecoParameters.jl")

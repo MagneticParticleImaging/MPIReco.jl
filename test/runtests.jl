@@ -1,8 +1,11 @@
-using Requests
+using HTTP
 
 if !isdir("dataMP01")
-  streamSM = get("http://media.tuhh.de/ibi/mpireco/data.zip")
-  save(streamSM, "data.zip")
+  HTTP.open("GET", "http://media.tuhh.de/ibi/mpireco/data.zip") do http
+    open("data.zip", "w") do file
+        write(file, http)
+    end
+  end
   run(`unzip data.zip`)
 end
 
@@ -10,12 +13,18 @@ filenameSM = "systemMatrix.mdf"
 filenameMeas = "measurement.mdf"
 
 if !isfile(filenameSM)
-  streamSM = get("http://media.tuhh.de/ibi/mdfv2/systemMatrix_V2.mdf")
-  save(streamSM, filenameSM)
+  HTTP.open("GET", "http://media.tuhh.de/ibi/mdfv2/systemMatrix_V2.mdf") do http
+    open(filenameSM, "w") do file
+        write(file, http)
+    end
+  end
 end
 if !isfile(filenameMeas)
-  streamMeas = get("http://media.tuhh.de/ibi/mdfv2/measurement_V2.mdf")
-  save(streamMeas, filenameMeas)
+  HTTP.open("GET", "http://media.tuhh.de/ibi/mdfv2/measurement_V2.mdf") do http
+    open(filenameMeas, "w") do file
+        write(file, http)
+    end
+  end
 end
 
 include("MultiPatch.jl")

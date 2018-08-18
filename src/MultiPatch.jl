@@ -40,7 +40,7 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
 
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos(bMeas))
   uTotal = uTotal[:,periodsSortedbyFFPos,:]
-  uTotal = mean(uTotal,3)
+  uTotal = mean(uTotal,dims=3)
 
   # Here we call a regular reconstruction function
   c = reconstruction(FFOp,uTotal,(shape(FFOp.grid)...,); kargs...)
@@ -50,10 +50,10 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
 
   shape_ = size(c)
   color = AxisArrays.Axis{:color}(1:1)
-  x=Axis{:x}(range(offset[1],pixspacing[1],shape_[1]))
-  y=Axis{:y}(range(offset[2],pixspacing[2],shape_[2]))
-  z=Axis{:z}(range(offset[3],pixspacing[3],shape_[3]))
-  t=Axis{:time}(range(0.0,dfCycle(bMeas),L))
+  x=Axis{:x}(range(offset[1],step=pixspacing[1],length=shape_[1]))
+  y=Axis{:y}(range(offset[2],step=pixspacing[2],length=shape_[2]))
+  z=Axis{:z}(range(offset[3],step=pixspacing[3],length=shape_[3]))
+  t=Axis{:time}(range(0.0,step=dfCycle(bMeas),length=L))
   im = AxisArray(reshape(c,1,size(c,1),size(c,2),size(c,3),size(c,4)),color,x,y,z,t)
 
 
@@ -65,7 +65,7 @@ end
 # FFOperator is a type that acts as the MPI system matrix but exploits
 # its sparse structure.
 # Its very important to keep this type typestable
-type FFOperator{V<:AbstractMatrix, T<:Positions}
+mutable struct FFOperator{V<:AbstractMatrix, T<:Positions}
   S::Vector{V}
   grid::T
   N::Int
@@ -144,7 +144,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
                     roundPatches = false,
                     SFGridCenter = zeros(0,0),
                     systemMatrices = nothing,
-                    mapping=zeros(0), 
+                    mapping=zeros(0),
                     grid = nothing, kargs...)
 
   println("Load SF")
@@ -193,7 +193,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
     println(recoGrid)
   else
     recoGrid = grid
-  end 
+  end
 
   # Within the next loop we will refine our grid since we now know our reconstruction grid
   for k=1:numPatches
@@ -374,7 +374,7 @@ end
 
 setlambda(::FFOperator, ::Real) = nothing
 
-function dot_with_matrix_row{T}(Op::FFOperator, x::AbstractArray{T}, k::Integer)
+function dot_with_matrix_row(Op::FFOperator, x::AbstractArray{T}, k::Integer) where T
   p = Op.RowToPatch[k]
   xs = Op.xss[p]
   xc = Op.xcc[p]
@@ -386,7 +386,7 @@ function dot_with_matrix_row{T}(Op::FFOperator, x::AbstractArray{T}, k::Integer)
   return dot_with_matrix_row_(A,x,xs,xc,j,sign)
 end
 
-function dot_with_matrix_row_{T}(A::AbstractArray{T},x,xs,xc,j,sign)
+function dot_with_matrix_row_(A::AbstractArray{T},x,xs,xc,j,sign) where T
   tmp = zero(T)
   @simd  for i = 1:length(xs)
      @inbounds tmp += sign*A[j,xs[i]]*x[xc[i]]

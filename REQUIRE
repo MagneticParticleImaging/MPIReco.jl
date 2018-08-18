@@ -1,4 +1,14 @@
-julia 0.6
+julia 0.7
 Requests
 PyPlot
 Documenter
+Images
+Reexport
+FFTW
+ProgressMeter
+AxisArrays
+Images
+HTTP
+MPIFiles
+LinearSolver
+Compat
