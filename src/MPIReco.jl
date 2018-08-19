@@ -1,4 +1,3 @@
-__precompile__(true)
 module MPIReco
 
 using Pkg
