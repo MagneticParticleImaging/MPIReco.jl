@@ -1,8 +1,11 @@
 export consistenceCheck
 import Base: ndims
 import MPIFiles: calibSize, calibFov
-export squeeze
-
+if VERSION < v"1.0.0"
+  export squeeze
+else
+  import Base: squeeze
+end
 squeeze(A) = dropdims(A, dims=tuple(findall(([size(A)...].==1))...))
 
 function generateHeaderDict(bSF::MPIFile, b::MPIFile)
