@@ -32,7 +32,7 @@ function findCenterOfDfFov(bSF::MPIFile)
   if size(S3,3) > 1
     println("zdir")
     u = floor.(Int, centerOfMass(abs.(S3)))
-    x = indmin(abs.(vec((S3[u[1],u[2],(u[3]-5):(u[3]+5)]))))+u[3]-6
+    x = argmin(abs.(vec((S3[u[1],u[2],(u[3]-5):(u[3]+5)]))))+u[3]-6
     println(x)
     y_0 = real(S3[u[1],u[2],x-1])
     y_1 = real(S3[u[1],u[2],x+1])

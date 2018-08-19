@@ -1,7 +1,7 @@
 export consistenceCheck
 import Base: ndims
 import MPIFiles: calibSize, calibFov
-if VERSION < v"1.0.0"
+if VERSION >= v"1.0.0"
   export squeeze
 else
   import Base: squeeze

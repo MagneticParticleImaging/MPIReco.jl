@@ -62,7 +62,7 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
         else
             max, = findmax(abs.(buffer))
             t = redFactor*max
-            indices[k] = find(x->x>t,abs.(buffer))
+            indices[k] = findall(x->x>t,abs.(buffer))
         end
         numCoeff[k] = length(indices[k])
         data[k] = buffer[indices[k]]
