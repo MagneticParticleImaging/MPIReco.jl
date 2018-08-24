@@ -253,14 +253,6 @@ git-tree-sha1 = "af4791831b76f48f07dd8b83ad14250ac30b1043"
 uuid = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
 version = "0.4.0"
 
-[[ImageMetadata]]
-deps = ["AxisArrays", "ColorVectorSpace", "Colors", "Dates", "FixedPointNumbers", "ImageAxes", "ImageCore", "IndirectArrays", "Statistics", "Test"]
-git-tree-sha1 = "2cb0777d654781da75668e0a1b113b2da5a7dcb4"
-repo-rev = "master"
-repo-url = "https://github.com/JuliaImages/ImageMetadata.jl.git"
-uuid = "bc367c6b-8a6b-528e-b4bd-a4b897500b49"
-version = "0.4.1+"
-
 [[ImageMorphology]]
 deps = ["ImageCore", "Test"]
 git-tree-sha1 = "e94f43b9ff76f3a3810bfdd9b3d2fbcacbc26fd0"
@@ -272,14 +264,6 @@ deps = ["AxisAlgorithms", "ColorTypes", "ColorVectorSpace", "Colors", "Compat", 
 git-tree-sha1 = "af70edfdb0305dbaf4a4707696491815b331012b"
 uuid = "02fcd773-0e25-5acc-982a-7f6622650795"
 version = "0.4.2"
-
-[[Images]]
-deps = ["AxisArrays", "Base64", "ColorVectorSpace", "Colors", "FileIO", "FixedPointNumbers", "Graphics", "ImageAxes", "ImageCore", "ImageDistances", "ImageFiltering", "ImageMetadata", "ImageMorphology", "ImageTransformations", "IndirectArrays", "LinearAlgebra", "MappedArrays", "OffsetArrays", "Random", "Reexport", "SIUnits", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "Test", "TiledIteration"]
-git-tree-sha1 = "fefa5e2517b989700603388baa09e62aa57ecb7d"
-repo-rev = "master"
-repo-url = "https://github.com/JuliaImages/Images.jl.git"
-uuid = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
-version = "0.14.0+"
 
 [[IndirectArrays]]
 deps = ["Compat", "Pkg", "Test"]
@@ -360,14 +344,6 @@ deps = ["Compat", "LinearAlgebra"]
 git-tree-sha1 = "f03488a6426d8169a2810f6deccb2ead21866402"
 uuid = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 version = "0.4.1"
-
-[[LinearSolver]]
-deps = ["Compat", "FFTW", "LinearAlgebra", "LinearOperators", "ProgressMeter", "Random", "SparseArrays", "Test", "Wavelets"]
-git-tree-sha1 = "194a5fd1032dcf0b921560f7a05fb41286e61b83"
-repo-rev = "julia-0.7"
-repo-url = "https://github.com/tknopp/LinearSolver.jl.git"
-uuid = "1906c763-83da-50c9-aa61-18e2016498cc"
-version = "0.0.0"
 
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
