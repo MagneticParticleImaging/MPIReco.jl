@@ -1,5 +1,6 @@
 name = "MPIReco"
-uuid = "85015760-a730-11e8-216d-915f1f54b519"
+#uuid = "85015760-a730-11e8-216d-915f1f54b519"
+uuid = "cffeea2d-44ef-50d9-9a8a-3f5d8306ed6d"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
 version = "0.0.0"
 
