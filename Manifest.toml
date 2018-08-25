@@ -359,10 +359,8 @@ version = "0.4.1"
 
 [[LinearSolver]]
 deps = ["Compat", "FFTW", "LinearAlgebra", "LinearOperators", "ProgressMeter", "Random", "SparseArrays", "Wavelets"]
-git-tree-sha1 = "17d390cc51a4abc454847d2b7cba9383404f4042"
-repo-rev = "julia-0.7"
-repo-url = "https://github.com/tknopp/LinearSolver.jl.git"
-uuid = "12d7aa1e-a7d4-11e8-33ea-6753c3e87491"
+path = "/Users/knopp/.julia/dev/LinearSolver"
+uuid = "1906c763-83da-50c9-aa61-18e2016498cc"
 version = "0.0.0"
 
 [[Logging]]
@@ -370,10 +368,8 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[MPIFiles]]
 deps = ["AxisArrays", "Compat", "Dates", "DelimitedFiles", "FFTW", "FileIO", "Graphics", "HDF5", "HTTP", "ImageAxes", "ImageMetadata", "Interpolations", "LinearAlgebra", "Mmap", "ProgressMeter", "Random", "Reexport", "Statistics", "Test", "Unitful"]
-git-tree-sha1 = "dad8c459dce2af91c4a8de40c557c123e0f58a35"
-repo-rev = "julia-0.7"
-repo-url = "https://github.com/MagneticParticleImaging/MPIFiles.jl.git"
-uuid = "abe6be98-a7d4-11e8-0567-bd0575cb4605"
+path = "/Users/knopp/.julia/dev/MPIFiles"
+uuid = "a5edc15b-39e9-55dc-ae45-4d55e961169a"
 version = "0.0.0"
 
 [[MacroTools]]
