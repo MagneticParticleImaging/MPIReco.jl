@@ -20,7 +20,7 @@ makedocs(
 )
 
 deploydocs(repo   = "github.com/MagneticParticleImaging/MPIReco.jl.git",
-           julia  = "release",
+           julia  = "0.7",
            target = "build",
            deps   = nothing,
            make   = nothing)
