@@ -49,7 +49,8 @@ addons:
 #  - julia -e 'ENV["PYTHON"]=""; using Pkg; Pkg.clone("https://github.com/tknopp/LinearSolver.jl.git"); Pkg.clone("https://github.com/MagneticParticleImaging/MPIfiles.jl.git"); Pkg.add("Conda"); using Conda; Conda.update(); Conda.add("matplotlib"); Pkg.add("PyCall"); Pkg.build("PyCall"); Pkg.add("PyPlot");'
 
 ## uncomment the following lines to override the default test script
-#script:
+script:
+  - xvfb-run julia --check-bounds=yes --color=yes -e "if VERSION < v\"0.7.0-DEV.5183\"; Pkg.test(\"${JL_PKG}\", coverage=true); else using Pkg; Pkg.test(coverage=true); end"
 #  - LD_PRELOAD=${HOME}/.julia/packages/Conda/deps/usr/lib/libz.so julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("MPIReco"); Pkg.test("MPIReco"; coverage=true)'
 after_success:
   # push coverage results to Coveralls
