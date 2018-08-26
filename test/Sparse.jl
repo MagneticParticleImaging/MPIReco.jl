@@ -17,7 +17,7 @@ c1 = reconstruction(bSF, b; lambd=0.1,
                    spectralLeakageCorrection=false)
 
 
-figure(16)
+#figure(16)
 imagesc(c1[1,:,:,1,1])
 
 
@@ -30,7 +30,7 @@ c2 = reconstruction(bSF, b; lambd=0.1,
                    redFactor = redFactor,
                    useDFFoV = false)
 
-figure(17)
+#figure(17)
 imagesc(c2[1,:,:,1,1])
 
 
@@ -43,7 +43,7 @@ c3 = reconstruction(bSF, b; lambd=0.1,
                    redFactor = redFactor,
                    useDFFoV = true)
 
-figure(18)
+#figure(18)
 imagesc(c3[1,:,:,1,1])
 
 c2 = reconstruction(bSF, b; lambd=0.01,
@@ -55,7 +55,7 @@ c2 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = false)
 
-figure(19)
+#figure(19)
 imagesc(c2[1,:,:,1,1])
 
 
@@ -68,7 +68,7 @@ c3 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = true)
 
-figure(20)
+#figure(20)
 imagesc(c3[1,:,:,1,1])
 
 c2 = reconstruction(bSF, b; lambd=0.01,
@@ -80,7 +80,7 @@ c2 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = false)
 
-figure(21)
+#figure(21)
 imagesc(c2[1,:,:,1,1])
 
 
@@ -93,5 +93,5 @@ c3 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = true)
 
-figure(22)
+#figure(22)
 imagesc(c3[1,:,:,1,1])

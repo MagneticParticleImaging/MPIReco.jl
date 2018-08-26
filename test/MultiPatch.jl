@@ -8,19 +8,19 @@ using Winston
 bSF = MultiMPIFile(["SF_MP"])
 
 b = MultiMPIFile(["dataMP01", "dataMP02", "dataMP03", "dataMP04"])
-figure(11)
 
 @time c1 = reconstruction(bSF, b;
                    SNRThresh=5, frames=1, minFreq=80e3,
                    recChannels=1:2,iterations=1, spectralLeakageCorrection=false)
 
+#figure(11)
 imagesc(c1[1,:,:,1,1])
 
 @time c2 = reconstruction(bSF, b;
                    SNRThresh=5, frames=1, minFreq=80e3,
                    recChannels=1:2,iterations=1, roundPatches=true, spectralLeakageCorrection=false)
 
-figure(12)
+#figure(12)
 imagesc(c2[1,:,:,1,1])
 
 
@@ -32,7 +32,7 @@ bSFs = MultiMPIFile(["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"])
                    SNRThresh=5, frames=1, minFreq=80e3,
                    recChannels=1:2,iterations=1, spectralLeakageCorrection=false)
 
-figure(12)
+#figure(12)
 imagesc(c3[1,:,:,1,1])
 
 
@@ -54,5 +54,5 @@ FFPos[:,4] = [0.008, -0.008, 0.0]
                    recChannels=1:2,iterations=1, spectralLeakageCorrection=false, mapping=mapping,
                    systemMatrices = S, SFGridCenter=SFGridCenter, FFPos=FFPos, FFPosSF=FFPos)
 
-figure(13)
+#figure(13)
 imagesc(c4[1,:,:,1,1])
