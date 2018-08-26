@@ -24,7 +24,7 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
       fovSize=calibFov(bSF)
       gridSF=calibSize(bSF)
       # adding one and floor afterwards to avoid zeros in the grid
-      dfGridSize = floor.(Int,gridSF.*dfFovSize./fovSize+1)
+      dfGridSize = floor.(Int, gridSF .* dfFovSize ./ fovSize .+ 1)
 
       origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
       grid = RegularGridPositions(dfGridSize, dfFovSize, [0.0,0.0,0.0])
