@@ -69,7 +69,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Installation",
     "title": "Installation",
     "category": "section",
-    "text": "The MPIReco project is a package written in the programming language Julia. In order to install MPIReco you first have to install Julia in version 0.6. Then open Julia and enterPkg.clone(\"https://github.com/MagneticParticleImaging/MPIReco.jl.git\")which will install the package. Then enterusing MPIRecowhich will install the dependencies MPIFiles and LinearSolver. Further dependencies have already been installed during the clone of the package.In order to obtain the example datasets you have to execute the unit tests which can be done by enteringPkg.test(\"MPIReco\")"
+    "text": "The MPIReco project is a package written in the programming language Julia. In order to install MPIReco you first have to install Julia in version 0.7 (version 1.0 not yet supported). Then open Julia and enter ] to open the package mode. Then enterdev https://github.com/MagneticParticleImaging/MPIFiles.jl.git\ndev https://github.com/tknopp/LinearSolver.jl.git\ndev https://github.com/MagneticParticleImaging/MPIReco.jl.gitwhich will install the package including its dependencies MPIFiles and LinearSolver. Then enterusing MPIRecoto load the packageIn order to obtain the example datasets you have to execute the unit tests which can be done by enteringtest MPIRecowithin the package mode of Julia."
 },
 
 {
@@ -77,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Installation",
     "title": "Getting Started",
     "category": "section",
-    "text": "In order to get started you can execute oninclude(Pkg.dir(\"MPIReco\",\"test/MultiPatch.jl\"))which will perform exemplary reconstructions and plot the results."
+    "text": "In order to get started you can executeusing Pkg\ninclude(joinpath(dirname(pathof(MPIReco)),\"..\",\"test\",\"MultiPatch.jl\"))which will perform exemplary reconstructions and plot the results."
 },
 
 {
