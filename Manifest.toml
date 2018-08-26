@@ -55,17 +55,17 @@ git-tree-sha1 = "2b43d451639984e3571951cc687b8509b0a86c6d"
 uuid = "d5fb7624-851a-54ee-a528-d3f3bac0b4a0"
 version = "0.2.2"
 
+[[Cairo]]
+deps = ["BinDeps", "Colors", "Compat", "Graphics", "Homebrew", "Libdl", "Pkg", "WinRPM"]
+git-tree-sha1 = "8ab06c8dbb396dc93e1ce14d4c987de2eb6e82c3"
+uuid = "159f3aea-2a34-519c-b102-8c37f9878175"
+version = "0.5.4"
+
 [[CatIndices]]
 deps = ["CustomUnitRanges", "OffsetArrays", "Test"]
 git-tree-sha1 = "254cf73ea369d2e39bfd6c5eb27a2296cfaed68c"
 uuid = "aafaddc9-749c-510e-ac4f-586e18779b91"
 version = "0.2.0"
-
-[[Codecs]]
-deps = ["Test"]
-git-tree-sha1 = "70885e5e038cba1c4c17a84ad6c40756e10a4fb5"
-uuid = "19ecbf4d-ef7c-5e4b-b54a-0a0ff23c5aed"
-version = "0.5.0"
 
 [[ColorTypes]]
 deps = ["FixedPointNumbers", "Random", "Test"]
@@ -187,6 +187,12 @@ git-tree-sha1 = "4671f2427ea4494a5d14fd485c4aa61ec1fb7cd2"
 uuid = "a2bd30eb-e257-5431-a919-1863eab51364"
 version = "0.3.0"
 
+[[Gtk]]
+deps = ["BinDeps", "Cairo", "Compat", "Graphics", "Homebrew", "Libdl", "Pkg", "Reexport", "Serialization", "Test", "WinRPM"]
+git-tree-sha1 = "b6df22eefcaa054fe4b865179dfbc0b1a4d95670"
+uuid = "4c0ca9eb-093a-5379-98c5-f87ac0bbbf44"
+version = "0.16.1"
+
 [[HDF5]]
 deps = ["BinDeps", "Blosc", "Compat", "Homebrew", "Libdl", "Pkg", "WinRPM"]
 git-tree-sha1 = "6e1cd8a2a71fe223ceccd8779b43a7daf006db9e"
@@ -210,18 +216,6 @@ deps = ["BinDeps", "InteractiveUtils", "JSON", "Libdl", "Test", "Unicode"]
 git-tree-sha1 = "5582ec74f735cf8d12e562a2e65c47f34063bd51"
 uuid = "d9be37ee-ecc9-5288-90f1-b9ca67657a75"
 version = "0.7.0"
-
-[[HttpCommon]]
-deps = ["Dates", "Nullables", "Pkg", "Test", "URIParser"]
-git-tree-sha1 = "46313284237aa6ca67a6bce6d6fbd323d19cff59"
-uuid = "77172c1b-203f-54ac-aa54-3f1198fe9f90"
-version = "0.5.0"
-
-[[HttpParser]]
-deps = ["BinDeps", "Compat", "HttpCommon", "Libdl"]
-git-tree-sha1 = "1d66ee8c46bf0f459d15fcfa59d75de30ed7d114"
-uuid = "38bc9a14-d65a-5c5a-8a51-c6e7361b5ffc"
-version = "0.4.0"
 
 [[IdentityRanges]]
 deps = ["OffsetArrays", "Pkg", "Test"]
@@ -317,12 +311,6 @@ git-tree-sha1 = "fec8e4d433072731466d37ed0061b3ba7f70eeb9"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.19.0"
 
-[[LaTeXStrings]]
-deps = ["Compat"]
-git-tree-sha1 = "7ab9b8788cfab2bdde22adf9004bda7ad9954b6c"
-uuid = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
-version = "1.0.2"
-
 [[LibCURL]]
 deps = ["BinaryProvider", "Compat", "Libdl", "Pkg"]
 git-tree-sha1 = "f7c4fd37291207ec6bd4b7b9abfc512d4bb8b88e"
@@ -413,12 +401,6 @@ git-tree-sha1 = "ce3b85e484a5d4c71dd5316215069311135fa9f2"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
 version = "0.3.2"
 
-[[Nullables]]
-deps = ["Compat", "Pkg"]
-git-tree-sha1 = "7777136d2169f07b9674a9d8dbd550d99fd250b8"
-uuid = "4d1e1d77-625e-5b40-9113-a560ec7a8ecd"
-version = "0.0.7"
-
 [[OffsetArrays]]
 deps = ["DelimitedFiles", "Test"]
 git-tree-sha1 = "f8cd140824f74f2948ff8660bc2292e16d29c1b7"
@@ -457,18 +439,6 @@ git-tree-sha1 = "09e653f4b0a3c44628f0bdd0a0e58bc92e0264ef"
 uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
 version = "0.6.0"
 
-[[PyCall]]
-deps = ["Compat", "Conda", "MacroTools", "Statistics", "VersionParsing"]
-git-tree-sha1 = "993d80a2cfd0fc4b2acc698370a4f9761b27cd9e"
-uuid = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
-version = "1.18.2"
-
-[[PyPlot]]
-deps = ["Colors", "Compat", "LaTeXStrings", "PyCall", "Test", "VersionParsing"]
-git-tree-sha1 = "3a0908224526b378cb0eb1b770385e23b70adb5c"
-uuid = "d330b81b-6aea-500a-939a-2ce795aea3ee"
-version = "2.6.0"
-
 [[REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
@@ -494,12 +464,6 @@ deps = ["Pkg"]
 git-tree-sha1 = "7b1d07f411bc8ddb7977ec7f377b97b158514fe0"
 uuid = "189a3867-3050-52da-a836-e630ba90ab69"
 version = "0.2.0"
-
-[[Requests]]
-deps = ["Codecs", "Compat", "HttpCommon", "HttpParser", "JSON", "Libz", "MbedTLS", "URIParser"]
-git-tree-sha1 = "f98b967d74311ee9d7ce03ec2f1e45fa93e699a8"
-uuid = "df88083b-ffd0-5ec9-9f27-0a3b3d809c9f"
-version = "0.5.1"
 
 [[Requires]]
 deps = ["Test"]
@@ -627,6 +591,12 @@ deps = ["BinDeps", "Compat", "HTTPClient", "LibExpat", "Libdl", "Libz", "SHA", "
 git-tree-sha1 = "023faa2430b4ad3f9cf073c03cf100d80630fb6d"
 uuid = "c17dfb99-b4f7-5aad-8812-456da1ad7187"
 version = "0.4.0"
+
+[[Winston]]
+deps = ["Cairo", "Colors", "Compat", "Dates", "Graphics", "Gtk", "IniFile", "LinearAlgebra", "NaNMath", "Pkg", "Printf", "REPL", "Random", "Reexport", "SparseArrays", "StatsBase"]
+git-tree-sha1 = "0c7e0522d0e88b5cc139d9e43c851e7727ea261f"
+uuid = "bd07be1c-e76f-5ff0-9c0b-f51ef45303c6"
+version = "0.14.0"
 
 [[WoodburyMatrices]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Test"]
