@@ -1,9 +1,12 @@
 export consistenceCheck
-import Base: ndims, squeeze
-import Compat: squeeze
+import Base: ndims
 import MPIFiles: calibSize, calibFov
-
-squeeze(A) = squeeze(A,tuple(find(([size(A)...].==1))...))
+if VERSION >= v"1.0.0"
+  export squeeze
+else
+  import Base: squeeze
+end
+squeeze(A) = dropdims(A, dims=tuple(findall(([size(A)...].==1))...))
 
 function generateHeaderDict(bSF::MPIFile, b::MPIFile)
   #header["spatialorder"] TODO
@@ -50,18 +53,18 @@ function consistenceCheck(bSF::MPIFile, bMeas::MPIFile)
 
 end
 
-function consistenceCheck{T<:MPIFile}(bSFs::Vector{T}, bMeas::MPIFile)
+function consistenceCheck(bSFs::Vector{T}, bMeas::MPIFile) where {T<:MPIFile}
   for bSF in bSFs
     consistenceCheck(bSF,bMeas)
   end
 end
 
-function consistenceCheck{T<:MPIFile}(bSF::MPIFile, bMeass::Vector{T})
+function consistenceCheck(bSF::MPIFile, bMeass::Vector{T}) where {T<:MPIFile}
   for bMeas in bMeass
     consistenceCheck(bSF,bMeas)
   end
 end
-function consistenceCheck{T<:MPIFile}(bSFs::Vector{T}, bMeass::Vector{T})
+function consistenceCheck(bSFs::Vector{T}, bMeass::Vector{T}) where {T<:MPIFile}
   for i = 1:length(bMeass)
     bMeas=bMeass[i]
     bSF=bSFs[i]
@@ -96,19 +99,19 @@ getSNRAllFrequencies(b) = calibSNR(b)[:,:,1]
 measPath(b::BrukerFile) = b.path
 measPath(b::MDFFile) = b.filename
 gridSize(b::MPIFile) = squeeze(calibSize(b))
-measPath{T<:MPIFile}(bs::Vector{T}) = [measPath(b) for b in bs]
-gridSize{T<:MPIFile}(bs::Vector{T}) = [gridSize(b) for b in bs]
-calibSize{T<:MPIFile}(bs::Vector{T}) = [calibSize(b) for b in bs]
-gridSizeCommon{T<:MPIFile}(bs::Vector{T}) = gridSize(bs[1])
+measPath(bs::Vector{T}) where {T<:MPIFile} = [measPath(b) for b in bs]
+gridSize(bs::Vector{T}) where {T<:MPIFile} = [gridSize(b) for b in bs]
+calibSize(bs::Vector{T}) where {T<:MPIFile} = [calibSize(b) for b in bs]
+gridSizeCommon(bs::Vector{T}) where {T<:MPIFile} = gridSize(bs[1])
 gridSizeCommon(bs::MPIFile) = gridSize(bs)
 fov(b::MPIFile) = calibFov(b)
-fov{T<:MPIFile}(b::Vector{T}) = fov(b[1])
-calibFov{T<:MPIFile}(b::Vector{T}) = calibFov(b[1])
+fov(b::Vector{T}) where {T<:MPIFile} = fov(b[1])
+calibFov(b::Vector{T}) where {T<:MPIFile} = calibFov(b[1])
 sfGradient(b::MPIFile) = diag(acqGradient(b)[:,:,1,1])
 sfGradient(b::MPIFile,dim) = sfGradient(b)[dim]
 numFreq(b::MPIFile) = rxNumFrequencies(b)
 ffPos(b::MPIFile; kargs...) = squeeze(acqOffsetFieldShift(b))
-function ffPos{T<:BrukerFile}(b::Vector{T};alpha=[0,0,0])
+function ffPos(b::Vector{T};alpha=[0,0,0]) where {T<:BrukerFile}
   fovCenter = zeros(3,length(b))
   for l=1:length(b)
     fovCenter[:,l] = ffPos(b[l], alpha=alpha)
@@ -126,7 +129,7 @@ numTimePoints(b::MPIFile) = rxNumSamplingPoints(b)
 
 
 import MPIFiles: filterFrequencies
-function filterFrequencies{T<:MPIFile}(bSFs::Vector{T}; kargs...)
+function filterFrequencies(bSFs::Vector{T}; kargs...) where {T<:MPIFile}
   return intersect([filterFrequencies(bSF; kargs...) for bSF in bSFs]...)
 end
 
@@ -135,7 +138,7 @@ function filterFrequencies(bSFs::MultiMPIFile; kargs...)
   return union([filterFrequencies(bSF; kargs...) for bSF in bSFs]...)
 end
 
-function rowEnergy{T}(A::AbstractMatrix{Complex{T}})
+function rowEnergy(A::AbstractMatrix{Complex{T}}) where T
   M = size(A,1)
   energy = zeros(T, M)
   for m=1:M
@@ -145,7 +148,7 @@ function rowEnergy{T}(A::AbstractMatrix{Complex{T}})
   return energy
 end
 
-function rowEnergy{T<:Real}(A::AbstractMatrix{T})
+function rowEnergy(A::AbstractMatrix{T}) where {T<:Real}
   M = size(A,1)
   energy = zeros(T, M)
   for m=1:M
@@ -206,7 +209,7 @@ function calculateTraceOfNormalMatrix(A::AbstractMatrix, weights::Vector)
   return trace
 end
 
-function calculateTraceOfNormalMatrix(A::AbstractMatrix, weights::Void)
+function calculateTraceOfNormalMatrix(A::AbstractMatrix, weights::Nothing)
   energy = rowEnergy(A)
   return  norm(energy)^2
 end

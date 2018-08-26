@@ -1,4 +1,16 @@
-julia 0.6
-Requests
-PyPlot
+AxisArrays
+Compat
+Dates
 Documenter
+FFTW
+HTTP
+ImageMetadata
+Images
+LinearAlgebra
+LinearSolver
+MPIFiles
+ProgressMeter
+PyPlot
+Random
+Reexport
+Requests

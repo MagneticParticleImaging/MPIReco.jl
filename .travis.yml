@@ -1,11 +1,12 @@
 ## Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
+sudo: required
 os:
   - linux
 #  - osx
 julia:
-  - release
-  - nightly
+  - 0.7
+  - 1.0
 notifications:
   email: false
 git:
@@ -30,26 +31,30 @@ git:
 
 # uncomment the following lines to allow failures on nightly julia
 # (tests will run but not make your overall status red)
-matrix:
-  allow_failures:
-  - julia: nightly
-addons:
-  apt:
-    packages:
-    - hdf5-tools
+#matrix:
+#  allow_failures:
+#  - julia: nightly
 
-before_install:
+addons:
+    apt:
+        packages:
+            - xvfb
+            - xauth
+            - libgtk-3-dev
+            - hdf5-tools
+#before_install:
 #  - julia -e 'Pkg.update()'
   #- test "x$TRAVIS_OS_NAME" = xosx -o "x$PYTHON" = xConda-python || (sudo apt-get -qq update && sudo apt-get install -y $PYTHON)
   # Work around (part 1/2) matplotlib backend error leading to "matplotlib.pyplot could not be found by pyimport": can't just set env PYTHON="".
-  - julia -e 'ENV["PYTHON"]=""; Pkg.add("Conda"); using Conda; Conda.update(); Conda.add("matplotlib"); Pkg.add("PyCall"); Pkg.build("PyCall"); Pkg.add("PyPlot");'
+#  - julia -e 'ENV["PYTHON"]=""; using Pkg; Pkg.clone("https://github.com/tknopp/LinearSolver.jl.git"); Pkg.clone("https://github.com/MagneticParticleImaging/MPIfiles.jl.git"); Pkg.add("Conda"); using Conda; Conda.update(); Conda.add("matplotlib"); Pkg.add("PyCall"); Pkg.build("PyCall"); Pkg.add("PyPlot");'
 
 ## uncomment the following lines to override the default test script
 script:
-  - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'Pkg.clone(pwd()); Pkg.build("MPIReco"); Pkg.test("MPIReco"; coverage=true)'
+  - xvfb-run julia --check-bounds=yes --color=yes -e "if VERSION < v\"0.7.0-DEV.5183\"; Pkg.test(\"${JL_PKG}\", coverage=true); else using Pkg; Pkg.test(coverage=true); end"
+#  - LD_PRELOAD=${HOME}/.julia/packages/Conda/deps/usr/lib/libz.so julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("MPIReco"); Pkg.test("MPIReco"; coverage=true)'
 after_success:
   # push coverage results to Coveralls
-  - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'cd(Pkg.dir("MPIReco")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+  - julia -e 'using Pkg; cd(Pkg.dir("MPIReco")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
   # push coverage results to Codecov
-  - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'cd(Pkg.dir("MPIReco")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
-  - LD_PRELOAD=${HOME}/.julia/v0.6/Conda/deps/usr/lib/libz.so julia -e 'cd(Pkg.dir("MPIReco")); ENV["DOCUMENTER_DEBUG"] = "true"; include(joinpath("docs", "make.jl"))'
+  - julia -e 'using Pkg; cd(Pkg.dir("MPIReco")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+  - julia -e 'using Pkg; cd(Pkg.dir("MPIReco")); ENV["DOCUMENTER_DEBUG"] = "true"; include(joinpath("docs", "make.jl"))'

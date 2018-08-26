@@ -94,7 +94,7 @@ function reconstruction(filenameSF::AbstractString, filenameMeas::AbstractString
   reconstruction(bSF,bMeas,freq; kargs...)
 end
 
-function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...)
+function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...) where {T<:MPIFile}
 
   if acqNumPeriodsPerFrame(bMeas) > 1
     return reconstructionMultiPatch(bSF, bMeas; kargs...)
@@ -103,9 +103,9 @@ function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kar
   end
 end
 
-function reconstructionSinglePatch{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
+function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
-  bEmpty = nothing, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, kargs...)
+  bEmpty = nothing, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, kargs...) where {T<:MPIFile}
 
   freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
 
@@ -176,13 +176,13 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
   return c
 end
 
-function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
+function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
   loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
-  deadPixels=Int[], kargs...)
+  deadPixels=Int[], kargs...) where {T<:MPIFile}
 
-  (typeof(bgFrames) <: Range && bEmpty==nothing) && (bEmpty = bMeas)
+  (typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
   bgcorrection = bEmpty != nothing ? true : false
 
   consistenceCheck(bSF, bMeas)
@@ -202,12 +202,12 @@ function reconstruction{T<:MPIFile}(bSF::Union{T,Vector{T}}, bMeas::MPIFile, fre
                         solver=solver; kargs...)
 end
 
-function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
+function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
   frames = nothing, bEmpty = nothing, bgFrames = 1, nAverages = 1, sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
   weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz", spectralCleaning=true, fgFrames=1:10,
-  noiseFreqThresh=0.0, kargs...)
+  noiseFreqThresh=0.0, kargs...) where {T<:MPIFile}
 
-  # (typeof(bgFrames) <: Range && bEmpty==nothing) && (bEmpty = bMeas)
+  # (typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
   bgcorrection = bEmpty != nothing ? true : false
 
   println("Loading emptymeas ...")
@@ -224,7 +224,7 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
   frames == nothing && (frames = 1:acqNumFrames(bMeas))
 
   weights = getWeights(weightType, freq, S, weightingLimit=weightingLimit,
-                       bEmpty = bEmpty, bgFrames=bgFrames, bMeas = bMeas, bgFrames=bgFrames, bSF=bSF)
+                       bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames, bSF=bSF)
 
   L = -fld(-length(frames),nAverages)
   p = Progress(L, 1, "Reconstructing data...")
@@ -239,7 +239,7 @@ function reconstruction{T<:MPIFile}(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, 
     u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=nAverages, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
     bEmpty!=nothing && (u = u .- uEmpty)
 
-    noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bgFrames=bgFrames, bMeas = bMeas, bgFrames=bgFrames)
+    noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames)
 
     println("Reconstruction ...")
     c = reconstruction(S, u, shape(grid); sparseTrafo=sparseTrafo, progress=p, weights=weights,
@@ -261,12 +261,12 @@ function initImage(bSFFF::MPIFile, bMeas::MPIFile, L::Int, grid::RegularGridPosi
   pixspacing = spacing(grid) ./ acqGradient(bMeas)[1] .* acqGradient(bSFFF)[1]
   offset = ffPos(bMeas) .- 0.5.*calibFov(bSFFF) .+ 0.5.*pixspacing
 
-  Arr=Array{T}(shp...,L)
+  Arr=Array{T}(undef, shp...,L)
 
-  x=Axis{:x}(range(offset[1],pixspacing[1],shp[1]))
-  y=Axis{:y}(range(offset[2],pixspacing[2],shp[2]))
-  z=Axis{:z}(range(offset[3],pixspacing[3],shp[3]))
-  t=Axis{:time}(range(0.0,dfCycle(bMeas),L))
+  x=Axis{:x}(range(offset[1],step=pixspacing[1],length=shp[1]))
+  y=Axis{:y}(range(offset[2],step=pixspacing[2],length=shp[2]))
+  z=Axis{:z}(range(offset[3],step=pixspacing[3],length=shp[3]))
+  t=Axis{:time}(range(0.0,step=dfCycle(bMeas),length=L))
   im = AxisArray(Arr,x,y,z,t)
 
   # The following does for some reason not work: ReadOnlyMemoryError
@@ -279,13 +279,13 @@ function initImage(bSFFF::MPIFile, bMeas::MPIFile, L::Int, grid::RegularGridPosi
   return imMeta
 end
 
-function initImage{T<:MPIFile}(bSFs::Vector{T}, bMeas::MPIFile, L::Int, grid::RegularGridPositions,
-                               loadOnlineParams=false)
+function initImage(bSFs::Vector{T}, bMeas::MPIFile, L::Int, grid::RegularGridPositions,
+                               loadOnlineParams=false) where {T<:MPIFile}
   return Images.ImageMeta[initImage(bSF,bMeas,L,grid,loadOnlineParams) for bSF in bSFs]
 end
 
 initIndex(bSF::MPIFile) = 1
-initIndex{T<:MPIFile}(bSFs::Vector{T}) = Int[1 for bSF in bSFs]
+initIndex(bSFs::Vector{T}) where {T<:MPIFile} = Int[1 for bSF in bSFs]
 
 function writePartToImage(c, image, index::Int, partframes, nAverages, shape)
   inc = -fld(-length(partframes),nAverages)*prod(shape)
@@ -298,7 +298,7 @@ function writePartToImage(c, image, bSF::MPIFile)
   image[:] = c[:]
 end
 
-function writePartToImage{T<:MPIFile}(c, image, bSFs::Vector{T})
+function writePartToImage(c, image, bSFs::Vector{T}) where {T<:MPIFile}
   #error("Where am I called")
   split = 1
   for (i,bSF) in enumerate(bSFs)
@@ -326,13 +326,13 @@ end
 
 splitrange(r::Int,maxlength::Int) = r
 
-function splitrange(r::Range,maxlength::Int)
-  rout = Range[]
+function splitrange(r::AbstractRange,maxlength::Int)
+  rout = AbstractRange[]
   stepsize = step(r)
-  i = start(r)
-  while i<=last(r)
+  i = first(r)
+  while i <= last(r)
     l = min(maxlength, div(last(r)-i,stepsize)+1)
-    push!(rout, range(i,stepsize,l))
+    push!(rout, range(i,step=stepsize,length=l))
     i += stepsize*l
   end
   return rout

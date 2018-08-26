@@ -1,7 +1,7 @@
 using MPIReco
-using Base.Test
-
-using PyPlot
+using Test
+using Statistics
+using Winston
 
 
 bSF = MPIFile("systemMatrix.mdf")
@@ -17,9 +17,8 @@ c1 = reconstruction(bSF, b; lambd=0.1,
                    spectralLeakageCorrection=false)
 
 
-figure(1)
-subplot(5,2,1)
-imshow(c1[1,:,:,1,1])
+#figure(16)
+imagesc(c1[1,:,:,1,1])
 
 
 c2 = reconstruction(bSF, b; lambd=0.1,
@@ -31,8 +30,8 @@ c2 = reconstruction(bSF, b; lambd=0.1,
                    redFactor = redFactor,
                    useDFFoV = false)
 
-subplot(5,2,3)
-imshow(c2[1,:,:,1,1])
+#figure(17)
+imagesc(c2[1,:,:,1,1])
 
 
 c3 = reconstruction(bSF, b; lambd=0.1,
@@ -44,8 +43,8 @@ c3 = reconstruction(bSF, b; lambd=0.1,
                    redFactor = redFactor,
                    useDFFoV = true)
 
-subplot(5,2,4)
-imshow(c3[1,:,:,1,1])
+#figure(18)
+imagesc(c3[1,:,:,1,1])
 
 c2 = reconstruction(bSF, b; lambd=0.01,
                    SNRThresh = 3, frames=1:100, minFreq=80e3, nAverages=100,
@@ -56,8 +55,8 @@ c2 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = false)
 
-subplot(5,2,5)
-imshow(c2[1,:,:,1,1])
+#figure(19)
+imagesc(c2[1,:,:,1,1])
 
 
 c3 = reconstruction(bSF, b; lambd=0.01,
@@ -69,8 +68,8 @@ c3 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = true)
 
-subplot(5,2,6)
-imshow(c3[1,:,:,1,1])
+#figure(20)
+imagesc(c3[1,:,:,1,1])
 
 c2 = reconstruction(bSF, b; lambd=0.01,
                    SNRThresh = 3, frames=1:100, minFreq=80e3, nAverages=100,
@@ -81,8 +80,8 @@ c2 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = false)
 
-subplot(5,2,7)
-imshow(c2[1,:,:,1,1])
+#figure(21)
+imagesc(c2[1,:,:,1,1])
 
 
 c3 = reconstruction(bSF, b; lambd=0.01,
@@ -94,5 +93,5 @@ c3 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = true)
 
-subplot(5,2,8)
-imshow(c3[1,:,:,1,1])
+#figure(22)
+imagesc(c3[1,:,:,1,1])

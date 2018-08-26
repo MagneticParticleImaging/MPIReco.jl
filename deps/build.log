@@ -1,0 +1,16 @@
+Installing LinearSolver
+  Updating registry at `~/.julia/registries/General`
+  Updating git-repo `https://github.com/JuliaRegistries/General.git`
+[?25l[2K[?25h  Updating git-repo `https://github.com/tknopp/LinearSolver.jl.git`
+[?25l[2K[?25h Resolving package versions...
+  Updating `/var/folders/qq/qy54d9z146d92l97lhdzmmw00000gn/T/tmp58YTlV/Project.toml`
+ [no changes]
+  Updating `/var/folders/qq/qy54d9z146d92l97lhdzmmw00000gn/T/tmp58YTlV/Manifest.toml`
+ [no changes]
+Installing MPIFiles
+  Updating git-repo `https://github.com/MagneticParticleImaging/MPIFiles.jl.git`
+[?25l[2K[?25h Resolving package versions...
+  Updating `/var/folders/qq/qy54d9z146d92l97lhdzmmw00000gn/T/tmp58YTlV/Project.toml`
+ [no changes]
+  Updating `/var/folders/qq/qy54d9z146d92l97lhdzmmw00000gn/T/tmp58YTlV/Manifest.toml`
+ [no changes]
