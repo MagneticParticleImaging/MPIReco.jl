@@ -353,7 +353,7 @@ version = "0.4.1"
 
 [[LinearSolver]]
 deps = ["Compat", "FFTW", "LinearAlgebra", "LinearOperators", "ProgressMeter", "Random", "SparseArrays", "Test", "Wavelets"]
-git-tree-sha1 = "8949329a4c905ab76adc61b5837d17df84937608"
+git-tree-sha1 = "782e5a86d9231e7453ac808d61c7e962542b1ad6"
 repo-rev = "master"
 repo-url = "https://github.com/tknopp/LinearSolver.jl.git"
 uuid = "1906c763-83da-50c9-aa61-18e2016498cc"
