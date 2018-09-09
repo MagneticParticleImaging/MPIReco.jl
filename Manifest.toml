@@ -75,9 +75,9 @@ version = "0.7.4"
 
 [[ColorVectorSpace]]
 deps = ["ColorTypes", "Colors", "FixedPointNumbers", "LinearAlgebra", "SpecialFunctions", "Statistics", "StatsBase", "Test"]
-git-tree-sha1 = "9ccd32d161d30ca1dacc4c21e63aa63513b39a44"
+git-tree-sha1 = "a890f08e61b40e9843d7177206da61229a3603c8"
 uuid = "c3611d14-8923-5661-9e6a-0046d554d3a4"
-version = "0.6.1"
+version = "0.6.2"
 
 [[Colors]]
 deps = ["ColorTypes", "FixedPointNumbers", "InteractiveUtils", "Pkg", "Printf", "Reexport", "Test"]
@@ -189,15 +189,15 @@ version = "0.3.0"
 
 [[Gtk]]
 deps = ["BinDeps", "Cairo", "Compat", "Graphics", "Homebrew", "Libdl", "Pkg", "Reexport", "Serialization", "Test", "WinRPM"]
-git-tree-sha1 = "d3a195cfae66e0364346a881d4227dee10d791d6"
+git-tree-sha1 = "33b4d74f0097894373a2fd86db0a8c04012d2b55"
 uuid = "4c0ca9eb-093a-5379-98c5-f87ac0bbbf44"
-version = "0.16.2"
+version = "0.16.3"
 
 [[HDF5]]
-deps = ["BinDeps", "Blosc", "Distributed", "Homebrew", "Libdl", "LinearAlgebra", "Pkg", "Test", "WinRPM"]
-git-tree-sha1 = "2407ec97bdb872ed0d569ff8e592c7a5d60675bc"
+deps = ["BinDeps", "Blosc", "Distributed", "Homebrew", "Libdl", "LinearAlgebra", "Mmap", "Pkg", "Test", "WinRPM"]
+git-tree-sha1 = "8c3bcdb44db436cd20106e2381e1c1ac96aa0ee3"
 uuid = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
-version = "0.10.0"
+version = "0.10.2"
 
 [[HTTP]]
 deps = ["Base64", "Dates", "Distributed", "IniFile", "MbedTLS", "Sockets", "Test"]
@@ -259,17 +259,23 @@ git-tree-sha1 = "e94f43b9ff76f3a3810bfdd9b3d2fbcacbc26fd0"
 uuid = "787d08f9-d448-5407-9aad-5290dd7ab264"
 version = "0.1.1"
 
+[[ImageShow]]
+deps = ["Base64", "ColorTypes", "Colors", "FileIO", "FixedPointNumbers", "ImageCore", "InteractiveUtils", "Pkg", "Requires", "Test"]
+git-tree-sha1 = "ee5396bd0cf2ce72e34e9b36fd359d7527311973"
+uuid = "4e3cecfd-b093-5904-9786-8bbb286a6a31"
+version = "0.1.1"
+
 [[ImageTransformations]]
-deps = ["AxisAlgorithms", "ColorTypes", "ColorVectorSpace", "Colors", "CoordinateTransformations", "FixedPointNumbers", "IdentityRanges", "ImageCore", "InteractiveUtils", "Interpolations", "LinearAlgebra", "OffsetArrays", "Pkg", "StaticArrays", "Test"]
-git-tree-sha1 = "bd02b0dd87fd1283bf383e0e6fab934a6b0453d4"
+deps = ["AxisAlgorithms", "ColorTypes", "ColorVectorSpace", "Colors", "CoordinateTransformations", "FixedPointNumbers", "IdentityRanges", "ImageCore", "Interpolations", "LinearAlgebra", "OffsetArrays", "Pkg", "StaticArrays", "Test"]
+git-tree-sha1 = "dad4b267df7b2960ca9988ea3acfdc9ada4344e7"
 uuid = "02fcd773-0e25-5acc-982a-7f6622650795"
-version = "0.5.0"
+version = "0.5.2"
 
 [[Images]]
-deps = ["AxisArrays", "Base64", "ColorTypes", "ColorVectorSpace", "Colors", "FileIO", "FixedPointNumbers", "Graphics", "ImageAxes", "ImageCore", "ImageDistances", "ImageFiltering", "ImageMetadata", "ImageMorphology", "ImageTransformations", "IndirectArrays", "InteractiveUtils", "LinearAlgebra", "MappedArrays", "OffsetArrays", "Pkg", "Random", "Reexport", "SIUnits", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "Test", "TiledIteration"]
-git-tree-sha1 = "9fef51c7d544490f7b4acc41dc5b82d4d1dffc09"
+deps = ["AxisArrays", "Base64", "ColorTypes", "ColorVectorSpace", "Colors", "FileIO", "FixedPointNumbers", "Graphics", "ImageAxes", "ImageCore", "ImageDistances", "ImageFiltering", "ImageMetadata", "ImageMorphology", "ImageShow", "ImageTransformations", "IndirectArrays", "InteractiveUtils", "LinearAlgebra", "MappedArrays", "OffsetArrays", "Pkg", "Random", "Reexport", "SIUnits", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "Test", "TiledIteration"]
+git-tree-sha1 = "73e21f66a8968d52ccf93b9c9c6a46e652d33d4e"
 uuid = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
-version = "0.15.1"
+version = "0.16.0"
 
 [[IndirectArrays]]
 deps = ["Compat", "Pkg", "Test"]
@@ -358,7 +364,7 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[MPIFiles]]
 deps = ["AxisArrays", "Compat", "Dates", "DelimitedFiles", "FFTW", "FileIO", "Graphics", "HDF5", "HTTP", "ImageAxes", "ImageMetadata", "Interpolations", "LinearAlgebra", "Mmap", "ProgressMeter", "Random", "Reexport", "Statistics", "Test", "Unitful"]
-git-tree-sha1 = "ef49292b779cb3abad41a9016af1716a5adf67af"
+git-tree-sha1 = "22ef002d7b5c7ab3c4d6a4f5e59e363b78f344ad"
 repo-rev = "master"
 repo-url = "https://github.com/MagneticParticleImaging/MPIFiles.jl.git"
 uuid = "a5edc15b-39e9-55dc-ae45-4d55e961169a"
@@ -387,10 +393,10 @@ uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
 version = "0.6.0"
 
 [[Missings]]
-deps = ["Compat"]
-git-tree-sha1 = "866fb034899be6055dcb6cb1a70fbda379bb0b55"
+deps = ["Dates", "InteractiveUtils", "SparseArrays", "Test"]
+git-tree-sha1 = "196528fa1df03df435025f52f9c1ff8356f94738"
 uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
-version = "0.2.10"
+version = "0.3.0"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
@@ -421,9 +427,9 @@ version = "0.4.1"
 
 [[Parameters]]
 deps = ["Markdown", "OrderedCollections", "Pkg", "REPL", "Test"]
-git-tree-sha1 = "404052e5baa21d90cd1e5a68a1f6a387980562bf"
+git-tree-sha1 = "40f540ec96e50c0b2b9efdb11b5e4d0c63f90923"
 uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
-version = "0.10.0"
+version = "0.10.1"
 
 [[Pkg]]
 deps = ["Dates", "LibGit2", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
@@ -470,6 +476,12 @@ deps = ["Pkg"]
 git-tree-sha1 = "7b1d07f411bc8ddb7977ec7f377b97b158514fe0"
 uuid = "189a3867-3050-52da-a836-e630ba90ab69"
 version = "0.2.0"
+
+[[Requires]]
+deps = ["Test"]
+git-tree-sha1 = "f6fbf4ba64d295e146e49e021207993b6b48c7d1"
+uuid = "ae029012-a4dd-5104-9daa-d747884805df"
+version = "0.5.2"
 
 [[Rotations]]
 deps = ["LinearAlgebra", "Pkg", "Random", "StaticArrays", "Statistics", "Test"]
