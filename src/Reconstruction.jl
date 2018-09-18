@@ -13,7 +13,7 @@ end
 function vecImToIm(images::Vector)
   out = AxisArray(zeros(length(images),size(images[1])...),
            AxisArrays.Axis{:color}(1:length(images)),
-           Images.axes(images[1].data)...)
+           images[1].data.axes...)
   for i in eachindex(images)
     out[i,ntuple(x->:,ndims(images[1]))...] = images[i]
   end
