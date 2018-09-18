@@ -150,7 +150,7 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
   #solv = linearSolver(solver)
   B = linearOperator(sparseTrafo, shape)
   solv = createLinearSolver(solver, S; shape=shape, weights=weights, lambdL2=lambd,
-                            sparseTrafo=B, verbose = false, enforceReal=true,
+                            sparseTrafo=B, enforceReal=true,
                             enforcePositive=true, kargs...)
 
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
