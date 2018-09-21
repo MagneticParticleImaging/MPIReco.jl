@@ -18,7 +18,6 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
 
     if useDFFoV
       #z = findCenterOfDfFov(bSF;dispRes=false,combine=combine,useCOM=useCOM,depth=depth)
-      #println("Found center at $z")
 
       dfFovSize=dfFov(bSF)
       fovSize=calibFov(bSF)
@@ -44,7 +43,6 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
     data = [zeros(ComplexF32,1) for i=1:l]
     numCoeff = zeros(Int32,l)
 
-    p = Progress(nFreq, 1, "Applying basis trafo...")
     for k = 1:l
         SF = vec(map(ComplexF32, systemMatrix(bSF, frequencies[k], bgcorrection) ))
 
