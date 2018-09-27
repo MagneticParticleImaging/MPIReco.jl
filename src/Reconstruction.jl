@@ -237,6 +237,10 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
 
     noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames)
 
+    # convert measurement data if neccessary
+    if eltype(S)!=eltype(u)
+      u = map(eltype(S),u)
+    end
     @debug "Reconstruction ..."
     c = reconstruction(S, u, shape(grid); sparseTrafo=sparseTrafo, progress=p, weights=weights,
                        reshapesolution=false, solver=solver, kargs...)
