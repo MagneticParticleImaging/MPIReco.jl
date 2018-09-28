@@ -10,7 +10,7 @@ for (l,SF) in enumerate(SFs)
   #subplot(2,2,l)
   bSF = MPIFile(SF)
   a = findCenterOfDfFov(bSF)
-  println(a)
+  @info "center position" a
   S = getSF(bSF,2,0,0,2);
   imagesc(abs.(S)[:,:,1]);
   plot([a[2]-1],[a[1]-1],"gx",lw=4)
@@ -23,7 +23,7 @@ for (l,SF) in enumerate(SFs)
   #subplot(2,2,l)
   bSF = MPIFile(SF)
   a = findCenterOfDfFov(bSF)
-  println(a)
+  @info "center position" a
   S = getSF(bSF,5,6,0,1);
   imagesc(abs.(S)[:,:,1]);
   plot([a[2]-1],[a[1]-1],"gx",lw=4)
