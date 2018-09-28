@@ -1,4 +1,4 @@
-export consistenceCheck
+export consistenceCheck, generateHeaderDictOnline
 import Base: ndims
 import MPIFiles: calibSize, calibFov
 if VERSION >= v"1.0.0"
