@@ -22,10 +22,8 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile;
 end
 
 function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
-            frames=nothing, bEmpty=nothing,
-            nAverages=1, loadas32bit=false,
-            spectralLeakageCorrection=true,
-            kargs...)
+            frames=nothing, bEmpty=nothing, nAverages=1, 
+	    spectralLeakageCorrection=true, kargs...)
   bgcorrection = (bEmpty != nothing)
 
   FFOp = FFOperatorHighLevel(bSF, bMeas, freq, bgcorrection;

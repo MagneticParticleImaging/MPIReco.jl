@@ -11,7 +11,6 @@ function defaultRecoParams()
   params[:nAverages] = 1
   params[:repetitionTime] = 0.0
   params[:denoiseWeight] = 0
-  params[:loadas32bit] = true
   params[:loadasreal] = false
   params[:sparseTrafo] = nothing
   params[:redFactor] = 0.0
@@ -38,7 +37,6 @@ function defaultRecoParamsOld()
   params[:nAverages] = "1"
   params[:repetitionTime] = "0.0"
   params[:denoiseWeight] = "0"
-  params[:loadas32bit] = "true"
   params[:loadasreal] = "false"
   params[:maxload] = "100"
   params[:sparseTrafo] = "nothing"
@@ -87,7 +85,7 @@ function loadRecoParams(filename::AbstractString)
     params[key] = parse(Int,get(ini,"","$key", params[key]))
   end
 
-  for key in [:sortBySNR, :loadas32bit, :loadasreal]
+  for key in [:sortBySNR, :loadasreal]
     params[key] = to_bool(get(ini,"","$key", params[key]))
   end
 
