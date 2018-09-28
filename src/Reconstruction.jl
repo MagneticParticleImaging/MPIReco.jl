@@ -13,7 +13,7 @@ end
 function vecImToIm(images::Vector)
   out = AxisArray(zeros(length(images),size(images[1])...),
            AxisArrays.Axis{:color}(1:length(images)),
-           Images.axes(images[1].data)...)
+           images[1].data.axes...)
   for i in eachindex(images)
     out[i,ntuple(x->:,ndims(images[1]))...] = images[i]
   end
@@ -40,12 +40,11 @@ function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoP
 
   numReco = findReco(d,study,exp,recoParams)
   if numReco > 0
-    println("Reco found")
+    @info "Reconstruction found in MDF dataset store."
     reco = getReco(d,study,exp, numReco)
-    #c = loaddata(reco.path)
     c = loadRecoDataMDF(reco.path)
   else
-    println("Reco not found")
+    @info "No reconstruction found. Performing reconstruction now."
     c = reconstruction(recoParams)
     addReco(d,study,exp, c)
   end
@@ -118,12 +117,10 @@ function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
     freq = intersect(freq, freqVarMean)
   end
 
-  println("Frequency Selection: ", length(freq), " frequencies")
-
   # Ensure that no frequencies are used that are not present in the measurement
   freq = intersect(freq, filterFrequencies(bMeas))
 
-  println("Frequency Selection: ", length(freq), " frequencies")
+  @debug "selecting $(length(freq)) frequencies"
 
   return reconstruction(bSF, bMeas, freq; bEmpty=bEmpty, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
 end
@@ -150,7 +147,7 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
   #solv = linearSolver(solver)
   B = linearOperator(sparseTrafo, shape)
   solv = createLinearSolver(solver, S; shape=shape, weights=weights, lambdL2=lambd,
-                            sparseTrafo=B, verbose = false, enforceReal=true,
+                            sparseTrafo=B, enforceReal=true,
                             enforcePositive=true, kargs...)
 
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
@@ -187,11 +184,10 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
 
   consistenceCheck(bSF, bMeas)
 
-  println("Loading System matrix ...")
+  @debug "Loading System matrix"
   S, grid = getSF(bSF, freq, sparseTrafo, solver; bgcorrection=bgcorrection, loadasreal=loadasreal,
             thresh=thresh, redFactor=redFactor, saveTrafo=saveTrafo, useDFFoV=useDFFoV,
             gridsize=gridsize, fov=fov, center=center, deadPixels=deadPixels)
-  println("Loading System matrix done!")
 
   if denoiseWeight > 0 && sparseTrafo == nothing
     denoiseSF!(S, shape, weight=denoiseWeight)
@@ -210,7 +206,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   # (typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
   bgcorrection = bEmpty != nothing ? true : false
 
-  println("Loading emptymeas ...")
+  @debug "Loading emptymeas ..."
   if bEmpty!=nothing
     if acqNumBGFrames(bEmpty) > 0
       uEmpty = getMeasurementsFD(bEmpty, false, frequencies=freq, frames=measBGFrameIdx(bEmpty),
@@ -235,17 +231,20 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   index = initIndex(bSF)
   iterator = nAverages == 1 ? splitrange(frames,maxload) : splitrange(frames,nAverages*maxload)
   for partframes in iterator
-    println("Loading measurements ...")
+    @debug "Loading measurements ..."
     u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=nAverages, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
     bEmpty!=nothing && (u = u .- uEmpty)
 
     noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames)
 
-    println("Reconstruction ...")
+    # convert measurement data if neccessary
+    if eltype(S)!=eltype(u)
+      u = map(eltype(S),u)
+    end
+    @debug "Reconstruction ..."
     c = reconstruction(S, u, shape(grid); sparseTrafo=sparseTrafo, progress=p, weights=weights,
                        reshapesolution=false, solver=solver, kargs...)
     #maskDFFOV && (c .*= trustedFOVMask(bSF))
-    println("Reconstruction done")
 
     index = writePartToImage(c, image, index, partframes, nAverages, shape(grid))
   end

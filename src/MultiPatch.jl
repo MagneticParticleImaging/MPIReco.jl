@@ -16,7 +16,7 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile;
 
   freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
 
-  println("Frequency Selection: ", length(freq), " frequencies")
+  @debug "selecting $(length(freq)) frequencies"
 
   return reconstructionMultiPatch(bSF, bMeas, freq; kargs...)
 end
@@ -147,7 +147,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
                     mapping=zeros(0),
                     grid = nothing, kargs...)
 
-  println("Load SF")
+  @debug "Loading System matrix"
   numPatches = size(FFPos,2)
   M = length(freq)
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
@@ -187,10 +187,9 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
 
   # We now know all the subgrids for each patch, if the corresponding system matrix would be taken as is
   # and if a possible focus field missmatch has been taken into account (by changing the center)
-  println("Calc Reco Grid")
+  @debug "Calculate Reconstruction Grid"
   if grid == nothing
     recoGrid = RegularGridPositions(grids)
-    println(recoGrid)
   else
     recoGrid = grid
   end
@@ -201,20 +200,16 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
     SF = SFs[idx]
 
     issubgrid = isSubgrid(recoGrid,grids[k])
-    #println(" issubgrid = $issubgrid")
-    #println(grids[k])
     if !issubgrid
       grids[k] = deriveSubgrid(recoGrid, grids[k])
     end
-    #println(grids[k])
   end
-  println("Use $(length(S)) patches")
+  @debug "Use $(length(S)) patches"
 
-  println("Calc LUT")
+  @debug "Calculate LUT"
   # now that we have all grids we can calculate the indices within the recoGrid
   xcc, xss = calculateLUT(grids, recoGrid)
 
-  println("Finished")
   return FFOperator(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
@@ -224,7 +219,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
                     roundPatches = false, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
                     kargs...)
 
-  println("Load SF")
+  @debug "Loading System matrix"
   numPatches = size(FFPos,2)
   M = length(freq)
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
@@ -247,8 +242,6 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
 
     SF = SFs[idx]
 
-    #println("For patch $k at position $(FFPos[:,k]) I will use SM $idx with FFP $(FFPosSF[idx]) ")
-
     if isapprox(FFPosSF[idx],FFPos[:,k])
       diffFFPos = zeros(3)
     else
@@ -260,7 +253,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
 
   # We now know all the subgrids for each patch, if the corresponding system matrix would be taken as is
   # and if a possible focus field missmatch has been taken into account (by changing the center)
-  println("Calc Reco Grid")
+  @debug "Calculate Reconstruction Grid"
   recoGrid = RegularGridPositions(grids)
 
 
@@ -318,15 +311,14 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
       patchToSMIdx[k] = length(S)
     end
   end
-  println("Use $(length(S)) patches")
+  @debug "Use $(length(S)) patches"
 
-  println("Calc LUT")
+  @debug "Calculate LUT"
   # now that we have all grids we can calculate the indices within the recoGrid
   xcc, xss = calculateLUT(grids, recoGrid)
 
   sign = ones(Int, M, numPatches)
 
-  println("Finished")
   return FFOperator(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end

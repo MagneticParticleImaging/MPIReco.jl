@@ -92,8 +92,7 @@ numReceivers(b) = rxNumChannels(b)
 bandwidth(b) = rxBandwidth(b)
 tracer(b) = tracerName(b)
 function description(b)
-   println(filepath(b))
-   experimentDescription(b)
+   return experimentDescription(b)
 end
 getSNRAllFrequencies(b) = calibSNR(b)[:,:,1]
 measPath(b::BrukerFile) = b.path

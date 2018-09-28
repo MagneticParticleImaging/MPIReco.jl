@@ -70,28 +70,28 @@ end
 
 
 function setNoiseFreqToZero(uMeas, freq, noiseFreqThresh; bEmpty = nothing, bgFrames=1:10, bMeas = nothing, fgFrames = 1:10)
-  println("Setting noise frequencies to zero")
+  @debug "Setting noise frequencies to zero"
 
-    nFreq = numFreq(bMeas)
-    nReceivers = numReceivers(bMeas)
-    freqMask = zeros(nFreq, nReceivers)
+  nFreq = numFreq(bMeas)
+  nReceivers = numReceivers(bMeas)
+  freqMask = zeros(nFreq, nReceivers)
 
-    u = getMeasurementsFT(bMeas,frames=fgFrames)
-    uEmpty = getMeasurementsFT(bEmpty,frames=bgFrames)
+  u = getMeasurementsFT(bMeas,frames=fgFrames)
+  uEmpty = getMeasurementsFT(bEmpty,frames=bgFrames)
 
-    stdDevU = sqrt(abs(var(u,3 )))
-    meanU = abs(mean(u,dims=3).-mean(uEmpty,dims=3))
-    meanUEmpty = abs(mean(uEmpty,dims=3))
+  stdDevU = sqrt(abs(var(u,3 )))
+  meanU = abs(mean(u,dims=3).-mean(uEmpty,dims=3))
+  meanUEmpty = abs(mean(uEmpty,dims=3))
 
-    for k=1:nFreq
-      for r=1:nReceivers
-        if stdDevU[k,r]/meanU[k,r] < noiseFreqThresh
-          freqMask[k,r] = 1
-        else
-          freqMask[k,r] = 0
-        end
+  for k=1:nFreq
+    for r=1:nReceivers
+      if stdDevU[k,r]/meanU[k,r] < noiseFreqThresh
+        freqMask[k,r] = 1
+      else
+        freqMask[k,r] = 0
       end
     end
+  end
 
   uMeas[:,:] .*=  vec(freqMask)[freq]
 end
