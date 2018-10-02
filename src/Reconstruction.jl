@@ -229,7 +229,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   image = initImage(bSF,bMeas,L,grid,false)
 
   index = initIndex(bSF)
-  iterator = nAverages == 1 ? splitrange(frames,maxload) : splitrange(frames,nAverages*maxload)
+  iterator = nAverages == 1 ? Iterators.partition(frames,maxload) : Iterators.partition(frames,nAverages*maxload)
   for partframes in iterator
     @debug "Loading measurements ..."
     u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=nAverages, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
@@ -321,37 +321,4 @@ function writePartToImage(c, image, index::Vector{Int}, partframes,
     index[i] += inc
   end
   return index
-end
-
-splitrange(r::Int,maxlength::Int) = r
-
-function splitrange(r::AbstractRange,maxlength::Int)
-  rout = AbstractRange[]
-  stepsize = step(r)
-  i = first(r)
-  while i <= last(r)
-    l = min(maxlength, div(last(r)-i,stepsize)+1)
-    push!(rout, range(i,step=stepsize,length=l))
-    i += stepsize*l
-  end
-  return rout
-end
-
-function splitrange(r::Array{Int,1}, maxlength::Int)
-  res=Array[]
-  l=length(r)
-  if maxlength < l
-    i=1
-    while i <= l
-      if (i+maxlength-1) > l
-        push!(res, r[i:end])
-      else
-        push!(res, r[i:i+maxlength-1])
-      end
-      i=i+maxlength
-    end
-    return res
-  else
-    return Any[r]
-  end
 end
