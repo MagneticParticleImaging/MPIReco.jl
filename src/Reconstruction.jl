@@ -32,7 +32,9 @@ function vecImToIm(image::ImageMeta)
   return out
 end
 
-
+"""
+This is the most high level reconstruction method using the `MDFDatasetStore`
+"""
 function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoParams)
 
   !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( MPIFile( recoParams[:measPath] ) ))
@@ -44,7 +46,6 @@ function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoP
     reco = getReco(d,study,exp, numReco)
     c = loadRecoDataMDF(reco.path)
   else
-    @info "No reconstruction found. Performing reconstruction now."
     c = reconstruction(recoParams)
     addReco(d,study,exp, c)
   end
@@ -55,6 +56,7 @@ end
 This is the most high level reconstruction method that performs in-memory reconstruction
 """
 function reconstruction(recoParams::Dict)
+  @info "Performing in-memory reconstruction."
   bMeas = MPIFile( recoParams[:measPath] )
   !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( bMeas ))
   bSF = MPIFile(recoParams[:SFPath])
