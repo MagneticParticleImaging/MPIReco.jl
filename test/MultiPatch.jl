@@ -13,16 +13,15 @@ b = MultiMPIFile(["dataMP01", "dataMP02", "dataMP03", "dataMP04"])
                    SNRThresh=5, frames=1, minFreq=80e3,
                    recChannels=1:2,iterations=1, spectralLeakageCorrection=false)
 
-#figure(11)
-imagesc(c1[1,:,:,1,1])
+p = imagesc(c1.data.data[1,:,:,1,1])
+savefig(p, "./img/MultiPatch1.png")
 
 @time c2 = reconstruction(bSF, b;
                    SNRThresh=5, frames=1, minFreq=80e3,
                    recChannels=1:2,iterations=1, roundPatches=true, spectralLeakageCorrection=false)
 
-#figure(12)
-imagesc(c2[1,:,:,1,1])
-
+p = imagesc(c2.data.data[1,:,:,1,1])
+savefig(p, "./img/MultiPatch2.png")
 
 
 # MultiPatch MultiSF
@@ -32,8 +31,8 @@ bSFs = MultiMPIFile(["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"])
                    SNRThresh=5, frames=1, minFreq=80e3,
                    recChannels=1:2,iterations=1, spectralLeakageCorrection=false)
 
-#figure(12)
-imagesc(c3[1,:,:,1,1])
+p = imagesc(c3.data.data[1,:,:,1,1])
+savefig(p, "./img/MultiPatch3.png")
 
 
 
@@ -54,5 +53,5 @@ FFPos[:,4] = [0.008, -0.008, 0.0]
                    recChannels=1:2,iterations=1, spectralLeakageCorrection=false, mapping=mapping,
                    systemMatrices = S, SFGridCenter=SFGridCenter, FFPos=FFPos, FFPosSF=FFPos)
 
-#figure(13)
-imagesc(c4[1,:,:,1,1])
+p = imagesc(c4.data.data[1,:,:,1,1])
+savefig(p, "./img/MultiPatch4.png")

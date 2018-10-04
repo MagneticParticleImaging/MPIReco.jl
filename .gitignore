@@ -4,3 +4,4 @@
 test/data*
 test/SF*
 test/*.mdf
+test/img/*

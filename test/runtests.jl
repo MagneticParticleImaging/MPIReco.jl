@@ -27,6 +27,9 @@ if !isfile(filenameMeas)
   end
 end
 
+
+mkpath("./img/")
+
 include("MultiPatch.jl")
 include("MultiGradient.jl")
 include("Regular.jl")

@@ -16,9 +16,8 @@ c1 = reconstruction(bSF, b; lambd=0.1,
                    iterations = 3,
                    spectralLeakageCorrection=false)
 
-
-#figure(16)
-imagesc(c1[1,:,:,1,1])
+p = imagesc(c1.data.data[1,:,:,1,1])
+savefig(p, "./img/Sparse1.png")
 
 
 c2 = reconstruction(bSF, b; lambd=0.1,
@@ -30,9 +29,8 @@ c2 = reconstruction(bSF, b; lambd=0.1,
                    redFactor = redFactor,
                    useDFFoV = false)
 
-#figure(17)
-imagesc(c2[1,:,:,1,1])
-
+p = imagesc(c2.data.data[1,:,:,1,1])
+savefig(p, "./img/Sparse2.png")
 
 c3 = reconstruction(bSF, b; lambd=0.1,
                    SNRThresh = 2, frames=1:100, minFreq=80e3, nAverages=100,
@@ -43,8 +41,8 @@ c3 = reconstruction(bSF, b; lambd=0.1,
                    redFactor = redFactor,
                    useDFFoV = true)
 
-#figure(18)
-imagesc(c3[1,:,:,1,1])
+p = imagesc(c3.data.data[1,:,:,1,1])
+savefig(p, "./img/Sparse3.png")
 
 c2 = reconstruction(bSF, b; lambd=0.01,
                    SNRThresh = 3, frames=1:100, minFreq=80e3, nAverages=100,
@@ -55,9 +53,8 @@ c2 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = false)
 
-#figure(19)
-imagesc(c2[1,:,:,1,1])
-
+p = imagesc(c2.data.data[1,:,:,1,1])
+savefig(p, "./img/Sparse4.png")
 
 c3 = reconstruction(bSF, b; lambd=0.01,
                    SNRThresh = 3, frames=1:100, minFreq=80e3, nAverages=100,
@@ -68,8 +65,8 @@ c3 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = true)
 
-#figure(20)
-imagesc(c3[1,:,:,1,1])
+p = imagesc(c3.data.data[1,:,:,1,1])
+savefig(p, "./img/Sparse5.png")
 
 c2 = reconstruction(bSF, b; lambd=0.01,
                    SNRThresh = 3, frames=1:100, minFreq=80e3, nAverages=100,
@@ -80,8 +77,8 @@ c2 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = false)
 
-#figure(21)
-imagesc(c2[1,:,:,1,1])
+p = imagesc(c2.data.data[1,:,:,1,1])
+savefig(p, "./img/Sparse6.png")
 
 
 c3 = reconstruction(bSF, b; lambd=0.01,
@@ -93,5 +90,5 @@ c3 = reconstruction(bSF, b; lambd=0.01,
                    redFactor = redFactor,
                    useDFFoV = true)
 
-#figure(22)
-imagesc(c3[1,:,:,1,1])
+p = imagesc(c3.data.data[1,:,:,1,1])
+savefig(p, "./img/Sparse7.png")
