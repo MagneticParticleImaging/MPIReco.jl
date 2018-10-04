@@ -1,30 +1,25 @@
 using MPIReco
 using Winston
 
-SFs = ["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"]
+@testset "system matrix center estimation" begin
+  SFs = ["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"]
+  center = [[9.0,23.0,1.0],[9.0,10.0,1.0],[22.0,23.0,1.0],[22.0,10.0,1.0]]
+  
+  for (l,SF) in enumerate(SFs)
+    bSF = MPIFile(SF)
+    a = findCenterOfDfFov(bSF)
+    @test a == center[l]
+    S = getSF(bSF,2,0,0,2);
+    imagesc(abs.(S)[:,:,1]);
+    plot([a[2]-1],[a[1]-1],"gx",lw=4)
+  end
 
-#figure(14)
-#clf()
-
-for (l,SF) in enumerate(SFs)
-  #subplot(2,2,l)
-  bSF = MPIFile(SF)
-  a = findCenterOfDfFov(bSF)
-  @info "center position" a
-  S = getSF(bSF,2,0,0,2);
-  imagesc(abs.(S)[:,:,1]);
-  plot([a[2]-1],[a[1]-1],"gx",lw=4)
-end
-
-#figure(15)
-#clf()
-
-for (l,SF) in enumerate(SFs)
-  #subplot(2,2,l)
-  bSF = MPIFile(SF)
-  a = findCenterOfDfFov(bSF)
-  @info "center position" a
-  S = getSF(bSF,5,6,0,1);
-  imagesc(abs.(S)[:,:,1]);
-  plot([a[2]-1],[a[1]-1],"gx",lw=4)
+  for (l,SF) in enumerate(SFs)
+    bSF = MPIFile(SF)
+    a = findCenterOfDfFov(bSF)
+    @test a == center[l]
+    S = getSF(bSF,5,6,0,1);
+    imagesc(abs.(S)[:,:,1]);
+    plot([a[2]-1],[a[1]-1],"gx",lw=4)
+  end
 end

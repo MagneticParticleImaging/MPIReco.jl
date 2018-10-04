@@ -43,22 +43,23 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   # Here we call a regular reconstruction function
   c = reconstruction(FFOp,uTotal,(shape(FFOp.grid)...,); kargs...)
 
-  pixspacing = voxelSize(bSF) ./ sfGradient(bMeas,3) .* sfGradient(bSF,3)
-  offset = fieldOfViewCenter(FFOp.grid)  .- 0.5.*fieldOfView(FFOp.grid) .+ 0.5.*spacing(FFOp.grid)
-
-  shape_ = size(c)
-  color = AxisArrays.Axis{:color}(1:1)
-  x=Axis{:x}(range(offset[1],step=pixspacing[1],length=shape_[1]))
-  y=Axis{:y}(range(offset[2],step=pixspacing[2],length=shape_[2]))
-  z=Axis{:z}(range(offset[3],step=pixspacing[3],length=shape_[3]))
-  t=Axis{:time}(range(0.0,step=dfCycle(bMeas),length=L))
-  im = AxisArray(reshape(c,1,size(c,1),size(c,2),size(c,3),size(c,4)),color,x,y,z,t)
-
-
+  # calculate axis
+  shp = size(c)
+  pixspacing = (voxelSize(bSF) ./ sfGradient(bMeas,3) .* sfGradient(bSF,3)) * 1000u"mm"
+  offset = (fieldOfViewCenter(FFOp.grid) .- 0.5.*fieldOfView(FFOp.grid) .+ 0.5.*spacing(FFOp.grid)) * 1000u"mm"
+  # TODO does this provide the correct value in the multi-patch case?
+  dtframes = dfCycle(bMeas)*nAverages*1000u"ms"
+  # create image
+  c = reshape(c,1,size(c)...)
+  im = AxisArray(c, Axis{:color}(1:1),
+                 Axis{:x}(range(offset[1],step=pixspacing[1],length=shp[1])),
+                 Axis{:y}(range(offset[2],step=pixspacing[2],length=shp[2])),
+                 Axis{:z}(range(offset[3],step=pixspacing[3],length=shp[3])),
+                 Axis{:time}(range(0u"ms",step=dtframes,length=L)))
   imMeta = ImageMeta(im,generateHeaderDict(bSF,bMeas))
+
   return imMeta
 end
-
 
 # FFOperator is a type that acts as the MPI system matrix but exploits
 # its sparse structure.

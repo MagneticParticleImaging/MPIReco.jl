@@ -27,8 +27,8 @@ if !isfile(filenameMeas)
   end
 end
 
+include("Reconstruction.jl")
 include("MultiPatch.jl")
 include("MultiGradient.jl")
-include("Regular.jl")
 include("Sparse.jl")
 include("SMCenter.jl")

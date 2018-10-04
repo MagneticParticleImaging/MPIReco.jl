@@ -1,36 +1,5 @@
-export reconstruction, imToVecIm, vecImToIm
+export reconstruction
 export writePartToImage, initImage
-
-function imToVecIm(image::ImageMeta)
-  out = ImageMeta[]
-  for i=1:size(image,1)
-    I = getindex(image, i, ntuple(x->:,ndims(image)-1)...)
-    push!(out, I)
-  end
-  return out
-end
-
-function vecImToIm(images::Vector)
-  out = AxisArray(zeros(length(images),size(images[1])...),
-           AxisArrays.Axis{:color}(1:length(images)),
-           images[1].data.axes...)
-  for i in eachindex(images)
-    out[i,ntuple(x->:,ndims(images[1]))...] = images[i]
-  end
-  out = ImageMeta(out,properties(images[1]))
-  return out
-end
-
-function vecImToIm(image::ImageMeta)
-  out = AxisArray(zeros(1, size(image)...),
-           AxisArrays.Axis{:color}(1:1),
-           Images.axes(image.data)...)
-
-  out[1,ntuple(x->:,ndims(image))...] = image
-
-  out = ImageMeta(out,properties(image))
-  return out
-end
 
 """
 This is the most high level reconstruction method using the `MDFDatasetStore`
@@ -96,7 +65,6 @@ function reconstruction(filenameSF::AbstractString, filenameMeas::AbstractString
 end
 
 function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...) where {T<:MPIFile}
-
   if acqNumPeriodsPerFrame(bMeas) > 1
     return reconstructionMultiPatch(bSF, bMeas; kargs...)
   else
@@ -127,6 +95,127 @@ function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
   return reconstruction(bSF, bMeas, freq; bEmpty=bEmpty, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
 end
 
+function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
+			frames = nothing, nAverages = 1, maxload = 100, 
+			maskDFFOV=false, bEmpty = nothing, bgFrames = 1, 
+			denoiseWeight = 0, redFactor = 0.0, thresh = nothing, 
+			loadasreal = false, solver = "kaczmarz", 
+			sparseTrafo = nothing, saveTrafo=false, 
+			gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), 
+			center=[0.0,0.0,0.0], useDFFoV=false, deadPixels=Int[], 
+			weightType=WeightingType.None, weightingLimit = 0, 
+			spectralCleaning=true, fgFrames=1:10, noiseFreqThresh=0.0, 
+			kargs...) where {T<:MPIFile}
+
+  (typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
+  bgcorrection = bEmpty != nothing ? true : false
+
+  @debug "Loading System matrix"
+  consistenceCheck(bSF, bMeas)
+  S, grid = getSF(bSF, freq, sparseTrafo, solver; bgcorrection=bgcorrection,
+		  loadasreal=loadasreal, thresh=thresh, redFactor=redFactor,
+		  saveTrafo=saveTrafo, useDFFoV=useDFFoV, gridsize=gridsize,
+		  fov=fov, center=center, deadPixels=deadPixels)
+
+  if denoiseWeight > 0 && sparseTrafo == nothing
+    denoiseSF!(S, shape, weight=denoiseWeight)
+  end
+
+  @debug "Loading emptymeas ..."
+  if bEmpty!=nothing
+    if acqNumBGFrames(bEmpty) > 0
+      uEmpty = getMeasurementsFD(bEmpty, false, frequencies=freq, frames=measBGFrameIdx(bEmpty),
+      numAverages = acqNumBGFrames(bEmpty), bgCorrection=false, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
+    else
+      uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
+      loadasreal = loadasreal,spectralLeakageCorrection=spectralCleaning)
+    end
+  end
+
+  frames == nothing && (frames = 1:acqNumFrames(bMeas))
+
+  weights = getWeights(weightType, freq, S, weightingLimit=weightingLimit,
+                       bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames, bSF=bSF)
+
+  L = -fld(-length(frames),nAverages) # number of tomograms to be reconstructed
+  p = Progress(L, 1, "Reconstructing data...")
+
+  #initialize output
+  image = initImage(bSF,bMeas,L,nAverages,grid,false)
+
+  currentIndex = 1
+  iterator = nAverages == 1 ? Iterators.partition(frames,maxload) : Iterators.partition(frames,nAverages*maxload)
+  for partframes in iterator
+    @debug "Loading measurements ..."
+    u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=nAverages, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
+    bEmpty!=nothing && (u = u .- uEmpty)
+
+    noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames)
+
+    # convert measurement data if neccessary
+    if eltype(S)!=eltype(u)
+      @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
+      u = map(eltype(S),u)
+    end
+    @debug "Reconstruction ..."
+    c = reconstruction(S, u, shape(grid); sparseTrafo=sparseTrafo, progress=p,
+		       weights=weights, reshapesolution=false, solver=solver, kargs...)
+
+    currentIndex = writePartToImage!(image, c, currentIndex, partframes, nAverages)
+  end
+
+  return image
+end
+
+function writePartToImage!(image, c, currentIndex::Int, partframes, nAverages)
+  # permute c's dimensions into image order
+  colorsize = size(image,1)
+  spatialsize = size(image,2)*size(image,3)*size(image,4)
+  inc = -fld(-length(partframes),nAverages)
+  c = reshape(c,spatialsize,colorsize,inc)
+  c = permutedims(c,[2,1,3])
+  # write c to image
+  image[Axis{:time}(currentIndex:currentIndex+inc-1)] = c[:]
+  currentIndex += inc
+  return currentIndex
+end
+
+function initImage(bSFs::Union{T,Vector{T}}, bMeas::S, L::Int, nAverages::Int,
+		   grid::RegularGridPositions, loadOnlineParams=false) where {T,S<:MPIFile}
+  
+  # the number of channels is determined by the number of system matrices 
+  if isa(bSFs,AbstractVector)
+    numcolors = length(bSFs)
+    bSF = bSFs[1]
+  else
+    numcolors = 1
+    bSF = bSFs
+  end
+  # calculate axis 
+  shp = shape(grid)
+  pixspacing = (spacing(grid) ./ acqGradient(bMeas)[1] .* acqGradient(bSF)[1])*1000u"mm"
+  offset = (ffPos(bMeas) .- 0.5 .* calibFov(bSF))*1000u"mm" .+ 0.5 .* pixspacing
+  dtframes = dfCycle(bMeas)*nAverages*1000u"ms"
+  # initialize raw array
+  Arr=Array{Float32}(undef, numcolors,shp...,L)
+  # create image
+  im = AxisArray(Arr, Axis{:color}(1:numcolors), 
+		 Axis{:x}(range(offset[1],step=pixspacing[1],length=shp[1])),
+		 Axis{:y}(range(offset[2],step=pixspacing[2],length=shp[2])),
+		 Axis{:z}(range(offset[3],step=pixspacing[3],length=shp[3])),
+		 Axis{:time}(range(0u"ms",step=dtframes,length=L)))
+  # provide meta data
+  if loadOnlineParams
+      imMeta = ImageMeta(im,generateHeaderDictOnline(bSF,bMeas))
+  else
+      imMeta = ImageMeta(im,generateHeaderDict(bSF,bMeas))
+  end
+  return imMeta
+end
+
+"""
+Low level reconstruction method
+"""
 function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
                         lambd=0, progress=nothing, solver = "kaczmarz",
                         weights=nothing, profileName="", profiling=nothing,
@@ -173,154 +262,4 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
     c = reshape(c, shape..., L)
   end
   return c
-end
-
-function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
-  bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
-  loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
-  gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
-  deadPixels=Int[], kargs...) where {T<:MPIFile}
-
-  (typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
-  bgcorrection = bEmpty != nothing ? true : false
-
-  consistenceCheck(bSF, bMeas)
-
-  @debug "Loading System matrix"
-  S, grid = getSF(bSF, freq, sparseTrafo, solver; bgcorrection=bgcorrection, loadasreal=loadasreal,
-            thresh=thresh, redFactor=redFactor, saveTrafo=saveTrafo, useDFFoV=useDFFoV,
-            gridsize=gridsize, fov=fov, center=center, deadPixels=deadPixels)
-
-  if denoiseWeight > 0 && sparseTrafo == nothing
-    denoiseSF!(S, shape, weight=denoiseWeight)
-  end
-
-  return reconstruction(S, bSF, bMeas, freq, grid, bEmpty=bEmpty, bgFrames=bgFrames,
-                        sparseTrafo=sparseTrafo, loadasreal=loadasreal,
-                        solver=solver; kargs...)
-end
-
-function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
-  frames = nothing, bEmpty = nothing, bgFrames = 1, nAverages = 1, sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
-  weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz", spectralCleaning=true, fgFrames=1:10,
-  noiseFreqThresh=0.0, kargs...) where {T<:MPIFile}
-
-  # (typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
-  bgcorrection = bEmpty != nothing ? true : false
-
-  @debug "Loading emptymeas ..."
-  if bEmpty!=nothing
-    if acqNumBGFrames(bEmpty) > 0
-      uEmpty = getMeasurementsFD(bEmpty, false, frequencies=freq, frames=measBGFrameIdx(bEmpty),
-           numAverages=acqNumBGFrames(bEmpty), bgCorrection=false, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
-    else
-      uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
-           loadasreal=loadasreal,spectralLeakageCorrection=spectralCleaning)
-    end
-  end
-
-  frames == nothing && (frames = 1:acqNumFrames(bMeas))
-
-  weights = getWeights(weightType, freq, S, weightingLimit=weightingLimit,
-                       bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames, bSF=bSF)
-
-  L = -fld(-length(frames),nAverages)
-  p = Progress(L, 1, "Reconstructing data...")
-
-  #initialize output
-  image = initImage(bSF,bMeas,L,grid,false)
-
-  index = initIndex(bSF)
-  iterator = nAverages == 1 ? Iterators.partition(frames,maxload) : Iterators.partition(frames,nAverages*maxload)
-  for partframes in iterator
-    @debug "Loading measurements ..."
-    u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=nAverages, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
-    bEmpty!=nothing && (u = u .- uEmpty)
-
-    noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames)
-
-    # convert measurement data if neccessary
-    if eltype(S)!=eltype(u)
-      u = map(eltype(S),u)
-    end
-    @debug "Reconstruction ..."
-    c = reconstruction(S, u, shape(grid); sparseTrafo=sparseTrafo, progress=p, weights=weights,
-                       reshapesolution=false, solver=solver, kargs...)
-    #maskDFFOV && (c .*= trustedFOVMask(bSF))
-
-    index = writePartToImage(c, image, index, partframes, nAverages, shape(grid))
-  end
-
-  im = vecImToIm(image)
-  return im
-end
-
-function initImage(bSFFF::MPIFile, bMeas::MPIFile, L::Int, grid::RegularGridPositions,
-                    loadOnlineParams=false)
-  shp = shape(grid)
-  T = Float32
-  pixspacing = spacing(grid) ./ acqGradient(bMeas)[1] .* acqGradient(bSFFF)[1]
-  offset = ffPos(bMeas) .- 0.5.*calibFov(bSFFF) .+ 0.5.*pixspacing
-
-  Arr=Array{T}(undef, shp...,L)
-
-  x=Axis{:x}(range(offset[1],step=pixspacing[1],length=shp[1]))
-  y=Axis{:y}(range(offset[2],step=pixspacing[2],length=shp[2]))
-  z=Axis{:z}(range(offset[3],step=pixspacing[3],length=shp[3]))
-  t=Axis{:time}(range(0.0,step=dfCycle(bMeas),length=L))
-  im = AxisArray(Arr,x,y,z,t)
-
-  # The following does for some reason not work: ReadOnlyMemoryError
-  #im = AxisArray(Arr, (:x,:y,:z,:time),tuple(pixspacing...,dfCycle(bMeas)),tuple(offset...,0.0))
-  if loadOnlineParams
-      imMeta = ImageMeta(im,generateHeaderDictOnline(bSFFF,bMeas))
-  else
-      imMeta = ImageMeta(im,generateHeaderDict(bSFFF,bMeas))
-  end
-  return imMeta
-end
-
-function initImage(bSFs::Vector{T}, bMeas::MPIFile, L::Int, grid::RegularGridPositions,
-                               loadOnlineParams=false) where {T<:MPIFile}
-  return Images.ImageMeta[initImage(bSF,bMeas,L,grid,loadOnlineParams) for bSF in bSFs]
-end
-
-initIndex(bSF::MPIFile) = 1
-initIndex(bSFs::Vector{T}) where {T<:MPIFile} = Int[1 for bSF in bSFs]
-
-function writePartToImage(c, image, index::Int, partframes, nAverages, shape)
-  inc = -fld(-length(partframes),nAverages)*prod(shape)
-  image[index:index+inc-1] = c[:]
-  index += inc
-  return index
-end
-
-function writePartToImage(c, image, bSF::MPIFile)
-  image[:] = c[:]
-end
-
-function writePartToImage(c, image, bSFs::Vector{T}) where {T<:MPIFile}
-  #error("Where am I called")
-  split = 1
-  for (i,bSF) in enumerate(bSFs)
-    ctemp = vec(c[split:split-1+prod(gridSize(bSF)),:])
-
-    image[i][:] = ctemp
-    split += prod(gridSize(bSF))
-  end
-end
-
-function writePartToImage(c, image, index::Vector{Int}, partframes,
-                     nAverages, shape)
-  inc = -fld(-length(partframes),nAverages)*prod(shape)
-  split = 1
-  L = div(size(c,1),prod(shape))
-  for i=1:L
-    ctemp = c[split:split-1+prod(shape),:][:]
-
-    image[i][index[i]:index[i]+inc-1] = ctemp
-    split += prod(shape)
-    index[i] += inc
-  end
-  return index
 end
