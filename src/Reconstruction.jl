@@ -89,31 +89,43 @@ function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
   return reconstruction(bSF, bMeas, freq; bEmpty=bEmpty, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
 end
 
+
 function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
-			frames = nothing, nAverages = 1, maxload = 100, 
-			maskDFFOV=false, bEmpty = nothing, bgFrames = 1, 
-			denoiseWeight = 0, redFactor = 0.0, thresh = nothing, 
-			loadasreal = false, solver = "kaczmarz", 
-			sparseTrafo = nothing, saveTrafo=false, 
-			gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), 
-			center=[0.0,0.0,0.0], useDFFoV=false, deadPixels=Int[], 
-			weightType=WeightingType.None, weightingLimit = 0, 
-			spectralCleaning=true, fgFrames=1:10, noiseFreqThresh=0.0, 
-			kargs...) where {T<:MPIFile}
+  bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
+  loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
+  gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
+  deadPixels=Int[], kargs...) where {T<:MPIFile}
 
   (typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
   bgcorrection = bEmpty != nothing ? true : false
 
-  @debug "Loading System matrix"
   consistenceCheck(bSF, bMeas)
-  S, grid = getSF(bSF, freq, sparseTrafo, solver; bgcorrection=bgcorrection,
-		  loadasreal=loadasreal, thresh=thresh, redFactor=redFactor,
-		  saveTrafo=saveTrafo, useDFFoV=useDFFoV, gridsize=gridsize,
-		  fov=fov, center=center, deadPixels=deadPixels)
+
+  @debug "Loading System matrix"
+  S, grid = getSF(bSF, freq, sparseTrafo, solver;
+            bgcorrection=bgcorrection, loadasreal=loadasreal,
+            thresh=thresh, redFactor=redFactor, saveTrafo=saveTrafo,
+            useDFFoV=useDFFoV, gridsize=gridsize, fov=fov, center=center,
+            deadPixels=deadPixels)
 
   if denoiseWeight > 0 && sparseTrafo == nothing
     denoiseSF!(S, shape, weight=denoiseWeight)
   end
+
+  return reconstruction(S, bSF, bMeas, freq, grid, bEmpty=bEmpty, bgFrames=bgFrames,
+                        sparseTrafo=sparseTrafo, loadasreal=loadasreal,
+                        solver=solver; kargs...)
+end
+
+function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
+  frames = nothing, bEmpty = nothing, bgFrames = 1, nAverages = 1,
+  sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
+  weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
+  spectralCleaning=true, fgFrames=1:10,
+  noiseFreqThresh=0.0, kargs...) where {T<:MPIFile}
+
+  #(typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
+  bgcorrection = bEmpty != nothing ? true : false
 
   @debug "Loading emptymeas ..."
   if bEmpty!=nothing
@@ -176,8 +188,8 @@ end
 
 function initImage(bSFs::Union{T,Vector{T}}, bMeas::S, L::Int, nAverages::Int,
 		   grid::RegularGridPositions, loadOnlineParams=false) where {T,S<:MPIFile}
-  
-  # the number of channels is determined by the number of system matrices 
+
+  # the number of channels is determined by the number of system matrices
   if isa(bSFs,AbstractVector)
     numcolors = length(bSFs)
     bSF = bSFs[1]
@@ -185,7 +197,7 @@ function initImage(bSFs::Union{T,Vector{T}}, bMeas::S, L::Int, nAverages::Int,
     numcolors = 1
     bSF = bSFs
   end
-  # calculate axis 
+  # calculate axis
   shp = shape(grid)
   pixspacing = (spacing(grid) ./ acqGradient(bMeas)[1] .* acqGradient(bSF)[1])*1000u"mm"
   offset = (ffPos(bMeas) .- 0.5 .* calibFov(bSF))*1000u"mm" .+ 0.5 .* pixspacing
@@ -193,7 +205,7 @@ function initImage(bSFs::Union{T,Vector{T}}, bMeas::S, L::Int, nAverages::Int,
   # initialize raw array
   Arr=Array{Float32}(undef, numcolors,shp...,L)
   # create image
-  im = AxisArray(Arr, Axis{:color}(1:numcolors), 
+  im = AxisArray(Arr, Axis{:color}(1:numcolors),
 		 Axis{:x}(range(offset[1],step=pixspacing[1],length=shp[1])),
 		 Axis{:y}(range(offset[2],step=pixspacing[2],length=shp[2])),
 		 Axis{:z}(range(offset[3],step=pixspacing[3],length=shp[3])),
