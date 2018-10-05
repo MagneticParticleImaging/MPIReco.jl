@@ -358,7 +358,7 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[MPIFiles]]
 deps = ["AxisArrays", "Compat", "Dates", "DelimitedFiles", "FFTW", "FileIO", "Graphics", "HDF5", "HTTP", "ImageAxes", "ImageMetadata", "Interpolations", "LinearAlgebra", "Mmap", "Random", "Reexport", "Statistics", "Test", "Unitful"]
-git-tree-sha1 = "239220594ec9a5381d612bbc0686caca7e4242cb"
+git-tree-sha1 = "5dfb0d758e301ce6443176ab46c37d60b4da4487"
 repo-rev = "master"
 repo-url = "https://github.com/MagneticParticleImaging/MPIFiles.jl.git"
 uuid = "a5edc15b-39e9-55dc-ae45-4d55e961169a"
@@ -440,10 +440,10 @@ deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[ProgressMeter]]
-deps = ["Printf", "Random", "Test"]
-git-tree-sha1 = "09e653f4b0a3c44628f0bdd0a0e58bc92e0264ef"
+deps = ["Distributed", "Printf", "Random", "Test"]
+git-tree-sha1 = "5b55c2c974084eab2689ec0d1d5245561b22aeb0"
 uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
-version = "0.6.0"
+version = "0.6.1"
 
 [[REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets"]
