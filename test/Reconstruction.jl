@@ -11,7 +11,6 @@ using Winston
 	    -11.375u"mm":1.25u"mm":27.375u"mm", 
 	    0.0u"mm":1.0u"mm":0.0u"mm", 
 	    0.0u"ms":0.6528u"ms":0.0u"ms")
-  Winston.colormap("Grays")
   
   # standard reconstruction
   c1 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
@@ -19,7 +18,7 @@ using Winston
   @test axisnames(c1) == names
   @test axisvalues(c1) == values
   p = imagesc(data(data(c1[1,:,:,1,1])), (minimum(c1),maximum(c1)))
-  #display(p) # needs to be uncommented if test is run via include
+  savefig(p, "./img/Reconstruction1.png")
 
   # fused lasso
   c2 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
@@ -28,7 +27,7 @@ using Winston
   @test axisnames(c2) == names
   @test axisvalues(c2) == values
   p = imagesc(data(data(c2[1,:,:,1,1])), (minimum(c2),maximum(c2)))
-  #display(p)
+  savefig(p, "./img/Reconstruction2.png")
   
   # with interpolation
   c3 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
@@ -36,7 +35,7 @@ using Winston
   @test axisnames(c3) == names
   @test axisvalues(c3) == (values[1], -27.8u"mm":0.4u"mm":11.8u"mm", -11.8u"mm":0.4u"mm":27.8u"mm", values[4:5]...)
   p = imagesc(data(data(c3[1,:,:,1,1])), (minimum(c3),maximum(c3)))
-  #display(p)
+  savefig(p, "./img/Reconstruction3.png")
 
   # with fov adpation and center shift
   c4 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
@@ -46,7 +45,7 @@ using Winston
   # TODO Tobi: does this make sense?
   @test axisvalues(c4) == (values[1], -27.6u"mm":0.8u"mm":11.6u"mm", -11.6u"mm":0.8u"mm":27.6u"mm", 499.5u"mm":1000.0u"mm":499.5u"mm", values[5])
   p = imagesc(data(data(c4[1,:,:,1,1])), (minimum(c4),maximum(c4)))
-  #display(p)
+  savefig(p, "./img/Reconstruction4.png")
 
   # multi colored reconstruction
   c5 = reconstruction([bSF,bSF], b;
@@ -55,9 +54,9 @@ using Winston
   @test axisnames(c5) == names
   @test axisvalues(c5) == (1:2,values[2:end]...)
   p = imagesc(data(data(c5[1,:,:,1,1])), (minimum(c5),maximum(c5)))
-  #display(p)
+  savefig(p, "./img/Reconstruction5a.png")
   p = imagesc(data(data(c5[2,:,:,1,1])), (minimum(c5),maximum(c5)))
-  #display(p)
+  savefig(p, "./img/Reconstruction5b.png")
 
   # dict based reco
   r = defaultRecoParams()
@@ -72,5 +71,5 @@ using Winston
   @test axisnames(c6) == names
   @test axisvalues(c6) == values
   p = imagesc(data(data(c6[1,:,:,1,1])), (minimum(c6),maximum(c6)))
-  #display(p)
+  savefig(p, "./img/Reconstruction6.png")
 end

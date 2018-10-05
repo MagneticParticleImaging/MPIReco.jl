@@ -9,17 +9,19 @@ using Winston
     bSF = MPIFile(SF)
     a = findCenterOfDfFov(bSF)
     @test a == center[l]
-    S = getSF(bSF,2,0,0,2);
-    imagesc(abs.(S)[:,:,1]);
-    plot([a[2]-1],[a[1]-1],"gx",lw=4)
+    S = getSF(bSF,2,0,0,2)
+    p = imagesc(abs.(S)[:,:,1])
+    add(p, Points([a[2]-1],[a[1]-1],color="yellow",lw=5))
+    savefig(p, "./img/Center1.png")
   end
 
   for (l,SF) in enumerate(SFs)
     bSF = MPIFile(SF)
     a = findCenterOfDfFov(bSF)
     @test a == center[l]
-    S = getSF(bSF,5,6,0,1);
-    imagesc(abs.(S)[:,:,1]);
-    plot([a[2]-1],[a[1]-1],"gx",lw=4)
+    S = getSF(bSF,5,6,0,1)
+    p = imagesc(abs.(S)[:,:,1])
+    add(p, Points([a[2]-1],[a[1]-1],color="yellow",lw=5))
+    savefig(p, "./img/Center2.png")
   end
 end

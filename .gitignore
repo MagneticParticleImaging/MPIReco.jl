@@ -5,3 +5,4 @@ test/data*
 test/SF*
 test/*.mdf
 deps/build.log
+test/img/*
