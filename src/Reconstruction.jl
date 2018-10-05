@@ -31,14 +31,8 @@ function reconstruction(recoParams::Dict)
   bSF = MPIFile(recoParams[:SFPath])
 
   c = reconstruction(bSF, bMeas; recoParams...)
-  #make me collored??
-  #c[1]["recoParams"] = recoParams
-  if ndims(c)==1
-    c[1]["recoParams"] = recoParams
-  else
-    c["recoParams"] = recoParams
-  end
-
+  # store reco params with image
+  c["recoParams"] = recoParams
   return c
 end
 
