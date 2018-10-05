@@ -48,7 +48,7 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   pixspacing = (voxelSize(bSF) ./ sfGradient(bMeas,3) .* sfGradient(bSF,3)) * 1000u"mm"
   offset = (fieldOfViewCenter(FFOp.grid) .- 0.5.*fieldOfView(FFOp.grid) .+ 0.5.*spacing(FFOp.grid)) * 1000u"mm"
   # TODO does this provide the correct value in the multi-patch case?
-  dtframes = dfCycle(bMeas)*nAverages*1000u"ms"
+  dtframes = acqNumAverages(bMeas)*dfCycle(bMeas)*nAverages*1u"s"
   # create image
   c = reshape(c,1,size(c)...)
   im = AxisArray(c, Axis{:color}(1:1),
