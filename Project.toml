@@ -1,14 +1,14 @@
 name = "MPIReco"
 uuid = "cffeea2d-44ef-50d9-9a8a-3f5d8306ed6d"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.0.0"
+#version = "0.0.0"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-MPIFiles = "a5edc15b-39e9-55dc-ae45-4d55e961169a"
+MPIFiles = "371237a9-e6c1-5201-9adb-3d8cfa78fa9f"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
