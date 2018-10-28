@@ -1,5 +1,5 @@
 import Base: size
-import LinearSolver: initkaczmarz, dot_with_matrix_row, kaczmarz_update!
+import RegularizedLeastSquares: initkaczmarz, dot_with_matrix_row, kaczmarz_update!
 
 export reconstructionMultiPatch, FFOperator
 
@@ -22,7 +22,7 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile;
 end
 
 function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
-            frames=nothing, bEmpty=nothing, nAverages=1, 
+            frames=nothing, bEmpty=nothing, nAverages=1,
 	    spectralLeakageCorrection=true, kargs...)
   bgcorrection = (bEmpty != nothing)
 

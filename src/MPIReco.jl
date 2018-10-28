@@ -2,14 +2,14 @@ module MPIReco
   using Pkg
   using Reexport
   @reexport using MPIFiles
-  @reexport using LinearSolver
+  @reexport using RegularizedLeastSquares
   @reexport using Images
   using AxisArrays
   using ProgressMeter
   using LinearAlgebra
   using SparseArrays
   @reexport using Unitful
-  
+
   include("Utils.jl")
   include("RecoParameters.jl")
   include("SystemMatrixCenter.jl")

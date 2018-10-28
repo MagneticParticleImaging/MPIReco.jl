@@ -7,10 +7,10 @@ In order to install MPIReco you first have to install [Julia](http://julialang.o
 the package mode. Then enter
 ```julia
 dev https://github.com/MagneticParticleImaging/MPIFiles.jl.git
-dev https://github.com/tknopp/LinearSolver.jl.git
+dev https://github.com/tknopp/RegularizedLeastSquares.jl.git
 dev https://github.com/MagneticParticleImaging/MPIReco.jl.git
 ```
-which will install the package including its dependencies [MPIFiles](https://github.com/MagneticParticleImaging/MPIFiles.jl.git) and [LinearSolver](https://github.com/tknopp/LinearSolver.jl.git). Then enter
+which will install the package including its dependencies [MPIFiles](https://github.com/MagneticParticleImaging/MPIFiles.jl.git) and [RegularizedLeastSquares](https://github.com/tknopp/RegularizedLeastSquares.jl.git). Then enter
 ```julia
 using MPIReco
 ```
