@@ -26,7 +26,7 @@ function getSF(bSF, frequencies, sparseTrafo, solver; kargs...)
   elseif solver == "cgnr" || solver == "lsqr" || solver == "fusedlasso"
     return copy(transpose(SF)), grid
   elseif solver == "direct"
-    return LinearSolver.tikhonovLU(copy(transpose(SF))), grid
+    return RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
   else
     return SF, grid
   end
