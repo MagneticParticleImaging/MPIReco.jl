@@ -20,7 +20,7 @@ setlambda(S::AbstractMatrix, λ::Real) = nothing
 function getSF(bSF, frequencies, sparseTrafo, solver; kargs...)
   SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
   if solver == "kaczmarz"
-    return transp(SF), grid
+    return transpose(SF), grid
   elseif solver == "pseudoinverse"
     return SVD(svd(transpose(SF))...), grid
   elseif solver == "cgnr" || solver == "lsqr" || solver == "fusedlasso"
