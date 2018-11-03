@@ -384,9 +384,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[MbedTLS]]
 deps = ["BinaryProvider", "Dates", "Libdl", "Random", "Sockets", "Test"]
-git-tree-sha1 = "294100fb8907956b1afd9ce3294e085c2de5bd5e"
+git-tree-sha1 = "c93a87da4081a3de781f34e0540175795a2ce83d"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "0.6.5"
+version = "0.6.6"
 
 [[Missings]]
 deps = ["Dates", "InteractiveUtils", "SparseArrays", "Test"]
@@ -474,12 +474,10 @@ uuid = "189a3867-3050-52da-a836-e630ba90ab69"
 version = "0.2.0"
 
 [[RegularizedLeastSquares]]
-deps = ["Documenter", "FFTW", "LinearAlgebra", "LinearOperators", "SparseArrays", "Wavelets"]
-git-tree-sha1 = "af5d1c9fbb79b7f2168238db2fc87f85cd05842e"
-repo-rev = "master"
-repo-url = "https://github.com/tknopp/RegularizedLeastSquares.jl.git"
-uuid = "1906c763-83da-50c9-aa61-18e2016498cc"
-version = "0.0.0"
+deps = ["Documenter", "FFTW", "LinearAlgebra", "LinearOperators", "Random", "SparseArrays", "Test", "Wavelets"]
+git-tree-sha1 = "61bbee339c91cf05e8c3747828eadd1daccfc08c"
+uuid = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
+version = "0.1.0"
 
 [[Requires]]
 deps = ["Test"]
