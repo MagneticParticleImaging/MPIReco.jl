@@ -40,7 +40,13 @@ getSF(bSF::Vector{T}, frequencies, sparseTrafo::AbstractString; kargs...) where 
   getSF(bSF[1], frequencies, sparseTrafo; kargs...)
 
 function getSF(bSFs::Vector{T}, frequencies; kargs...) where {T<:MPIFile}
-  data = [getSF(bSF, frequencies; kargs...) for bSF in bSFs]
+  maxFov = [0.0,0.0,0.0]
+  maxSize = [0,0,0]
+  for l=1:length(bSFs)
+    maxFov = max.(maxFov, calibFov(bSFs[l]))
+    maxSize = max.(maxSize, collect(calibSize(bSFs[l])) )
+  end
+  data = [getSF(bSF, frequencies; gridsize=maxSize, fov=maxFov, kargs...) for bSF in bSFs]
   return cat([d[1] for d in data]..., dims=1), data[1][2] # grid of the first SF
 end
 
