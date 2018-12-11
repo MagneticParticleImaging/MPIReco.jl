@@ -7,7 +7,7 @@ This is the most high level reconstruction method using the `MDFDatasetStore`
 function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoParams)
 
   !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( MPIFile( recoParams[:measPath] ) ))
-  haskey(recoParams,:emptyMeasPath) && recoParams[:emptyMeasPath]!=nothing && (recoParams[:emptyMeasPath] = MPIFile( recoParams[:emptyMeasPath] ) )
+  haskey(recoParams,:emptyMeasPath) && recoParams[:emptyMeasPath]!=nothing && (recoParams[:bEmpty] = MPIFile( recoParams[:emptyMeasPath] ) )
 
   numReco = findReco(d,study,exp,recoParams)
   if numReco > 0
@@ -94,10 +94,10 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
   loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
-  deadPixels=Int[], kargs...) where {T<:MPIFile}
+  deadPixels=Int[], bgCorrectionInternal=false, kargs...) where {T<:MPIFile}
 
   (typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
-  bgcorrection = bEmpty != nothing ? true : false
+  bgcorrection = bEmpty != nothing ? true : bgCorrectionInternal
 
   consistenceCheck(bSF, bMeas)
 
@@ -114,14 +114,14 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
 
   return reconstruction(S, bSF, bMeas, freq, grid, bEmpty=bEmpty, bgFrames=bgFrames,
                         sparseTrafo=sparseTrafo, loadasreal=loadasreal,
-                        solver=solver; kargs...)
+                        solver=solver, bgCorrectionInternal=bgCorrectionInternal; kargs...)
 end
 
 function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
   frames = nothing, bEmpty = nothing, bgFrames = 1, nAverages = 1,
   sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
   weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
-  spectralCleaning=true, fgFrames=1:10,
+  spectralCleaning=true, fgFrames=1:10, bgCorrectionInternal=false,
   noiseFreqThresh=0.0, kargs...) where {T<:MPIFile}
 
   #(typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
@@ -131,7 +131,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   if bEmpty!=nothing
     if acqNumBGFrames(bEmpty) > 0
       uEmpty = getMeasurementsFD(bEmpty, false, frequencies=freq, frames=measBGFrameIdx(bEmpty),
-      numAverages = acqNumBGFrames(bEmpty), bgCorrection=false, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
+      numAverages = acqNumBGFrames(bEmpty), bgCorrection=bgCorrectionInternal, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
     else
       uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
       loadasreal = loadasreal,spectralLeakageCorrection=spectralCleaning)
@@ -153,7 +153,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   iterator = nAverages == 1 ? Iterators.partition(frames,maxload) : Iterators.partition(frames,nAverages*maxload)
   for partframes in iterator
     @debug "Loading measurements ..."
-    u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=nAverages, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
+    u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=nAverages, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning, bgCorrection=bgCorrectionInternal)
     bEmpty!=nothing && (u = u .- uEmpty)
 
     noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames)
