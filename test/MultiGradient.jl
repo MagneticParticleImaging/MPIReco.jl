@@ -1,9 +1,10 @@
 using MPIReco
 using Test
-#using Winston
-using FileIO
-using QuartzImageIO
-using ImageMagick
+using Winston
+#using QuartzImageIO
+#using ImageMagick
+#using FileIO
+
 
 # multi-gradient is a special case of multi-patch
 @testset "multi-gradient in-memory reconstruction" begin
@@ -18,13 +19,13 @@ using ImageMagick
   @test axisnames(c1) == names
   @test axisvalues(c1) == (1:1, -26.0u"mm":1.0u"mm":26.0u"mm", -26.75u"mm":1.0u"mm":26.25u"mm", 0.0u"mm":1.0u"mm":0.0u"mm", 0.0u"ms":0.6528u"ms":0.0u"ms")
   im1 = reverse(c1[1,:,:,1,1]',dims=1)
-  #p = imagesc(data(data(im1)), (minimum(im1),maximum(im1)))
-  #savefig(p, "./img/MultiGradient1.png")
+  p = imagesc(data(data(im1)), (minimum(im1),maximum(im1)))
+  savefig(p, "./img/MultiGradient1.png")
 
-  Iabs = abs.(im1)
-  Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
-  Icolored = colorview(Gray, Iabs./maximum(Iabs))
-  FileIO.save("./img/MultiGradient1.png", Icolored )
+  #Iabs = abs.(im1)
+  #Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
+  #Icolored = colorview(Gray, Iabs./maximum(Iabs))
+  #FileIO.save("./img/MultiGradient1.png", Icolored )
 
   # low gradient with all 3 high gradient patches
   b = MultiMPIFile(["dataMG_G1", "dataMG_G2_01", "dataMG_G2_02", "dataMG_G2_03"])
@@ -36,13 +37,13 @@ using ImageMagick
   # TODO wo kommt dieser Floatingpoint Fehler rein? Lässt der sich vermeiden?
   @test axisvalues(c2) == (1:1, -26.0u"mm":1.0u"mm":26.0u"mm", -26.500000000000004u"mm":1.0u"mm":30.499999999999996u"mm", 0.0u"mm":1.0u"mm":0.0u"mm", 0.0u"ms":0.6528u"ms":0.0u"ms")
   im2 = reverse(c2[1,:,:,1,1]',dims=1)
-  #p = imagesc(data(data(im2)), (minimum(im2),maximum(im2)))
-  #savefig(p, "./img/MultiGradient2.png")
+  p = imagesc(data(data(im2)), (minimum(im2),maximum(im2)))
+  savefig(p, "./img/MultiGradient2.png")
 
-  Iabs = abs.(im2)
-  Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
-  Icolored = colorview(Gray, Iabs./maximum(Iabs))
-  FileIO.save("./img/MultiGradient2.png", Icolored )
+  #Iabs = abs.(im2)
+  #Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
+  #Icolored = colorview(Gray, Iabs./maximum(Iabs))
+  #FileIO.save("./img/MultiGradient2.png", Icolored )
 
 
   # low gradient only
@@ -53,11 +54,11 @@ using ImageMagick
 			    SNRThresh=2, frames=1, lambd=0.003, minFreq=80e3,
 			    recChannels=1:2,iterations=3, roundPatches=false)
   im3 = reverse(c3[1,:,:,1,1]',dims=1)
-  #p = imagesc(data(data(im1)), (minimum(im1),maximum(im1)))
-  #savefig(p, "./img/MultiGradient1.png")
+  p = imagesc(data(data(im1)), (minimum(im1),maximum(im1)))
+  savefig(p, "./img/MultiGradient3.png")
 
-  Iabs = abs.(im3)
-  Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
-  Icolored = colorview(Gray, Iabs./maximum(Iabs))
-  FileIO.save("./img/MultiGradient3.png", Icolored )
+  #Iabs = abs.(im3)
+  #Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
+  #Icolored = colorview(Gray, Iabs./maximum(Iabs))
+  #FileIO.save("./img/MultiGradient3.png", Icolored )
 end
