@@ -2,6 +2,8 @@ using MPIReco
 using Test
 #using Winston
 using FileIO
+using QuartzImageIO
+using ImageMagick
 
 # multi-gradient is a special case of multi-patch
 @testset "multi-gradient in-memory reconstruction" begin
@@ -22,7 +24,7 @@ using FileIO
   Iabs = abs.(im1)
   Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
   Icolored = colorview(Gray, Iabs./maximum(Iabs))
-  save("./img/MultiGradient1.png", Icolored )
+  FileIO.save("./img/MultiGradient1.png", Icolored )
 
   # low gradient with all 3 high gradient patches
   b = MultiMPIFile(["dataMG_G1", "dataMG_G2_01", "dataMG_G2_02", "dataMG_G2_03"])
@@ -40,7 +42,7 @@ using FileIO
   Iabs = abs.(im2)
   Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
   Icolored = colorview(Gray, Iabs./maximum(Iabs))
-  save("./img/MultiGradient2.png", Icolored )
+  FileIO.save("./img/MultiGradient2.png", Icolored )
 
 
   # low gradient only
@@ -57,5 +59,5 @@ using FileIO
   Iabs = abs.(im3)
   Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
   Icolored = colorview(Gray, Iabs./maximum(Iabs))
-  save("./img/MultiGradient3.png", Icolored )
+  FileIO.save("./img/MultiGradient3.png", Icolored )
 end
