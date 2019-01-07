@@ -91,9 +91,10 @@ function FFOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
   end
 
   if length(FFPosSF) == 0
-    FFPosSF_ = [vec(ffPos(SF)) for SF in bSF]
+    L = length(ffPos(bSF[1]))
+    FFPosSF_ = [vec(ffPos(SF))[l] for l=1:L, SF in bSF] #[vec(ffPos(SF)) for SF in bSF]
   else
-    FFPosSF_ = [vec(FFPosSF[:,l]) for l=1:size(FFPosSF,2)]
+    FFPosSF_ = FFPosSF #[vec(FFPosSF[:,l]) for l=1:size(FFPosSF,2)]
   end
 
   gradient = acqGradient(bMeas)[:,:,1,periodsSortedbyFFPos[:,1]]
@@ -113,9 +114,9 @@ end
 function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
   idx = -1
   minDist = 1e20
-  for (l,FFPSF) in enumerate(ffPosSF)
+  for l = 1:size(ffPosSF,2)
     if gradientSF[l][:,:,1,1] == gradient
-      dist = norm(FFPSF.-FFPos)
+      dist = norm(ffPosSF[:,l].-FFPos)
       if dist < minDist
         minDist = dist
         idx = l
@@ -179,7 +180,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
     idx = mapping[k]
     SF = SFs[idx]
 
-    diffFFPos = FFPosSF[idx] .- FFPos[:,k]
+    diffFFPos = FFPosSF[:,idx] .- FFPos[:,k]
 
     push!(grids, RegularGridPositions(calibSize(SF),calibFov(SF),SFGridCenter[:,idx].-diffFFPos))
   end
@@ -241,10 +242,10 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
 
     SF = SFs[idx]
 
-    if isapprox(FFPosSF[idx],FFPos[:,k])
+    if isapprox(FFPosSF[:,idx],FFPos[:,k])
       diffFFPos = zeros(3)
     else
-      diffFFPos = FFPosSF[idx] .- FFPos[:,k]
+      diffFFPos = FFPosSF[:,idx] .- FFPos[:,k]
     end
     push!(grids, RegularGridPositions(calibSize(SF),calibFov(SF),calibFovCenter(SF).-diffFFPos))
     matchingSMIdx[k] = idx
