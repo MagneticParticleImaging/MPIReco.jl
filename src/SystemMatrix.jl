@@ -92,8 +92,8 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
     origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
     target = RegularGridPositions(gridsize,fov,center)
 
-    SInterp = zeros(eltype(S),prod(gridsize),length(frequencies))
-    for k=1:length(frequencies)
+    SInterp = zeros(eltype(S),prod(gridsize),length(frequencies)*acqNumPeriodsPerFrame(bSF))
+    for k=1:length(frequencies)*acqNumPeriodsPerFrame(bSF)
       A = MPIFiles.interpolate(reshape(S[:,k],calibSize(bSF)...), origin, target)
       SInterp[:,k] = vec(A)
     end
@@ -107,7 +107,7 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
     S = converttoreal(S,bSF)
     resSize = [gridsize..., 2*length(frequencies)*acqNumPeriodsPerFrame(bSF)]
   else
-    resSize = [gridsize..., length(frequencies)*acqNumPeriodsPerFrame(bSF)]
+    resSize = [gridsize...,length(frequencies)*acqNumPeriodsPerFrame(bSF)]
   end
 
   if returnasmatrix
