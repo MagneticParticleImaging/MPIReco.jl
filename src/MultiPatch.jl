@@ -29,7 +29,7 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   FFOp = FFOperatorHighLevel(bSF, bMeas, freq, bgcorrection;
                     kargs... )
 
-  L = numScans(bMeas)
+  L = acqNumFGFrames(bMeas)
   (frames==nothing) && (frames=collect(1:L))
   nFrames=length(frames)
 
@@ -75,6 +75,10 @@ mutable struct FFOperator{V<:AbstractMatrix, T<:Positions}
   sign::Matrix{Int}
   nPatches::Int
   patchToSMIdx::Vector{Int}
+end
+
+function FFOperatorHighLevel(SF::MPIFile, bMeas, freq, bgcorrection::Bool; kargs...)
+  return FFOperatorHighLevel(MultiMPIFile([SF]), bMeas, freq, bgcorrection; kargs...)
 end
 
 function FFOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgcorrection::Bool;

@@ -130,7 +130,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   @debug "Loading emptymeas ..."
   if bEmpty!=nothing
     if acqNumBGFrames(bEmpty) > 0
-      uEmpty = getMeasurementsFD(bEmpty, false, frequencies=freq, frames=measBGFrameIdx(bEmpty),
+      uEmpty = getMeasurementsFD(bEmpty, false, frequencies=freq, frames=bgFrames, #frames=measBGFrameIdx(bEmpty),
       numAverages = acqNumBGFrames(bEmpty), bgCorrection=bgCorrectionInternal, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
     else
       uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
