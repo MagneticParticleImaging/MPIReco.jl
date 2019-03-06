@@ -22,22 +22,24 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile;
 end
 
 function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
-            frames=nothing, bEmpty=nothing, nAverages=1,
+            frames=nothing, bEmpty=nothing, nAverages=1, numAverages=nAverages,
 	    spectralLeakageCorrection=true, kargs...)
-  bgcorrection = (bEmpty != nothing)
 
-  FFOp = FFOperatorHighLevel(bSF, bMeas, freq, bgcorrection;
+  bgCorrection = (bEmpty != nothing)
+
+  FFOp = FFOperatorHighLevel(bSF, bMeas, freq, bgCorrection;
                     kargs... )
 
   L = acqNumFGFrames(bMeas)
   (frames==nothing) && (frames=collect(1:L))
   nFrames=length(frames)
 
-  uTotal = getMeasurementsFD(bMeas,frequencies=freq, frames=frames, numAverages=nAverages,
+  uTotal = getMeasurementsFD(bMeas,frequencies=freq, frames=frames, numAverages=numAverages,
                              spectralLeakageCorrection=spectralLeakageCorrection)
 
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos(bMeas))
   uTotal = uTotal[:,periodsSortedbyFFPos,:]
+
   uTotal = mean(uTotal,dims=3)
 
   # Here we call a regular reconstruction function
@@ -48,7 +50,7 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   pixspacing = (voxelSize(bSF) ./ sfGradient(bMeas,3) .* sfGradient(bSF,3)) * 1000u"mm"
   offset = (fieldOfViewCenter(FFOp.grid) .- 0.5.*fieldOfView(FFOp.grid) .+ 0.5.*spacing(FFOp.grid)) * 1000u"mm"
   # TODO does this provide the correct value in the multi-patch case?
-  dtframes = acqNumAverages(bMeas)*dfCycle(bMeas)*nAverages*1u"s"
+  dtframes = acqNumAverages(bMeas)*dfCycle(bMeas)*numAverages*1u"s"
   # create image
   c = reshape(c,1,size(c)...)
   im = AxisArray(c, Axis{:color}(1:1),
@@ -77,11 +79,11 @@ mutable struct FFOperator{V<:AbstractMatrix, T<:Positions}
   patchToSMIdx::Vector{Int}
 end
 
-function FFOperatorHighLevel(SF::MPIFile, bMeas, freq, bgcorrection::Bool; kargs...)
-  return FFOperatorHighLevel(MultiMPIFile([SF]), bMeas, freq, bgcorrection; kargs...)
+function FFOperatorHighLevel(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
+  return FFOperatorHighLevel(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
 end
 
-function FFOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
+function FFOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
         FFPos = zeros(0,0), FFPosSF = zeros(0,0), kargs...)
 
   FFPos_ = ffPos(bMeas)
@@ -103,7 +105,7 @@ function FFOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
 
   gradient = acqGradient(bMeas)[:,:,1,periodsSortedbyFFPos[:,1]]
 
-  FFOp = FFOperator(bSF, bMeas, freq, bgcorrection,
+  FFOp = FFOperator(bSF, bMeas, freq, bgCorrection,
                   FFPos = FFPos_,
                   gradient = gradient,
                   FFPosSF = FFPosSF_; kargs...)
@@ -111,8 +113,8 @@ function FFOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
 end
 
 
-function FFOperator(SF::MPIFile, bMeas, freq, bgcorrection::Bool; kargs...)
-  return FFOperator(MultiMPIFile([SF]), bMeas, freq, bgcorrection; kargs...)
+function FFOperator(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
+  return FFOperator(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
 end
 
 function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
@@ -133,16 +135,16 @@ function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
   return idx
 end
 
-function FFOperator(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
+function FFOperator(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
         mapping=zeros(0), kargs...)
   if length(mapping) > 0
-    return FFOperatorExpliciteMapping(SFs,bMeas,freq,bgcorrection; mapping=mapping, kargs...)
+    return FFOperatorExpliciteMapping(SFs,bMeas,freq,bgCorrection; mapping=mapping, kargs...)
   else
-    return FFOperatorRegular(SFs,bMeas,freq,bgcorrection; kargs...)
+    return FFOperatorRegular(SFs,bMeas,freq,bgCorrection; kargs...)
   end
 end
 
-function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
+function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
                     denoiseWeight=0, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
                     gradient=zeros(0,0,0),
                     roundPatches = false,
@@ -157,7 +159,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
 
   if systemMatrices == nothing
-    S = [getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection)[1] for SF in SFs]
+    S = [getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection)[1] for SF in SFs]
   else
     S = systemMatrices
   end
@@ -198,6 +200,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
     recoGrid = grid
   end
 
+
   # Within the next loop we will refine our grid since we now know our reconstruction grid
   for k=1:numPatches
     idx = mapping[k]
@@ -218,7 +221,7 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgcorrection
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
-function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
+function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
                     denoiseWeight=0, gradient=zeros(0,0,0),
                     roundPatches = false, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
                     kargs...)
@@ -290,7 +293,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
       if u > 0 # its already in memory
         patchToSMIdx[k] = u
       else     # not yet in memory  -> load it
-        S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection)
+        S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection)
         push!(S,S_)
         push!(SOrigIdx,idx)
         push!(SIsPlain,true) # mark this as a plain system matrix (without interpolation)
@@ -302,7 +305,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgcorrection::Bool;
       newGrid = deriveSubgrid(recoGrid, grids[k])
 
       # load the matrix on the new subgrid
-      S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgcorrection=bgcorrection,
+      S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection,
                    gridsize=shape(newGrid),
                    fov=fieldOfView(newGrid),
                    center=fieldOfViewCenter(newGrid).-fieldOfViewCenter(grids[k]))

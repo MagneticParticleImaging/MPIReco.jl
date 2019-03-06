@@ -73,12 +73,13 @@ function repairDeadPixels(S, shape, deadPixels)
 end
 
 function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer=1,
-               bgcorrection=false, loadasreal=false, gridsize=collect(calibSize(bSF)),
+               bgcorrection=false, bgCorrection=bgcorrection, loadasreal=false, 
+	       gridsize=collect(calibSize(bSF)),
 	       fov=calibFov(bSF), center=[0.0,0.0,0.0], deadPixels=Int[], kargs...)
 
   nFreq = rxNumFrequencies(bSF)
 
-  S = getSystemMatrix(bSF, frequencies, bgCorrection=bgcorrection)
+  S = getSystemMatrix(bSF, frequencies, bgCorrection=bgCorrection)
 
   if !isempty(deadPixels)
     repairDeadPixels(S,gridsize,deadPixels)

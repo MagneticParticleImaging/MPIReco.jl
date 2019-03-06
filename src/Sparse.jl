@@ -13,7 +13,7 @@ end
 # parameter globalComp: if true, each frequency gets the same number of non-zero entries
 #						if false, the number of non-zero entries is determined by a changing threshold
 function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
-    globalComp=true,redFactor=0.1, bgcorrection=false,
+    globalComp=true,redFactor=0.1, bgcorrection=false, bgCorrection=bgcorrection,
     loadasreal=false, compAna=nothing, combine=true, useCOM=false, depth=4, useDFFoV=false, kargs...)
 
     if useDFFoV
@@ -44,7 +44,7 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
     numCoeff = zeros(Int32,l)
 
     for k = 1:l
-        SF = vec(map(ComplexF32, systemMatrix(bSF, frequencies[k], bgcorrection) ))
+        SF = vec(map(ComplexF32, systemMatrix(bSF, frequencies[k], bgCorrection) ))
 
         if useDFFoV
           A = MPIFiles.interpolate(reshape(SF,shape(origin)...), origin, grid)
