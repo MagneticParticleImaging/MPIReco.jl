@@ -12,3 +12,5 @@ RegularizedLeastSquares
 SparseArrays
 Unitful
 Winston
+SparseArrays
+LinearAlgebra
