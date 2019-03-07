@@ -1,7 +1,7 @@
 var documenterSearchIndex = {"docs": [
 
 {
-    "location": "index.html#",
+    "location": "#",
     "page": "Home",
     "title": "Home",
     "category": "page",
@@ -9,7 +9,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#MPI-Reco-1",
+    "location": "#MPI-Reco-1",
     "page": "Home",
     "title": "MPI Reco",
     "category": "section",
@@ -17,7 +17,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#Introduction-1",
+    "location": "#Introduction-1",
     "page": "Home",
     "title": "Introduction",
     "category": "section",
@@ -25,7 +25,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#License-/-Terms-of-Usage-1",
+    "location": "#License-/-Terms-of-Usage-1",
     "page": "Home",
     "title": "License / Terms of Usage",
     "category": "section",
@@ -33,7 +33,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#Contact-1",
+    "location": "#Contact-1",
     "page": "Home",
     "title": "Contact",
     "category": "section",
@@ -41,7 +41,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#Contributors-1",
+    "location": "#Contributors-1",
     "page": "Home",
     "title": "Contributors",
     "category": "section",
@@ -49,7 +49,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "usage.html#",
+    "location": "usage/#",
     "page": "Installation",
     "title": "Installation",
     "category": "page",
@@ -57,7 +57,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "usage.html#Installation-and-Usage-1",
+    "location": "usage/#Installation-and-Usage-1",
     "page": "Installation",
     "title": "Installation and Usage",
     "category": "section",
@@ -65,15 +65,15 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "usage.html#Installation-1",
+    "location": "usage/#Installation-1",
     "page": "Installation",
     "title": "Installation",
     "category": "section",
-    "text": "The MPIReco project is a package written in the programming language Julia. In order to install MPIReco you first have to install Julia in version 0.7 (version 1.0 not yet supported). Then open Julia and enter ] to open the package mode. Then enterdev https://github.com/MagneticParticleImaging/MPIFiles.jl.git\ndev https://github.com/tknopp/LinearSolver.jl.git\ndev https://github.com/MagneticParticleImaging/MPIReco.jl.gitwhich will install the package including its dependencies MPIFiles and LinearSolver. Then enterusing MPIRecoto load the packageIn order to obtain the example datasets you have to execute the unit tests which can be done by enteringtest MPIRecowithin the package mode of Julia."
+    "text": "The MPIReco project is a package written in the programming language Julia. In order to install MPIReco you first have to install Julia in version 0.7 (version 1.0 not yet supported). Then open Julia and enter ] to open the package mode. Then enterdev https://github.com/MagneticParticleImaging/MPIFiles.jl.git\ndev https://github.com/tknopp/RegularizedLeastSquares.jl.git\ndev https://github.com/MagneticParticleImaging/MPIReco.jl.gitwhich will install the package including its dependencies MPIFiles and RegularizedLeastSquares. Then enterusing MPIRecoto load the packageIn order to obtain the example datasets you have to execute the unit tests which can be done by enteringtest MPIRecowithin the package mode of Julia."
 },
 
 {
-    "location": "usage.html#Getting-Started-1",
+    "location": "usage/#Getting-Started-1",
     "page": "Installation",
     "title": "Getting Started",
     "category": "section",
@@ -81,7 +81,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "overview.html#",
+    "location": "overview/#",
     "page": "Overview",
     "title": "Overview",
     "category": "page",
@@ -89,7 +89,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "overview.html#Overview-1",
+    "location": "overview/#Overview-1",
     "page": "Overview",
     "title": "Overview",
     "category": "section",
@@ -97,7 +97,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "overview.html#Data-Storage-1",
+    "location": "overview/#Data-Storage-1",
     "page": "Overview",
     "title": "Data Storage",
     "category": "section",
@@ -105,7 +105,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "multiPatch.html#",
+    "location": "multiPatch/#",
     "page": "Multi-patch",
     "title": "Multi-patch",
     "category": "page",
