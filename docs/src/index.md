@@ -19,12 +19,10 @@ Key features are
   during reconstructions are loaded into memory.
 * spectral leakage correction (implemented in MPIFiles.jl)
 
-
 ## License / Terms of Usage
 
 The source code of this project is licensed under the MIT license. This implies that
-you are free to use, share, and adapt it. However, you must give appropriate credit by citing the project.
-
+you are free to use, share, and adapt it. However, please give appropriate credit by citing the project.
 
 ## Contact
 

@@ -10,13 +10,8 @@ makedocs(
         "Installation" => "usage.md",
         "Overview" => "overview.md",
         "Multi-patch" => "multiPatch.md"
-        #"Tracers" => "tracers.md",
-        #"Phantoms" => "phantoms.md",
-        #"Sequences" => "sequences.md",
-        #"Calibration" => "calibration.md",
-        #"Datasets" => "datasets.md",
-        #"Reconstruction"=> "reconstructions.md"
     ],
+    html_prettyurls = false, #!("local" in ARGS),
 )
 
 deploydocs(repo   = "github.com/MagneticParticleImaging/MPIReco.jl.git",
