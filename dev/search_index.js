@@ -1,7 +1,7 @@
 var documenterSearchIndex = {"docs": [
 
 {
-    "location": "#",
+    "location": "index.html#",
     "page": "Home",
     "title": "Home",
     "category": "page",
@@ -9,7 +9,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#MPI-Reco-1",
+    "location": "index.html#MPI-Reco-1",
     "page": "Home",
     "title": "MPI Reco",
     "category": "section",
@@ -17,7 +17,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Introduction-1",
+    "location": "index.html#Introduction-1",
     "page": "Home",
     "title": "Introduction",
     "category": "section",
@@ -25,15 +25,15 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#License-/-Terms-of-Usage-1",
+    "location": "index.html#License-/-Terms-of-Usage-1",
     "page": "Home",
     "title": "License / Terms of Usage",
     "category": "section",
-    "text": "The source code of this project is licensed under the MIT license. This implies that you are free to use, share, and adapt it. However, you must give appropriate credit by citing the project."
+    "text": "The source code of this project is licensed under the MIT license. This implies that you are free to use, share, and adapt it. However, please give appropriate credit by citing the project."
 },
 
 {
-    "location": "#Contact-1",
+    "location": "index.html#Contact-1",
     "page": "Home",
     "title": "Contact",
     "category": "section",
@@ -41,7 +41,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Contributors-1",
+    "location": "index.html#Contributors-1",
     "page": "Home",
     "title": "Contributors",
     "category": "section",
@@ -49,7 +49,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "usage/#",
+    "location": "usage.html#",
     "page": "Installation",
     "title": "Installation",
     "category": "page",
@@ -57,7 +57,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "usage/#Installation-and-Usage-1",
+    "location": "usage.html#Installation-and-Usage-1",
     "page": "Installation",
     "title": "Installation and Usage",
     "category": "section",
@@ -65,7 +65,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "usage/#Installation-1",
+    "location": "usage.html#Installation-1",
     "page": "Installation",
     "title": "Installation",
     "category": "section",
@@ -73,7 +73,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "usage/#Getting-Started-1",
+    "location": "usage.html#Getting-Started-1",
     "page": "Installation",
     "title": "Getting Started",
     "category": "section",
@@ -81,7 +81,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "overview/#",
+    "location": "overview.html#",
     "page": "Overview",
     "title": "Overview",
     "category": "page",
@@ -89,7 +89,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "overview/#Overview-1",
+    "location": "overview.html#Overview-1",
     "page": "Overview",
     "title": "Overview",
     "category": "section",
@@ -97,7 +97,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "overview/#Data-Storage-1",
+    "location": "overview.html#Data-Storage-1",
     "page": "Overview",
     "title": "Data Storage",
     "category": "section",
@@ -105,7 +105,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "multiPatch/#",
+    "location": "multiPatch.html#",
     "page": "Multi-patch",
     "title": "Multi-patch",
     "category": "page",
