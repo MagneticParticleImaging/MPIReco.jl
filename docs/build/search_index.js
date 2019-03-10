@@ -9,11 +9,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "index.html#MPI-Reco-1",
+    "location": "index.html#MPIReco.jl-1",
     "page": "Home",
-    "title": "MPI Reco",
+    "title": "MPIReco.jl",
     "category": "section",
-    "text": "Julia package for reconstruction of magnetic particle imaging (MPI) data"
+    "text": "Julia package for the reconstruction of magnetic particle imaging (MPI) data"
 },
 
 {
@@ -21,7 +21,15 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Introduction",
     "category": "section",
-    "text": "This project provides functions for the reconstruction of MPI data. The project is implemented in the programming language Julia and contains algorithms forregular 1D / 2D / 3D image reconstruction using a system matrix based approach\nmulti-patch and multi-gradient reconstruction for data the has been acquired using a focus field sequence\nmulti-colored image reconstruction\nmatrix-compression techniquesKey features arefrequency filtering for memory efficient reconstruction. Only frequencies used during reconstructions are loaded into memory.\nspectral leakage correction (implemented in MPIFiles.jl)"
+    "text": "This project provides functions for the reconstruction of MPI data. The project is implemented in the programming language Julia and contains algorithms forRegular 1D / 2D / 3D image reconstruction using a system matrix based approach\nMulti-Patch Reconstruction for data that has been acquired using a focus field sequence\nMulti-Contrast Reconstruction\nMatrix-Compression TechniquesKey features areFrequency filtering for memory efficient reconstruction. Only frequencies used during reconstructions are loaded into memory.\nDifferent solvers provided by the package RegularizedLeastSquares.jl\nHigh-level until low-level reconstruction providing maximum flexibility for the user\nSpectral leakage correction (implemented in MPIFiles.jl)"
+},
+
+{
+    "location": "index.html#Installation-1",
+    "page": "Home",
+    "title": "Installation",
+    "category": "section",
+    "text": "Start julia and open the package mode by entering ]. Then enteradd MPIRecoThis will install the packages MPIReco.jl and all its dependencies."
 },
 
 {
@@ -45,7 +53,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Contributors",
     "category": "section",
-    "text": "Florian Griese\nNadine Gdaniec\nTobias Knopp\nMartin Möddel\nPatryk Szwargulski"
+    "text": "Tobias Knopp\nMartin Möddel\nPatryk Szwargulski"
 },
 
 {
@@ -82,33 +90,105 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "overview.html#",
-    "page": "Overview",
-    "title": "Overview",
+    "page": "Getting Started",
+    "title": "Getting Started",
     "category": "page",
     "text": ""
 },
 
 {
-    "location": "overview.html#Overview-1",
-    "page": "Overview",
-    "title": "Overview",
+    "location": "overview.html#Getting-Started-1",
+    "page": "Getting Started",
+    "title": "Getting Started",
     "category": "section",
     "text": "We will start looking at a very basic reconstruction scriptusing MPIReco\n\nfSF = MPIFile(\"SF_MP\")\nf = MPIFile(\"dataMP01\")\n\nc = reconstruction(fSF, f;\n                   SNRThresh=5,\n                   frames=1:10,\n                   minFreq=80e3,\n                   recChannels=1:2,\n                   iterations=1,\n                   spectralLeakageCorrection=true)\nLets go through that script step by step. First, we create handles for the system matrix and the measurement data. Both are of the type MPIFile which is an abstract type that can for instance be an MDFFile or a BrukerFile.Using the handles to the MPI datasets we can call the reconstruction function that has various variants depending on the types that are passed to it. Here, we exploit the multiple dispatch mechanism of julia. In addition to the file handles we also apply several reconstruction parameters using keyword arguments. In this case, we set the SNR threshold to 5 implying that only matrix rows with an SNR above 5 are used during reconstruction. The parameter frame decides which frame of the measured data should be reconstructed.The object c is of type ImageMeta and contains not only the reconstructed data but also several metadata such as the reconstruction parameters being used. c has in total 5 dimensions. The first dimension encodes multi-spectral channels. Dimensions 2-4 encode the three spatial dimensions. The last dimension contains the number of frames being stored in c."
 },
 
 {
     "location": "overview.html#Data-Storage-1",
-    "page": "Overview",
+    "page": "Getting Started",
     "title": "Data Storage",
     "category": "section",
     "text": "One can store the reconstruction result into an MDF file by callingsaveRecoDataMDF(\"filename.mdf\", c)In order to load the data one callsc = loaddata(\"filename.mdf\", c)"
 },
 
 {
-    "location": "multiPatch.html#",
-    "page": "Multi-patch",
-    "title": "Multi-patch",
+    "location": "basicReconstruction.html#",
+    "page": "Basic Reconstruction",
+    "title": "Basic Reconstruction",
     "category": "page",
+    "text": ""
+},
+
+{
+    "location": "basicReconstruction.html#Basic-Reconstruction-1",
+    "page": "Basic Reconstruction",
+    "title": "Basic Reconstruction",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "recoResults.html#",
+    "page": "Results",
+    "title": "Results",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "recoResults.html#Reconstruction-results-1",
+    "page": "Results",
+    "title": "Reconstruction results",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "multiContrast.html#",
+    "page": "Multi-Contrast",
+    "title": "Multi-Contrast",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "multiContrast.html#Multi-Contrast-Reconstruction-1",
+    "page": "Multi-Contrast",
+    "title": "Multi-Contrast Reconstruction",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "multiPatch.html#",
+    "page": "Multi-Patch",
+    "title": "Multi-Patch",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "multiPatch.html#Multi-Patch-Reconstruction-1",
+    "page": "Multi-Patch",
+    "title": "Multi-Patch Reconstruction",
+    "category": "section",
+    "text": ""
+},
+
+{
+    "location": "matrixCompression.html#",
+    "page": "Compression",
+    "title": "Compression",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "matrixCompression.html#Matrix-Compression-Techniques-1",
+    "page": "Compression",
+    "title": "Matrix-Compression Techniques",
+    "category": "section",
     "text": ""
 },
 

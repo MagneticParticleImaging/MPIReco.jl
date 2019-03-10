@@ -8,8 +8,12 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Installation" => "usage.md",
-        "Overview" => "overview.md",
-        "Multi-patch" => "multiPatch.md"
+        "Getting Started" => "overview.md",
+        "Basic Reconstruction" => "basicReconstruction.md",
+        "Results" => "recoResults.md",
+        "Multi-Contrast" => "multiContrast.md",
+        "Multi-Patch" => "multiPatch.md",
+        "Compression" => "matrixCompression.md"
     ],
     html_prettyurls = false, #!("local" in ARGS),
 )
