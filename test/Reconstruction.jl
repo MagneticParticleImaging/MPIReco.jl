@@ -1,24 +1,21 @@
 using MPIReco
-using Test
-using Winston
 
 @testset "single- and multi-channel in-memory reconstruction" begin
   bSF = MPIFile("SF_MP")
   b = MPIFile("dataMP01")
   names = (:color, :x, :y, :z, :time)
-  values = (1:1, 
-	    -27.375u"mm":1.25u"mm":11.375u"mm", 
-	    -11.375u"mm":1.25u"mm":27.375u"mm", 
-	    0.0u"mm":1.0u"mm":0.0u"mm", 
+  values = (1:1,
+	    -27.375u"mm":1.25u"mm":11.375u"mm",
+	    -11.375u"mm":1.25u"mm":27.375u"mm",
+	    0.0u"mm":1.0u"mm":0.0u"mm",
 	    0.0u"ms":0.6528u"ms":0.0u"ms")
-  
+
   # standard reconstruction
   c1 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-		      recChannels=1:2,iterations=1, spectralLeakageCorrection=true)
+		      recChannels=1:2, iterations=1, spectralLeakageCorrection=true)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values
-  p = imagesc(data(data(c1[1,:,:,1,1])), (minimum(c1),maximum(c1)))
-  savefig(p, "./img/Reconstruction1.png")
+  exportImage("./img/Reconstruction1.png", data(data(c1[1,:,:,1,1])))
 
   # fused lasso
   c2 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
@@ -26,16 +23,14 @@ using Winston
 		      loadasreal=true, lambdaTV=0.1, lambdaL1=0.1)
   @test axisnames(c2) == names
   @test axisvalues(c2) == values
-  p = imagesc(data(data(c2[1,:,:,1,1])), (minimum(c2),maximum(c2)))
-  savefig(p, "./img/Reconstruction2.png")
-  
+  exportImage("./img/Reconstruction2.png", data(data(c2[1,:,:,1,1])))
+
   # with interpolation
   c3 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
 		      recChannels=1:2, gridsize=[100,100,1],iterations=1)
   @test axisnames(c3) == names
   @test axisvalues(c3) == (values[1], -27.8u"mm":0.4u"mm":11.8u"mm", -11.8u"mm":0.4u"mm":27.8u"mm", values[4:5]...)
-  p = imagesc(data(data(c3[1,:,:,1,1])), (minimum(c3),maximum(c3)))
-  savefig(p, "./img/Reconstruction3.png")
+  exportImage("./img/Reconstruction3.png", data(data(c3[1,:,:,1,1])))
 
   # with fov adpation and center shift
   c4 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
@@ -44,8 +39,7 @@ using Winston
   @test axisnames(c4) == names
   # TODO Tobi: does this make sense?
   @test axisvalues(c4) == (values[1], -27.6u"mm":0.8u"mm":11.6u"mm", -11.6u"mm":0.8u"mm":27.6u"mm", 499.5u"mm":1000.0u"mm":499.5u"mm", values[5])
-  p = imagesc(data(data(c4[1,:,:,1,1])), (minimum(c4),maximum(c4)))
-  savefig(p, "./img/Reconstruction4.png")
+  exportImage("./img/Reconstruction4.png", data(data(c4[1,:,:,1,1])))
 
   # multi colored reconstruction
   c5 = reconstruction([bSF,bSF], b;
@@ -53,10 +47,8 @@ using Winston
 		      recChannels=1:2,iterations=1)
   @test axisnames(c5) == names
   @test axisvalues(c5) == (1:2,values[2:end]...)
-  p = imagesc(data(data(c5[1,:,:,1,1])), (minimum(c5),maximum(c5)))
-  savefig(p, "./img/Reconstruction5a.png")
-  p = imagesc(data(data(c5[2,:,:,1,1])), (minimum(c5),maximum(c5)))
-  savefig(p, "./img/Reconstruction5b.png")
+  exportImage("./img/Reconstruction5a.png", data(data(c5[1,:,:,1,1])))
+  exportImage("./img/Reconstruction5b.png", data(data(c5[2,:,:,1,1])))
 
   # dict based reco
   r = defaultRecoParams()
@@ -70,6 +62,5 @@ using Winston
   c6 = reconstruction(r)
   @test axisnames(c6) == names
   @test axisvalues(c6) == values
-  p = imagesc(data(data(c6[1,:,:,1,1])), (minimum(c6),maximum(c6)))
-  savefig(p, "./img/Reconstruction6.png")
+  exportImage("./img/Reconstruction6.png", data(data(c6[1,:,:,1,1])))
 end

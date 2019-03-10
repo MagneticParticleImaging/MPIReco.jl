@@ -1,4 +1,6 @@
 using HTTP
+using Test
+using FileIO
 
 if !isdir("dataMP01")
   HTTP.open("GET", "http://media.tuhh.de/ibi/mpireco/data.zip") do http
@@ -28,6 +30,12 @@ if !isfile(filenameMeas)
 end
 
 mkpath("./img/")
+
+function exportImage(filename, I::AbstractMatrix)
+  Iabs = abs.(I)
+  Icolored = colorview(Gray, Iabs./maximum(Iabs))
+  save(filename, Icolored )
+end
 
 include("Reconstruction.jl")
 include("MultiPatch.jl")

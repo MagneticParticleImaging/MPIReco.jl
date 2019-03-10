@@ -1,10 +1,4 @@
 using MPIReco
-using Test
-using Winston
-#using QuartzImageIO
-#using ImageMagick
-#using FileIO
-
 
 # multi-gradient is a special case of multi-patch
 @testset "multi-gradient in-memory reconstruction" begin
@@ -19,8 +13,7 @@ using Winston
   @test axisnames(c1) == names
   @test axisvalues(c1) == (1:1, -26.0u"mm":1.0u"mm":26.0u"mm", -26.75u"mm":1.0u"mm":26.25u"mm", 0.0u"mm":1.0u"mm":0.0u"mm", 0.0u"ms":0.6528u"ms":0.0u"ms")
   im1 = reverse(c1[1,:,:,1,1]',dims=1)
-  p = imagesc(data(data(im1)), (minimum(im1),maximum(im1)))
-  savefig(p, "./img/MultiGradient1.png")
+  exportImage("./img/MultiGradient1.png", data(data(im1[1,:,:,1,1])))
 
   #Iabs = abs.(im1)
   #Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
@@ -37,8 +30,7 @@ using Winston
   # TODO wo kommt dieser Floatingpoint Fehler rein? Lässt der sich vermeiden?
   @test axisvalues(c2) == (1:1, -26.0u"mm":1.0u"mm":26.0u"mm", -26.500000000000004u"mm":1.0u"mm":30.499999999999996u"mm", 0.0u"mm":1.0u"mm":0.0u"mm", 0.0u"ms":0.6528u"ms":0.0u"ms")
   im2 = reverse(c2[1,:,:,1,1]',dims=1)
-  p = imagesc(data(data(im2)), (minimum(im2),maximum(im2)))
-  savefig(p, "./img/MultiGradient2.png")
+  exportImage("./img/MultiGradient2.png", data(data(im2[1,:,:,1,1])))
 
   #Iabs = abs.(im2)
   #Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
@@ -54,8 +46,7 @@ using Winston
 			    SNRThresh=2, frames=1, lambd=0.003, minFreq=80e3,
 			    recChannels=1:2,iterations=3, roundPatches=false)
   im3 = reverse(c3[1,:,:,1,1]',dims=1)
-  p = imagesc(data(data(im1)), (minimum(im1),maximum(im1)))
-  savefig(p, "./img/MultiGradient3.png")
+  exportImage("./img/MultiGradient3.png", data(data(im1[1,:,:,1,1])))
 
   #Iabs = abs.(im3)
   #Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0

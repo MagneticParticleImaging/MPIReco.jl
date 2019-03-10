@@ -224,8 +224,7 @@ Low level reconstruction method
 """
 function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
                         lambd=0, progress=nothing, solver = "kaczmarz",
-                        weights=nothing, profileName="", profiling=nothing,
-                        reshapesolution = true, kargs...)
+                        weights=nothing, reshapesolution = true, kargs...)
 
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
