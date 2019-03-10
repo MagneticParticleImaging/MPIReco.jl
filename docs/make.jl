@@ -7,9 +7,9 @@ makedocs(
     authors = "Tobias Knopp,...",
     pages = [
         "Home" => "index.md",
-        "Installation" => "usage.md",
         "Getting Started" => "overview.md",
         "Basic Reconstruction" => "basicReconstruction.md",
+        "Parameters" => "parameters.md",
         "Results" => "recoResults.md",
         "Multi-Contrast" => "multiContrast.md",
         "Multi-Patch" => "multiPatch.md",
