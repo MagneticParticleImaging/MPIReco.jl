@@ -125,7 +125,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Basic Reconstruction",
     "title": "Middle Layer Reconstruction",
     "category": "section",
-    "text": ""
+    "text": "The middle level reconstruction first checks, whether the dataset is a multi-patch or a single-patch file. Then it will call either reconstructionSinglePatch or reconstructionMultiPatch. Both have essentially the signaturefunction reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;\n                                  minFreq=0, maxFreq=1.25e6, SNRThresh=-1,\n                                  maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),\n                                  bEmpty = nothing, bgFrames = 1, fgFrames = 1,\n                                  varMeanThresh = 0, minAmplification=2, kargs...) where {T<:MPIFile}"
 },
 
 {

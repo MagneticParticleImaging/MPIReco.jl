@@ -51,3 +51,14 @@ file. This usually only works, if this is executed on a system where the files
 are stored at exactly the same location as how they have been measured.
 
 ## Middle Layer Reconstruction
+
+The middle level reconstruction first checks, whether the dataset is a multi-patch
+or a single-patch file. Then it will call either `reconstructionSinglePatch` or
+`reconstructionMultiPatch`. Both have essentially the signature
+```julia
+function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
+                                  minFreq=0, maxFreq=1.25e6, SNRThresh=-1,
+                                  maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
+                                  bEmpty = nothing, bgFrames = 1, fgFrames = 1,
+                                  varMeanThresh = 0, minAmplification=2, kargs...) where {T<:MPIFile}
+```
