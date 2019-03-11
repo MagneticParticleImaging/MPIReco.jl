@@ -181,7 +181,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Multi-Contrast",
     "title": "Multi-Contrast Reconstruction",
     "category": "section",
-    "text": ""
+    "text": "Until now we have discussed single-contrast reconstruction in which case the reconstructed image c has a singleton first dimension. To perform multi-contrast reconstruction one has to specify multiple system matricesbSFa = MPIFile(filenameA)\nbSFb = MPIFile(filenameB)and can then invokec = reconstruction([bSFa, bSFb], b;\n                    SNRThresh=5, frames=1, minFreq=80e3,\n                    recChannels=1:2, iterations=1)Now one can access the first and second channel by c[1,:,:,:] and c[2,:,:,:]."
 },
 
 {
