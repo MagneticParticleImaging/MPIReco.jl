@@ -19,8 +19,8 @@ using MPIReco
 
   # fused lasso
   c2 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-		      recChannels=1:2,iterations=1, solver="fusedlasso",
-		      loadasreal=true, lambdaTV=0.1, lambdaL1=0.1)
+		      recChannels=1:2, iterations=100, solver="fusedlasso",
+		      loadasreal=true, lambdaTV=0.01, lambdaL1=0.01)
   @test axisnames(c2) == names
   @test axisvalues(c2) == values
   exportImage("./img/Reconstruction2.png", data(data(c2[1,:,:,1,1])))
@@ -44,7 +44,7 @@ using MPIReco
   # multi colored reconstruction
   c5 = reconstruction([bSF,bSF], b;
 		      SNRThresh=5, frames=1, minFreq=80e3,
-		      recChannels=1:2,iterations=1)
+		      recChannels=1:2, iterations=1)
   @test axisnames(c5) == names
   @test axisvalues(c5) == (1:2,values[2:end]...)
   exportImage("./img/Reconstruction5a.png", data(data(c5[1,:,:,1,1])))
