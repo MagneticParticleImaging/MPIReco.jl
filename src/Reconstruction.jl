@@ -223,7 +223,7 @@ end
 Low level reconstruction method
 """
 function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
-                        lambd=0, progress=nothing, solver = "kaczmarz",
+                        lambd=0.0, progress=nothing, solver = "kaczmarz",
                         weights=nothing, reshapesolution = true, kargs...)
 
   N = size(S,2) #prod(shape)
