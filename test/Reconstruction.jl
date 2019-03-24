@@ -41,7 +41,7 @@ using MPIReco
   @test axisvalues(c4) == (values[1], -27.6u"mm":0.8u"mm":11.6u"mm", -11.6u"mm":0.8u"mm":27.6u"mm", 499.5u"mm":1000.0u"mm":499.5u"mm", values[5])
   exportImage("./img/Reconstruction4.png", data(data(c4[1,:,:,1,1])))
 
-  # multi colored reconstruction
+  # multi colored reconstruction (deprecated interface)
   c5 = reconstruction([bSF,bSF], b;
 		      SNRThresh=5, frames=1, minFreq=80e3,
 		      recChannels=1:2, iterations=1)
@@ -49,6 +49,15 @@ using MPIReco
   @test axisvalues(c5) == (1:2,values[2:end]...)
   exportImage("./img/Reconstruction5a.png", data(data(c5[1,:,:,1,1])))
   exportImage("./img/Reconstruction5b.png", data(data(c5[2,:,:,1,1])))
+
+  # multi colored reconstruction (new interface)
+  c5 = reconstruction(MultiContrastFile([bSF,bSF]), b;
+          SNRThresh=5, frames=1, minFreq=80e3,
+          recChannels=1:2, iterations=1)
+  @test axisnames(c5) == names
+  @test axisvalues(c5) == (1:2,values[2:end]...)
+  exportImage("./img/Reconstruction5c.png", data(data(c5[1,:,:,1,1])))
+  exportImage("./img/Reconstruction5d.png", data(data(c5[2,:,:,1,1])))
 
   # dict based reco
   r = defaultRecoParams()

@@ -39,6 +39,9 @@ getSF(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Nothing; kargs...) wher
 getSF(bSF::Vector{T}, frequencies, sparseTrafo::AbstractString; kargs...) where {T<:MPIFile} =
   getSF(bSF[1], frequencies, sparseTrafo; kargs...)
 
+getSF(bSFs::MultiContrastFile, frequencies; kargs...) =
+   getSF(bSFs.files, frequencies; kargs...)
+
 function getSF(bSFs::Vector{T}, frequencies; kargs...) where {T<:MPIFile}
   maxFov = [0.0,0.0,0.0]
   maxSize = [0,0,0]
@@ -73,7 +76,7 @@ function repairDeadPixels(S, shape, deadPixels)
 end
 
 function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer=1,
-               bgcorrection=false, bgCorrection=bgcorrection, loadasreal=false, 
+               bgcorrection=false, bgCorrection=bgcorrection, loadasreal=false,
 	       gridsize=collect(calibSize(bSF)),
 	       fov=calibFov(bSF), center=[0.0,0.0,0.0], deadPixels=Int[], kargs...)
 

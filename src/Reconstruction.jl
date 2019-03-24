@@ -190,7 +190,7 @@ function initImage(bSFs::Union{T,Vector{T}}, bMeas::S, L::Int, numAverages::Int,
 		   grid::RegularGridPositions, loadOnlineParams=false) where {T,S<:MPIFile}
 
   # the number of channels is determined by the number of system matrices
-  if isa(bSFs,AbstractVector)
+  if isa(bSFs,AbstractVector) || isa(bSFs,MultiContrastFile)
     numcolors = length(bSFs)
     bSF = bSFs[1]
   else

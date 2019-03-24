@@ -11,6 +11,7 @@ module MPIReco
   @reexport using Unitful
 
   include("Utils.jl")
+  include("MultiContrast.jl")
   include("RecoParameters.jl")
   include("SystemMatrixCenter.jl")
   include("SystemMatrix.jl")
