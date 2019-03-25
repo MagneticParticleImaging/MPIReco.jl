@@ -223,7 +223,7 @@ end
 Low level reconstruction method
 """
 function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
-                        lambd=0.0, progress=nothing, solver = "kaczmarz",
+                        lambd=0.0, λ=lambd, progress=nothing, solver = "kaczmarz",
                         weights=nothing, reshapesolution = true, kargs...)
 
   N = size(S,2) #prod(shape)
@@ -234,15 +234,15 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
   c = zeros(N,L)
   #c = zeros(real(eltype(u)),N,L) Change by J.Dora
 
-  if lambd > 0
+  if λ > 0
     trace = calculateTraceOfNormalMatrix(S,weights)
-    lambd *= trace / N
-    setlambda(S,lambd)
+    λ *= trace / N
+    setlambda(S,λ)
   end
 
   #solv = linearSolver(solver)
   B = linearOperator(sparseTrafo, shape)
-  solv = createLinearSolver(solver, S; shape=shape, weights=weights, lambdL2=lambd,
+  solv = createLinearSolver(solver, S; shape=shape, weights=weights, λ=λ,
                             sparseTrafo=B, enforceReal=true,
                             enforcePositive=true, kargs...)
 
