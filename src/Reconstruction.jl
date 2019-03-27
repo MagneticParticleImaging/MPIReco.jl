@@ -122,7 +122,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
   weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
   spectralCleaning=true, fgFrames=1:10, bgCorrectionInternal=false,
-  noiseFreqThresh=0.0, kargs...) where {T<:MPIFile}
+  noiseFreqThresh=0.0, channelWeights=ones(3), kargs...) where {T<:MPIFile}
 
   #(typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
   bgCorrection = bEmpty != nothing ? true : false
@@ -141,7 +141,8 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   frames == nothing && (frames = 1:acqNumFrames(bMeas))
 
   weights = getWeights(weightType, freq, S, weightingLimit=weightingLimit,
-                       bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames, bSF=bSF)
+                       bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames, bSF=bSF,
+                       channelWeights = channelWeights)
 
   L = -fld(-length(frames),numAverages) # number of tomograms to be reconstructed
   p = Progress(L, 1, "Reconstructing data...")

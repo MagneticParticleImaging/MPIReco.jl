@@ -72,4 +72,24 @@ using MPIReco
   @test axisnames(c6) == names
   @test axisvalues(c6) == values
   exportImage("./img/Reconstruction6.png", data(data(c6[1,:,:,1,1])))
+
+  # channel weighting
+  c7a = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
+		      recChannels=1:2, iterations=1, λ=0.1,
+          weightType=WeightingType.Channel, channelWeights=[1.0,1.0,1.0])
+
+  exportImage("./img/Reconstruction7a.png", data(data(c7a[1,:,:,1,1])))
+
+  c7b = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
+		      recChannels=1:2, iterations=1, λ=0.1,
+          weightType=WeightingType.Channel, channelWeights=[1.0,0.001,1.0])
+
+  exportImage("./img/Reconstruction7b.png", data(data(c7b[1,:,:,1,1])))
+
+  c7c = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
+		      recChannels=1:2, iterations=1, λ=0.1,
+          weightType=WeightingType.Channel, channelWeights=[0.001,1.0,1.0])
+
+  exportImage("./img/Reconstruction7c.png", data(data(c7c[1,:,:,1,1])))
+
 end
