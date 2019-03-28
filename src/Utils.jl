@@ -42,13 +42,13 @@ function consistenceCheck(bSF::MPIFile, bMeas::MPIFile)
   gSF = acqGradient(bSF)[:,:,1,1]
   gMeas = acqGradient(bMeas)[:,:,1,1]
   if gSF != gMeas
-    warn("The gradient strength of the system matrix ($gSF T/m) does not fit to the measurements ($gMeas T/m)!")
+    @warn("The gradient strength of the system matrix ($gSF T/m) does not fit to the measurements ($gMeas T/m)!")
   end
 
   dfSF = dfStrength(bSF)
   dfMeas = dfStrength(bMeas)
   if dfSF[:,1] != dfMeas[:,1]
-    warn("The drive-field strength of the system matrix ($dfSF mT) does not fit to the measurements ($dfMeas mT)!")
+    @warn("The drive-field strength of the system matrix ($dfSF mT) does not fit to the measurements ($dfMeas mT)!")
   end
 
 end
