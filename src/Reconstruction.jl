@@ -4,6 +4,27 @@ export writePartToImage, initImage
 """
 This is the most high level reconstruction method using the `MDFDatasetStore`
 """
+function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoParams)
+
+  !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( MPIFile( recoParams[:measPath] ) ))
+  haskey(recoParams,:emptyMeasPath) && recoParams[:emptyMeasPath]!=nothing && (recoParams[:emptyMeas] = MPIFile( recoParams[:emptyMeasPath] ) )
+
+  numReco = findReco(d,study,exp,recoParams)
+  if numReco > 0
+    @info "Reconstruction found in MDF dataset store."
+    reco = getReco(d,study,exp, numReco)
+    c = loadRecoDataMDF(reco.path)
+  else
+    c = reconstruction(recoParams)
+    addReco(d,study,exp, c)
+  end
+  return c
+end
+
+# The previous function is somewhat redundant in its arguments. In particular
+# the measPath and the study/exp are redundant. Should be cleaned up before
+# it can be used as a user facing API
+#
 #function reconstruction(d::MDFDatasetStore, recoParams::Dict)
 #
 #  study = ???
@@ -23,22 +44,6 @@ This is the most high level reconstruction method using the `MDFDatasetStore`
 #  return reconstruction(d, study, exp, recoParams)
 #end
 
-function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoParams)
-
-  !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( MPIFile( recoParams[:measPath] ) ))
-  haskey(recoParams,:emptyMeasPath) && recoParams[:emptyMeasPath]!=nothing && (recoParams[:emptyMeas] = MPIFile( recoParams[:emptyMeasPath] ) )
-
-  numReco = findReco(d,study,exp,recoParams)
-  if numReco > 0
-    @info "Reconstruction found in MDF dataset store."
-    reco = getReco(d,study,exp, numReco)
-    c = loadRecoDataMDF(reco.path)
-  else
-    c = reconstruction(recoParams)
-    addReco(d,study,exp, c)
-  end
-  return c
-end
 
 """
 This is the most high level reconstruction method that performs in-memory reconstruction
