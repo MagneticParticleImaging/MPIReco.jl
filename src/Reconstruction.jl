@@ -254,7 +254,8 @@ Low level reconstruction method
 """
 function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
                         lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "kaczmarz",
-                        weights=nothing, reshapesolution = true, kargs...)
+                        weights=nothing, reshapesolution = true, 
+			enforceReal=true, enforcePositive=true, kargs...)
 
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
@@ -273,8 +274,8 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
   #solv = linearSolver(solver)
   B = linearOperator(sparseTrafo, shape)
   solv = createLinearSolver(solver, S; shape=shape, weights=weights, λ=λ,
-                            sparseTrafo=B, enforceReal=true,
-                            enforcePositive=true, kargs...)
+                            sparseTrafo=B, enforceReal=enforceReal,
+			    enforcePositive=enforcePositive, kargs...)
 
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
   for l=1:L
