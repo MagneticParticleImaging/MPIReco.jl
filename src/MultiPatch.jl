@@ -34,13 +34,15 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   (frames==nothing) && (frames=collect(1:L))
   nFrames=length(frames)
 
-  uTotal = getMeasurementsFD(bMeas,frequencies=freq, frames=frames, numAverages=numAverages,
+  uTotal_ = getMeasurementsFD(bMeas,frequencies=freq, frames=frames, numAverages=numAverages,
                              spectralLeakageCorrection=spectralLeakageCorrection)
 
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos(bMeas))
-  uTotal = uTotal[:,periodsSortedbyFFPos,:]
+  uTotal = similar(uTotal_,size(uTotal_,1),length(periodsSortedbyFFPos),size(uTotal_,3))
 
-  uTotal = mean(uTotal,dims=3)
+  for k=1:length(periodsSortedbyFFPos)
+      uTotal[:,k,:] = mean(uTotal_[:,periodsSortedbyFFPos[k],:], dims=2)
+  end
 
   # Here we call a regular reconstruction function
   c_ = reconstruction(FFOp, uTotal; kargs...)
@@ -90,8 +92,7 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
   FFPos_ = ffPos(bMeas)
 
   periodsSortedbyFFPos = unflattenOffsetFieldShift(FFPos_)
-
-  FFPos_ = FFPos_[:,periodsSortedbyFFPos[:,1]]
+  FFPos_ = FFPos_[:,getindex.(periodsSortedbyFFPos,1)]
 
   if length(FFPos) > 0
     FFPos_[:] = FFPos
@@ -104,7 +105,7 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
     FFPosSF_ = FFPosSF #[vec(FFPosSF[:,l]) for l=1:size(FFPosSF,2)]
   end
 
-  gradient = acqGradient(bMeas)[:,:,1,periodsSortedbyFFPos[:,1]]
+  gradient = acqGradient(bMeas)[:,:,1,getindex.(periodsSortedbyFFPos,1)]
 
   FFOp = MultiPatchOperator(bSF, bMeas, freq, bgCorrection,
                   FFPos = FFPos_,
