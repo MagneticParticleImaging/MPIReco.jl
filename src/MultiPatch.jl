@@ -92,7 +92,8 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
   FFPos_ = ffPos(bMeas)
 
   periodsSortedbyFFPos = unflattenOffsetFieldShift(FFPos_)
-  FFPos_ = FFPos_[:,getindex.(periodsSortedbyFFPos,1)]
+  idxFirstPeriod = getindex.(periodsSortedbyFFPos,1)
+  FFPos_ = FFPos_[:,idxFirstPeriod]
 
   if length(FFPos) > 0
     FFPos_[:] = FFPos
@@ -105,7 +106,7 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
     FFPosSF_ = FFPosSF #[vec(FFPosSF[:,l]) for l=1:size(FFPosSF,2)]
   end
 
-  gradient = acqGradient(bMeas)[:,:,1,getindex.(periodsSortedbyFFPos,1)]
+  gradient = acqGradient(bMeas)[:,:,1,idxFirstPeriod]
 
   FFOp = MultiPatchOperator(bSF, bMeas, freq, bgCorrection,
                   FFPos = FFPos_,
