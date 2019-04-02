@@ -1,6 +1,6 @@
 export consistenceCheck, generateHeaderDictOnline
 import Base: ndims
-import MPIFiles: calibSize, calibFov
+import MPIFiles: calibSize, calibFov, filterFrequencies
 if VERSION >= v"1.0.0"
   export squeeze
 else
@@ -42,13 +42,13 @@ function consistenceCheck(bSF::MPIFile, bMeas::MPIFile)
   gSF = acqGradient(bSF)[:,:,1,1]
   gMeas = acqGradient(bMeas)[:,:,1,1]
   if gSF != gMeas
-    warn("The gradient strength of the system matrix ($gSF T/m) does not fit to the measurements ($gMeas T/m)!")
+    @warn("The gradient strength of the system matrix ($gSF T/m) does not fit to the measurements ($gMeas T/m)!")
   end
 
   dfSF = dfStrength(bSF)
   dfMeas = dfStrength(bMeas)
   if dfSF[:,1] != dfMeas[:,1]
-    warn("The drive-field strength of the system matrix ($dfSF mT) does not fit to the measurements ($dfMeas mT)!")
+    @warn("The drive-field strength of the system matrix ($dfSF mT) does not fit to the measurements ($dfMeas mT)!")
   end
 
 end
@@ -72,15 +72,7 @@ function consistenceCheck(bSFs::Vector{T}, bMeass::Vector{T}) where {T<:MPIFile}
   end
 end
 
-#voxelSize(b::MPIFile) = calibFov(b) ./ calibSize(b)
-#voxelVolume(b::MPIFile) = prod( voxelSize(b) ) * 1000 #in Liter
-#dfFov(b::MPIFile) = squeeze(acqFov(b))
-#ffPos(b::MPIFile; kargs...) = acqOffsetFieldShift(b)[:,1,:]
-#ndims(b::MPIFile) = sum( (dfStrength(b) .> 0.00001) )
-#gridSizeCommon{T<:MPIFile}(bs::Vector{T}) = calibSize(bs[1])
-#gridSizeCommon(bs::MPIFile) = calibSize(bs)
-
-###
+### deprecated function names
 acqDate(b) = acqStartTime(b)
 subjectName(b) = experimentSubject(b)
 scanName(b) = experimentName(b)
@@ -91,26 +83,18 @@ operator(b) = scannerOperator(b)
 numReceivers(b) = rxNumChannels(b)
 bandwidth(b) = rxBandwidth(b)
 tracer(b) = tracerName(b)
-function description(b)
-   return experimentDescription(b)
-end
+description(b) = experimentDescription(b)
 getSNRAllFrequencies(b) = calibSNR(b)[:,:,1]
 measPath(b::BrukerFile) = b.path
 measPath(b::MDFFile) = b.filename
 gridSize(b::MPIFile) = squeeze(calibSize(b))
-measPath(bs::Vector{T}) where {T<:MPIFile} = [measPath(b) for b in bs]
-gridSize(bs::Vector{T}) where {T<:MPIFile} = [gridSize(b) for b in bs]
-calibSize(bs::Vector{T}) where {T<:MPIFile} = [calibSize(b) for b in bs]
-gridSizeCommon(bs::Vector{T}) where {T<:MPIFile} = gridSize(bs[1])
 gridSizeCommon(bs::MPIFile) = gridSize(bs)
 fov(b::MPIFile) = calibFov(b)
-fov(b::Vector{T}) where {T<:MPIFile} = fov(b[1])
-calibFov(b::Vector{T}) where {T<:MPIFile} = calibFov(b[1])
 sfGradient(b::MPIFile) = diag(acqGradient(b)[:,:,1,1])
 sfGradient(b::MPIFile,dim) = sfGradient(b)[dim]
 numFreq(b::MPIFile) = rxNumFrequencies(b)
 ffPos(b::MPIFile; kargs...) = squeeze(acqOffsetFieldShift(b))
-function ffPos(b::Vector{T};alpha=[0,0,0]) where {T<:BrukerFile}
+function ffPos(b::Vector{T}; alpha=[0,0,0]) where {T<:BrukerFile} # this seems to be wrong
   fovCenter = zeros(3,length(b))
   for l=1:length(b)
     fovCenter[:,l] = ffPos(b[l], alpha=alpha)
@@ -126,11 +110,6 @@ voxelVolume(b::MPIFile) = prod( voxelSize(b) ) * 1000 #in Liter
 dfFov(b) = squeeze(acqFov(b))
 numTimePoints(b::MPIFile) = rxNumSamplingPoints(b)
 
-
-import MPIFiles: filterFrequencies
-function filterFrequencies(bSFs::Vector{T}; kargs...) where {T<:MPIFile}
-  return intersect([filterFrequencies(bSF; kargs...) for bSF in bSFs]...)
-end
 
 # Multi-Patch setting
 function filterFrequencies(bSFs::MultiMPIFile; kargs...)

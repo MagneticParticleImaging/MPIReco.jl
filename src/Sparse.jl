@@ -75,8 +75,12 @@ end
 function loadsparsedata(f,data,indices,l,nPos,numCoeff,loadasreal::Bool)
   N = nPos
   M = l
-  S = map(ComplexF32, cat(data...,dims=1))
-  I = round.(Int64, cat(indices...,dims=1))
+  S = ComplexF32[]
+  I = Int64[]
+  for k=1:l
+    append!(S, data[k])
+    append!(I, indices[k])
+  end
   if loadasreal
     S = reshape(S,sum(numCoeff),1)
     S = converttoreal(S)

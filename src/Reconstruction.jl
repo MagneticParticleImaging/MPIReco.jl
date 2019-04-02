@@ -7,7 +7,7 @@ This is the most high level reconstruction method using the `MDFDatasetStore`
 function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoParams)
 
   !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( MPIFile( recoParams[:measPath] ) ))
-  haskey(recoParams,:emptyMeasPath) && recoParams[:emptyMeasPath]!=nothing && (recoParams[:bEmpty] = MPIFile( recoParams[:emptyMeasPath] ) )
+  haskey(recoParams,:emptyMeasPath) && recoParams[:emptyMeasPath]!=nothing && (recoParams[:emptyMeas] = MPIFile( recoParams[:emptyMeasPath] ) )
 
   numReco = findReco(d,study,exp,recoParams)
   if numReco > 0
@@ -20,6 +20,30 @@ function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoP
   end
   return c
 end
+
+# The previous function is somewhat redundant in its arguments. In particular
+# the measPath and the study/exp are redundant. Should be cleaned up before
+# it can be used as a user facing API
+#
+#function reconstruction(d::MDFDatasetStore, recoParams::Dict)
+#
+#  study = ???
+#
+#  studies = getStudies( activeDatasetStore(m) )
+#
+#  for study in studies
+#    push!(m.studyStore, (study.date, study.name, study.subject, study.path, true))
+#  end
+#
+#  m.currentStudy = Study(TreeModel(m.studyStoreSorted)[currentIt,4],
+#                         TreeModel(m.studyStoreSorted)[currentIt,2],
+#                         TreeModel(m.studyStoreSorted)[currentIt,3],
+#                         TreeModel(m.studyStoreSorted)[currentIt,1])
+#
+#  exp = getExperiment(study, recoParams[:measPath])
+#  return reconstruction(d, study, exp, recoParams)
+#end
+
 
 """
 This is the most high level reconstruction method that performs in-memory reconstruction
@@ -68,12 +92,12 @@ end
 
 function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
-  bEmpty = nothing, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, kargs...) where {T<:MPIFile}
+  bEmpty = nothing, emptyMeas=bEmpty, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, kargs...) where {T<:MPIFile}
 
   freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
 
   if varMeanThresh > 0
-    bEmptyTmp = (bEmpty == nothing) ? bMeas : bEmpty
+    bEmptyTmp = (emptyMeas == nothing) ? bMeas : emptyMeas
 
     freqVarMean = filterFrequenciesVarMean(bMeas, bEmptyTmp, fgFrames, bgFrames;
                                         thresh=varMeanThresh, minAmplification=minAmplification,
@@ -86,18 +110,18 @@ function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
 
   @debug "selecting $(length(freq)) frequencies"
 
-  return reconstruction(bSF, bMeas, freq; bEmpty=bEmpty, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
+  return reconstruction(bSF, bMeas, freq; emptyMeas=emptyMeas, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
 end
 
 
 function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
-  bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
+  bEmpty = nothing, emptyMeas = bEmpty, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
   loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
   deadPixels=Int[], bgCorrectionInternal=false, kargs...) where {T<:MPIFile}
 
-  (typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
-  bgCorrection = bEmpty != nothing ? true : bgCorrectionInternal
+  (typeof(bgFrames) <: AbstractRange && emptyMeas==nothing) && (emptyMeas = bMeas)
+  bgCorrection = emptyMeas != nothing ? true : bgCorrectionInternal
 
   consistenceCheck(bSF, bMeas)
 
@@ -112,36 +136,40 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
     denoiseSF!(S, shape, weight=denoiseWeight)
   end
 
-  return reconstruction(S, bSF, bMeas, freq, grid, bEmpty=bEmpty, bgFrames=bgFrames,
+  return reconstruction(S, bSF, bMeas, freq, grid, emptyMeas=emptyMeas, bgFrames=bgFrames,
                         sparseTrafo=sparseTrafo, loadasreal=loadasreal,
                         solver=solver, bgCorrectionInternal=bgCorrectionInternal; kargs...)
 end
 
 function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
-  frames = nothing, bEmpty = nothing, bgFrames = 1, nAverages = 1, numAverages=nAverages,
+  frames = nothing, bEmpty = nothing, emptyMeas= bEmpty, bgFrames = 1, nAverages = 1,
+  numAverages=nAverages,
   sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
   weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
-  spectralCleaning=true, fgFrames=1:10, bgCorrectionInternal=false,
-  noiseFreqThresh=0.0, kargs...) where {T<:MPIFile}
+  spectralCleaning=true, spectralLeakageCorrection=spectralCleaning,
+  fgFrames=1:10, bgCorrectionInternal=false,
+  noiseFreqThresh=0.0, channelWeights=ones(3), kargs...) where {T<:MPIFile}
 
   #(typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
-  bgCorrection = bEmpty != nothing ? true : false
+  bgCorrection = emptyMeas != nothing ? true : false
 
   @debug "Loading emptymeas ..."
-  if bEmpty!=nothing
-    if acqNumBGFrames(bEmpty) > 0
-      uEmpty = getMeasurementsFD(bEmpty, false, frequencies=freq, frames=bgFrames, #frames=measBGFrameIdx(bEmpty),
-      numAverages = acqNumBGFrames(bEmpty), bgCorrection=bgCorrectionInternal, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning)
+  if emptyMeas!=nothing
+    if acqNumBGFrames(emptyMeas) > 0
+      uEmpty = getMeasurementsFD(emptyMeas, false, frequencies=freq, frames=bgFrames, #frames=measBGFrameIdx(bEmpty),
+                numAverages = acqNumBGFrames(emptyMeas), bgCorrection=bgCorrectionInternal,
+               loadasreal=loadasreal, spectralLeakageCorrection=spectralLeakageCorrection)
     else
-      uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
-      loadasreal = loadasreal,spectralLeakageCorrection=spectralCleaning)
+      uEmpty = getMeasurementsFD(emptyMeas, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
+      loadasreal = loadasreal,spectralLeakageCorrection=spectralLeakageCorrection)
     end
   end
 
   frames == nothing && (frames = 1:acqNumFrames(bMeas))
 
   weights = getWeights(weightType, freq, S, weightingLimit=weightingLimit,
-                       bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames, bSF=bSF)
+                       emptyMeas = emptyMeas, bMeas = bMeas, bgFrames=bgFrames, bSF=bSF,
+                       channelWeights = channelWeights)
 
   L = -fld(-length(frames),numAverages) # number of tomograms to be reconstructed
   p = Progress(L, 1, "Reconstructing data...")
@@ -153,10 +181,12 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   iterator = numAverages == 1 ? Iterators.partition(frames,maxload) : Iterators.partition(frames,numAverages*maxload)
   for partframes in iterator
     @debug "Loading measurements ..."
-    u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=numAverages, loadasreal=loadasreal, spectralLeakageCorrection=spectralCleaning, bgCorrection=bgCorrectionInternal)
-    bEmpty!=nothing && (u = u .- uEmpty)
+    u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=numAverages,
+                          loadasreal=loadasreal, spectralLeakageCorrection=spectralLeakageCorrection,
+                          bgCorrection=bgCorrectionInternal)
+    emptyMeas!=nothing && (u = u .- uEmpty)
 
-    noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = bEmpty, bMeas = bMeas, bgFrames=bgFrames)
+    noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = emptyMeas, bMeas = bMeas, bgFrames=bgFrames)
 
     # convert measurement data if neccessary
     if eltype(S)!=eltype(u)
@@ -190,7 +220,7 @@ function initImage(bSFs::Union{T,Vector{T}}, bMeas::S, L::Int, numAverages::Int,
 		   grid::RegularGridPositions, loadOnlineParams=false) where {T,S<:MPIFile}
 
   # the number of channels is determined by the number of system matrices
-  if isa(bSFs,AbstractVector)
+  if isa(bSFs,AbstractVector) || isa(bSFs,MultiContrastFile)
     numcolors = length(bSFs)
     bSF = bSFs[1]
   else
@@ -223,8 +253,9 @@ end
 Low level reconstruction method
 """
 function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
-                        lambd=0.0, progress=nothing, solver = "kaczmarz",
-                        weights=nothing, reshapesolution = true, kargs...)
+                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "kaczmarz",
+                        weights=nothing, reshapesolution = true, 
+			enforceReal=true, enforcePositive=true, kargs...)
 
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
@@ -234,17 +265,17 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
   c = zeros(N,L)
   #c = zeros(real(eltype(u)),N,L) Change by J.Dora
 
-  if lambd > 0
+  if λ > 0
     trace = calculateTraceOfNormalMatrix(S,weights)
-    lambd *= trace / N
-    setlambda(S,lambd)
+    λ *= trace / N
+    setlambda(S,λ)
   end
 
   #solv = linearSolver(solver)
   B = linearOperator(sparseTrafo, shape)
-  solv = createLinearSolver(solver, S; shape=shape, weights=weights, lambdL2=lambd,
-                            sparseTrafo=B, enforceReal=true,
-                            enforcePositive=true, kargs...)
+  solv = createLinearSolver(solver, S; shape=shape, weights=weights, λ=λ,
+                            sparseTrafo=B, enforceReal=enforceReal,
+			    enforcePositive=enforcePositive, kargs...)
 
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
   for l=1:L

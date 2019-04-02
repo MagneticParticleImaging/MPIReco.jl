@@ -6,9 +6,12 @@ baremodule WeightingType
   MixingFactors = 2
   BGVariance = 3
   VarMeanThresh = 4
+  Channel = 5
 end
 
-function getWeights(weightType, freq, S; weightingLimit=0.0, bEmpty = nothing, bgFrames=1:10, bMeas = nothing, fgFrames = 1:10, bSF=nothing)
+function getWeights(weightType, freq, S; weightingLimit=0.0, emptyMeas = nothing,
+                 bgFrames=1:10, bMeas = nothing, fgFrames = 1:10, bSF=nothing,
+                 channelWeights=[1.0,1.0,1.0])
 
   if weightType == WeightingType.None
     return nothing
@@ -16,6 +19,19 @@ function getWeights(weightType, freq, S; weightingLimit=0.0, bEmpty = nothing, b
     reciprocalWeights = rowEnergy(S)
   elseif weightType == WeightingType.MixingFactors
     error("This weighting mode has to be implemented")
+  elseif weightType == WeightingType.Channel
+    nFreq = rxNumFrequencies(bMeas)
+    nReceivers = rxNumChannels(bMeas)
+    weights = zeros(nFreq, nReceivers)
+
+    if length(channelWeights) != nReceivers
+      @error "channelWeights has wrong length"
+    end
+
+    for d=1:nReceivers
+      weights[:,d] .= channelWeights[d]
+    end
+    return vec(weights)[freq]
   elseif weightType == WeightingType.BGVariance
     if bEmpty == nothing
       stdDevU = sqrt(vec(getBV(bSF)))
