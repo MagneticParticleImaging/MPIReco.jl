@@ -11,5 +11,5 @@ ProgressMeter
 QuartzImageIO
 Reexport
 RegularizedLeastSquares
-TensorDecompositions
+TensorDecompositions#master
 Unitful

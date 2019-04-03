@@ -36,13 +36,13 @@ using MPIReco
   end
 
   # DCT and fixed rank
-  @info "recovery using DCT and FR"
-  params[:prox_lr] = "FR"
-  params[:svtShape] = Tuple(shape)
-  params[:rank] = (6,6,1)
-  params[:ρ] = 5.e1
-  S_dctfr = smRecovery(y,samplingIdx,params)
-  for k=1:numFreqs
-    @test norm(S[:,k] - S_dct[:,k]) / norm(S[:,k]) ≈ 0 atol=0.11
-  end
+  # @info "recovery using DCT and FR"
+  # params[:prox_lr] = "FR"
+  # params[:svtShape] = Tuple(shape)
+  # params[:rank] = (6,6,1)
+  # params[:ρ] = 5.e1
+  # S_dctfr = smRecovery(y,samplingIdx,params)
+  # for k=1:numFreqs
+  #   @test norm(S[:,k] - S_dct[:,k]) / norm(S[:,k]) ≈ 0 atol=0.11
+  # end
 end
