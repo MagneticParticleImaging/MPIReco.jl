@@ -1,5 +1,5 @@
 # @everywhere using RegularizedLeastSquares, LinearOperators, TensorDecompositions, LinearAlgebra
-@everywhere using RegularizedLeastSquares, LinearOperators, LinearAlgebra
+#@everywhere using RegularizedLeastSquares, LinearOperators, LinearAlgebra
 export smRecovery
 
 ###################################################################
