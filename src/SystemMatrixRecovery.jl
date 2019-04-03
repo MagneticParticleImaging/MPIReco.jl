@@ -16,7 +16,7 @@ function smRecovery(y::Matrix{T}, samplingIdx::Array{Int64}, params::Dict) where
 
   # sparsifying transformation and regularization
   params[:sparseTrafo] = DCTOp(ComplexF64,params[:shape],2)
-  reg1 = getRegularization("L1", 1.0/params[:λ]; params...)
+  reg1 = Regularization("L1", 1.0/params[:λ]; params...)
 
   # low rank regularization
   lrProx = get(params, :prox_lr, "Nothing")
@@ -32,7 +32,7 @@ function smRecovery(y::Matrix{T}, samplingIdx::Array{Int64}, params::Dict) where
   y2, y_norm = getNormalizedMeasurement(y)
 
   # reconstruction
-  sf = map(x->splitBregman(P,x,reg1,reg2; params...),y2)
+  sf = map(x->splitBregman(P,x,[reg1,reg2]; params...),y2)
 
   sfMat = zeros(ComplexF64,prod(shape),size(y,2))
   for i=1:size(y,2)
