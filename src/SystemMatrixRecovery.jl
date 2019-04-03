@@ -1,4 +1,5 @@
-@everywhere using RegularizedLeastSquares, LinearOperators, TensorDecompositions, LinearAlgebra
+# @everywhere using RegularizedLeastSquares, LinearOperators, TensorDecompositions, LinearAlgebra
+@everywhere using RegularizedLeastSquares, LinearOperators, LinearAlgebra
 export smRecovery
 
 ###################################################################
@@ -46,10 +47,19 @@ end
 # low rank regularization
 #########################
 function lrReg(lrProx::AbstractString, λ::AbstractFloat, params::Dict{Symbol,Any})
+  # if lrProx == "LR"
+  #   reg = Regularization(prox! = proxLR!, λ=λ, params=params)
+  # elseif lrProx == "FR"
+  #   reg = Regularization(prox! = proxFR!, λ=λ, params=params)
+  # elseif lrProx == "Nothing"
+  #   reg = Regularization(prox! = x->x, λ=λ, params=params)
+  # else
+  #   error("proximal map $(lrProx) is not supported")
+  # end
   if lrProx == "LR"
-    reg = Regularization(prox! = proxLR!, λ=λ, params=params)
+    error("proximal map $(lrProx) is not yet supported")
   elseif lrProx == "FR"
-    reg = Regularization(prox! = proxFR!, λ=λ, params=params)
+    error("proximal map $(lrProx) is not yet supported")
   elseif lrProx == "Nothing"
     reg = Regularization(prox! = x->x, λ=λ, params=params)
   else
@@ -58,19 +68,19 @@ function lrReg(lrProx::AbstractString, λ::AbstractFloat, params::Dict{Symbol,An
   return reg
 end
 
-function proxLR!(x, λ; shape::NTuple{N,Int64}=(1,1,1), kargs...) where N
-  guvw_r = hosvd(reshape(real.(x), shape),shape)
-  guvw_i = hosvd(reshape(imag.(x), shape),shape)
-  proxL1!(guvw_r.core,λ)
-  proxL1!(guvw_i.core,λ)
-  x[:] = vec(compose(guvw_r)+1im*compose(guvw_i))
-end
-
-function proxFR!(x, λ; rank::NTuple{N,Int64}=(1,1,1), svtShape::NTuple{N,Int64}=(1,1,1), kargs...) where N
-  guvw_r = hosvd(reshape(real.(x), svtShape),rank)
-  guvw_i = hosvd(reshape(imag.(x), svtShape),rank)
-  x[:] = vec(compose(guvw_r)+1im*compose(guvw_i))
-end
+# function proxLR!(x, λ; shape::NTuple{N,Int64}=(1,1,1), kargs...) where N
+#   guvw_r = hosvd(reshape(real.(x), shape),shape)
+#   guvw_i = hosvd(reshape(imag.(x), shape),shape)
+#   proxL1!(guvw_r.core,λ)
+#   proxL1!(guvw_i.core,λ)
+#   x[:] = vec(compose(guvw_r)+1im*compose(guvw_i))
+# end
+#
+# function proxFR!(x, λ; rank::NTuple{N,Int64}=(1,1,1), svtShape::NTuple{N,Int64}=(1,1,1), kargs...) where N
+#   guvw_r = hosvd(reshape(real.(x), svtShape),rank)
+#   guvw_i = hosvd(reshape(imag.(x), svtShape),rank)
+#   x[:] = vec(compose(guvw_r)+1im*compose(guvw_i))
+# end
 
 ##########################
 # inverse of normal matrix
