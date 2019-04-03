@@ -11,7 +11,7 @@ module MPIReco
   @reexport using Unitful
   using Distributed
   using DistributedArrays
-  using TensorDecompositions
+  # using TensorDecompositions
   import LinearOperators
 
   include("Utils.jl")
