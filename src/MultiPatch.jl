@@ -374,7 +374,7 @@ function calculateTraceOfNormalMatrix(Op::MultiPatchOperator, weights)
   return trace
 end
 
-setlambda(::MultiPatchOperator, ::Real) = nothing
+setlambda(::MultiPatchOperator, ::Any) = nothing
 
 function dot_with_matrix_row(Op::MultiPatchOperator, x::AbstractArray{T}, k::Integer) where T
   p = Op.RowToPatch[k]

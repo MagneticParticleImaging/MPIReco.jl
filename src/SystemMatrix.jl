@@ -15,7 +15,7 @@ function converttoreal(S::AbstractArray{Complex{T}},f) where T
   return S
 end
 
-setlambda(S::AbstractMatrix, λ::Real) = nothing
+setlambda(S::AbstractMatrix, λ) = nothing
 
 function getSF(bSF, frequencies, sparseTrafo, solver; kargs...)
   SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)

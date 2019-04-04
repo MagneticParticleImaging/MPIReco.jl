@@ -267,7 +267,7 @@ function reconstruction(S, u::Array; sparseTrafo = nothing,
   c = zeros(N,L)
   #c = zeros(real(eltype(u)),N,L) Change by J.Dora
 
-  if λ > 0
+  if sum(abs.(λ)) > 0
     trace = calculateTraceOfNormalMatrix(S,weights)
     λ *= trace / N
     setlambda(S,λ)
