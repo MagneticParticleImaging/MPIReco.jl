@@ -19,10 +19,10 @@ using Test
   values =  axisvalues(c)
 
   # save c as MDF
-  saveRecoDataMDF("reco.mdf",c)
+  saveRecoData("reco.mdf",c)
 
   # load MDF
-  cmdf = loadRecoDataMDF("reco.mdf")
+  cmdf = loadRecoData("reco.mdf")
   @test axisnames(cmdf) == names
   @test axisvalues(cmdf) == values
 end

@@ -56,13 +56,8 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   dtframes = acqNumAverages(bMeas)*dfCycle(bMeas)*numAverages*1u"s"
   # create image
   c = reshape(c,1,size(c)...)
-  im = AxisArray(c, Axis{:color}(1:1),
-                 Axis{:x}(range(offset[1],step=pixspacing[1],length=shp[1])),
-                 Axis{:y}(range(offset[2],step=pixspacing[2],length=shp[2])),
-                 Axis{:z}(range(offset[3],step=pixspacing[3],length=shp[3])),
-                 Axis{:time}(range(0u"ms",step=dtframes,length=L)))
+  im = makeAxisArray(c, pixspacing, offset, dtframes)
   imMeta = ImageMeta(im,generateHeaderDict(bSF,bMeas))
-
   return imMeta
 end
 

@@ -13,7 +13,7 @@ function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoP
   if numReco > 0
     @info "Reconstruction found in MDF dataset store."
     reco = getReco(d,study,exp, numReco)
-    c = loadRecoDataMDF(reco.path)
+    c = loadRecoData(reco.path)
   else
     c = reconstruction(recoParams)
     addReco(d,study,exp, c)
@@ -236,13 +236,9 @@ function initImage(bSFs::Union{T,Vector{T}}, bMeas::S, L::Int, numAverages::Int,
   offset = (ffPos(bMeas) .- 0.5 .* calibFov(bSF))*1000u"mm" .+ 0.5 .* pixspacing
   dtframes = acqNumAverages(bMeas)*dfCycle(bMeas)*numAverages*1u"s"
   # initialize raw array
-  Arr=Array{Float32}(undef, numcolors,shp...,L)
+  array = Array{Float32}(undef, numcolors,shp...,L)
   # create image
-  im = AxisArray(Arr, Axis{:color}(1:numcolors),
-		 Axis{:x}(range(offset[1],step=pixspacing[1],length=shp[1])),
-		 Axis{:y}(range(offset[2],step=pixspacing[2],length=shp[2])),
-		 Axis{:z}(range(offset[3],step=pixspacing[3],length=shp[3])),
-		 Axis{:time}(range(0u"ms",step=dtframes,length=L)))
+  im = makeAxisArray(array, pixspacing, offset, dtframes)
   # provide meta data
   if loadOnlineParams
       imMeta = ImageMeta(im,generateHeaderDictOnline(bSF,bMeas))
