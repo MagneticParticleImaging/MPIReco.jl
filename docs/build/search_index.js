@@ -85,7 +85,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Getting Started",
     "title": "Data Storage",
     "category": "section",
-    "text": "One can store the reconstruction result into an MDF file by callingsaveRecoDataMDF(\"filename.mdf\", c)In order to load the data one callsc = loaddata(\"filename.mdf\", c)We will next take a closer look at different forms of the reconstruction routine."
+    "text": "One can store the reconstruction result into an MDF file by callingsaveRecoData(\"filename.mdf\", c)In order to load the data one callsc = loaddata(\"filename.mdf\", c)We will next take a closer look at different forms of the reconstruction routine."
 },
 
 {

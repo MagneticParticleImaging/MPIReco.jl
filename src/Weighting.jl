@@ -9,7 +9,7 @@ baremodule WeightingType
   Channel = 5
 end
 
-function getWeights(weightType, freq, S; weightingLimit=0.0, bEmpty = nothing,
+function getWeights(weightType, freq, S; weightingLimit=0.0, emptyMeas = nothing,
                  bgFrames=1:10, bMeas = nothing, fgFrames = 1:10, bSF=nothing,
                  channelWeights=[1.0,1.0,1.0])
 

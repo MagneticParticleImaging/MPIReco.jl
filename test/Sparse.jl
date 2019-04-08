@@ -43,7 +43,7 @@ using MPIReco
   exportImage("./img/Sparse3.png", data(data(c3[1,:,:,1,1])))
 
   c4 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
-		      minFreq=80e3, nAverages=100, sparseTrafo="DCT",
+		      minFreq=80e3, nAverages=100, sparseTrafo="DCT-IV",
 		      recChannels =1:2, iterations = 1,
 		      spectralLeakageCorrection=false, redFactor = redFactor,
 		      useDFFoV = false)
@@ -52,7 +52,7 @@ using MPIReco
   exportImage("./img/Sparse4.png", data(data(c4[1,:,:,1,1])))
 
   c5 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
-		      minFreq=80e3, nAverages=100, sparseTrafo="DCT",
+		      minFreq=80e3, nAverages=100, sparseTrafo="DCT-IV",
 		      recChannels =1:2, iterations = 1,
 		      spectralLeakageCorrection=true, redFactor = redFactor,
 		      useDFFoV = true)

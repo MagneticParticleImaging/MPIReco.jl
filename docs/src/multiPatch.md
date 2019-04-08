@@ -13,7 +13,7 @@ b = MultiMPIFile(["dataMP01", "dataMP02", "dataMP03", "dataMP04"])
 
 Now we get to the system matrix. The most simple approach is to use a single system
 matrix that was measured at the center. This can be done using
-```julia
+```julia 
 bSF = MultiMPIFile(["SF_MP"])
 
 c = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,

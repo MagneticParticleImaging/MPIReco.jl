@@ -1,9 +1,11 @@
 julia 0.7
 AxisArrays
+DistributedArrays
 FileIO
 HTTP
 ImageMagick
 Images
+LinearOperators
 MPIFiles
 ProgressMeter
 QuartzImageIO

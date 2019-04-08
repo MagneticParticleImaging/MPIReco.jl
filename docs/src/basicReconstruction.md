@@ -96,9 +96,9 @@ low level reconstruction routine is called.
 
 Finally, we have arrived at the low level reconstruction routine that has the signature
 ```julia
-function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
+function reconstruction(S, u::Array; sparseTrafo = nothing,
                         lambd=0, progress=nothing, solver = "kaczmarz",
-                        weights=nothing, reshapesolution = true, kargs...)
+                        weights=nothing, kargs...)
 ```
 One can see that it requires the system matrix `S` and the measurements `u` to be
 already loaded.
@@ -109,7 +109,7 @@ it will be a `Transposed` version of that type if the `Kaczmarz` algorithm is be
 used for efficiency reasons.
 
 However, in case that matrix compression is applied `S` will be of type `SparseMatrixCSC`.
-And for [Multi-Patch Reconstruction](@ref) `S` will be of type `FFOperator`. Hence,
+And for [Multi-Patch Reconstruction](@ref) `S` will be of type `MultiPatchOperator`. Hence,
 the solvers are implemented in a very generic way and require only certain functions
 to be implemented. The low level reconstruction method calls one of the solvers
 from [RegularizedLeastSquares.jl](https://github.com/tknopp/RegularizedLeastSquares.jl).
