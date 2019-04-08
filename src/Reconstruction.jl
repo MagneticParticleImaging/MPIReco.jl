@@ -13,7 +13,7 @@ function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoP
   if numReco > 0
     @info "Reconstruction found in MDF dataset store."
     reco = getReco(d,study,exp, numReco)
-    c = loadRecoDataMDF(reco.path)
+    c = loadRecoData(reco.path)
   else
     c = reconstruction(recoParams)
     addReco(d,study,exp, c)
