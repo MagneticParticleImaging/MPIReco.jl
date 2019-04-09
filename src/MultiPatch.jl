@@ -1,7 +1,7 @@
 import Base: size
 import RegularizedLeastSquares: initkaczmarz, dot_with_matrix_row, kaczmarz_update!
 
-export reconstructionMultiPatch, FFOperator
+export reconstructionMultiPatch, MultiPatchOperator
 
 
 # Necessary for Multi-System-Matrix FF reconstruction
@@ -27,23 +27,26 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
 
   bgCorrection = (bEmpty != nothing)
 
-  FFOp = FFOperatorHighLevel(bSF, bMeas, freq, bgCorrection;
+  FFOp = MultiPatchOperatorHighLevel(bSF, bMeas, freq, bgCorrection;
                     kargs... )
 
   L = acqNumFGFrames(bMeas)
   (frames==nothing) && (frames=collect(1:L))
   nFrames=length(frames)
 
-  uTotal = getMeasurementsFD(bMeas,frequencies=freq, frames=frames, numAverages=numAverages,
+  uTotal_ = getMeasurementsFD(bMeas,frequencies=freq, frames=frames, numAverages=numAverages,
                              spectralLeakageCorrection=spectralLeakageCorrection)
 
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos(bMeas))
-  uTotal = uTotal[:,periodsSortedbyFFPos,:]
+  uTotal = similar(uTotal_,size(uTotal_,1),length(periodsSortedbyFFPos),size(uTotal_,3))
 
-  uTotal = mean(uTotal,dims=3)
+  for k=1:length(periodsSortedbyFFPos)
+      uTotal[:,k,:] = mean(uTotal_[:,periodsSortedbyFFPos[k],:], dims=2)
+  end
 
   # Here we call a regular reconstruction function
-  c = reconstruction(FFOp,uTotal,(shape(FFOp.grid)...,); kargs...)
+  c_ = reconstruction(FFOp, uTotal; kargs...)
+  c = reshape(c_, shape(FFOp.grid)..., :)
 
   # calculate axis
   shp = size(c)
@@ -53,22 +56,17 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   dtframes = acqNumAverages(bMeas)*dfCycle(bMeas)*numAverages*1u"s"
   # create image
   c = reshape(c,1,size(c)...)
-  im = AxisArray(c, Axis{:color}(1:1),
-                 Axis{:x}(range(offset[1],step=pixspacing[1],length=shp[1])),
-                 Axis{:y}(range(offset[2],step=pixspacing[2],length=shp[2])),
-                 Axis{:z}(range(offset[3],step=pixspacing[3],length=shp[3])),
-                 Axis{:time}(range(0u"ms",step=dtframes,length=L)))
+  im = makeAxisArray(c, pixspacing, offset, dtframes)
   imMeta = ImageMeta(im,generateHeaderDict(bSF,bMeas))
-
   return imMeta
 end
 
-# FFOperator is a type that acts as the MPI system matrix but exploits
+# MultiPatchOperator is a type that acts as the MPI system matrix but exploits
 # its sparse structure.
 # Its very important to keep this type typestable
-mutable struct FFOperator{V<:AbstractMatrix, T<:Positions}
+mutable struct MultiPatchOperator{V<:AbstractMatrix, U<:Positions}
   S::Vector{V}
-  grid::T
+  grid::U
   N::Int
   M::Int
   RowToPatch::Vector{Int}
@@ -79,18 +77,18 @@ mutable struct FFOperator{V<:AbstractMatrix, T<:Positions}
   patchToSMIdx::Vector{Int}
 end
 
-function FFOperatorHighLevel(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
-  return FFOperatorHighLevel(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
+function MultiPatchOperatorHighLevel(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
+  return MultiPatchOperatorHighLevel(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
 end
 
-function FFOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
+function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
         FFPos = zeros(0,0), FFPosSF = zeros(0,0), kargs...)
 
   FFPos_ = ffPos(bMeas)
 
   periodsSortedbyFFPos = unflattenOffsetFieldShift(FFPos_)
-
-  FFPos_ = FFPos_[:,periodsSortedbyFFPos[:,1]]
+  idxFirstPeriod = getindex.(periodsSortedbyFFPos,1)
+  FFPos_ = FFPos_[:,idxFirstPeriod]
 
   if length(FFPos) > 0
     FFPos_[:] = FFPos
@@ -103,9 +101,9 @@ function FFOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
     FFPosSF_ = FFPosSF #[vec(FFPosSF[:,l]) for l=1:size(FFPosSF,2)]
   end
 
-  gradient = acqGradient(bMeas)[:,:,1,periodsSortedbyFFPos[:,1]]
+  gradient = acqGradient(bMeas)[:,:,1,idxFirstPeriod]
 
-  FFOp = FFOperator(bSF, bMeas, freq, bgCorrection,
+  FFOp = MultiPatchOperator(bSF, bMeas, freq, bgCorrection,
                   FFPos = FFPos_,
                   gradient = gradient,
                   FFPosSF = FFPosSF_; kargs...)
@@ -113,8 +111,8 @@ function FFOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
 end
 
 
-function FFOperator(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
-  return FFOperator(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
+function MultiPatchOperator(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
+  return MultiPatchOperator(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
 end
 
 function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
@@ -135,16 +133,16 @@ function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
   return idx
 end
 
-function FFOperator(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
+function MultiPatchOperator(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
         mapping=zeros(0), kargs...)
   if length(mapping) > 0
-    return FFOperatorExpliciteMapping(SFs,bMeas,freq,bgCorrection; mapping=mapping, kargs...)
+    return MultiPatchOperatorExpliciteMapping(SFs,bMeas,freq,bgCorrection; mapping=mapping, kargs...)
   else
-    return FFOperatorRegular(SFs,bMeas,freq,bgCorrection; kargs...)
+    return MultiPatchOperatorRegular(SFs,bMeas,freq,bgCorrection; kargs...)
   end
 end
 
-function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
+function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
                     denoiseWeight=0, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
                     gradient=zeros(0,0,0),
                     roundPatches = false,
@@ -217,11 +215,11 @@ function FFOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCorrection
   # now that we have all grids we can calculate the indices within the recoGrid
   xcc, xss = calculateLUT(grids, recoGrid)
 
-  return FFOperator(S, recoGrid, length(recoGrid), M*numPatches,
+  return MultiPatchOperator(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
-function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
+function MultiPatchOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
                     denoiseWeight=0, gradient=zeros(0,0,0),
                     roundPatches = false, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
                     kargs...)
@@ -326,7 +324,7 @@ function FFOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
 
   sign = ones(Int, M, numPatches)
 
-  return FFOperator(S, recoGrid, length(recoGrid), M*numPatches,
+  return MultiPatchOperator(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
@@ -346,7 +344,7 @@ function calculateLUT(grids, recoGrid)
   return xcc, xss
 end
 
-function size(FFOp::FFOperator,i::Int)
+function size(FFOp::MultiPatchOperator,i::Int)
   if i==2
     return FFOp.N
   elseif i==1
@@ -356,11 +354,11 @@ function size(FFOp::FFOperator,i::Int)
   end
 end
 
-length(FFOp::FFOperator) = size(FFOp,1)*size(FFOp,2)
+length(FFOp::MultiPatchOperator) = size(FFOp,1)*size(FFOp,2)
 
 ### The following is intended to use the standard kaczmarz method ###
 
-function calculateTraceOfNormalMatrix(Op::FFOperator, weights)
+function calculateTraceOfNormalMatrix(Op::MultiPatchOperator, weights)
   if length(Op.S) == 1
     trace = calculateTraceOfNormalMatrix(Op.S[1],weights)
     trace *= Op.nPatches #*prod(Op.PixelSizeSF)/prod(Op.PixelSizeC)
@@ -371,9 +369,9 @@ function calculateTraceOfNormalMatrix(Op::FFOperator, weights)
   return trace
 end
 
-setlambda(::FFOperator, ::Real) = nothing
+setlambda(::MultiPatchOperator, ::Any) = nothing
 
-function dot_with_matrix_row(Op::FFOperator, x::AbstractArray{T}, k::Integer) where T
+function dot_with_matrix_row(Op::MultiPatchOperator, x::AbstractArray{T}, k::Integer) where T
   p = Op.RowToPatch[k]
   xs = Op.xss[p]
   xc = Op.xcc[p]
@@ -393,7 +391,7 @@ function dot_with_matrix_row_(A::AbstractArray{T},x,xs,xc,j,sign) where T
   tmp
 end
 
-function kaczmarz_update!(Op::FFOperator, x::AbstractArray, k::Integer, beta)
+function kaczmarz_update!(Op::MultiPatchOperator, x::AbstractArray, k::Integer, beta)
   p = Op.RowToPatch[k]
   xs = Op.xss[p]
   xc = Op.xcc[p]
@@ -411,7 +409,7 @@ function kaczmarz_update_!(A,x,beta,xs,xc,j,sign)
   end
 end
 
-function initkaczmarz(Op::FFOperator,λ,weights::Vector)
+function initkaczmarz(Op::MultiPatchOperator,λ,weights::Vector)
   T = typeof(real(Op.S[1][1]))
   denom = zeros(T,Op.M)
   rowindex = zeros(Int64,Op.M)

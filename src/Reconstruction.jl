@@ -13,7 +13,7 @@ function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoP
   if numReco > 0
     @info "Reconstruction found in MDF dataset store."
     reco = getReco(d,study,exp, numReco)
-    c = loadRecoDataMDF(reco.path)
+    c = loadRecoData(reco.path)
   else
     c = reconstruction(recoParams)
     addReco(d,study,exp, c)
@@ -174,6 +174,9 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   L = -fld(-length(frames),numAverages) # number of tomograms to be reconstructed
   p = Progress(L, 1, "Reconstructing data...")
 
+  # initialize sparseTrafo
+  B = linearOperator(sparseTrafo, shape(grid))
+
   #initialize output
   image = initImage(bSF,bMeas,L,numAverages,grid,false)
 
@@ -194,8 +197,8 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
       u = map(eltype(S),u)
     end
     @debug "Reconstruction ..."
-    c = reconstruction(S, u, shape(grid); sparseTrafo=sparseTrafo, progress=p,
-		       weights=weights, reshapesolution=false, solver=solver, kargs...)
+    c = reconstruction(S, u; sparseTrafo=B, progress=p,
+		       weights=weights, solver=solver, shape=shape(grid), kargs...)
 
     currentIndex = writePartToImage!(image, c, currentIndex, partframes, numAverages)
   end
@@ -233,13 +236,9 @@ function initImage(bSFs::Union{T,Vector{T}}, bMeas::S, L::Int, numAverages::Int,
   offset = (ffPos(bMeas) .- 0.5 .* calibFov(bSF))*1000u"mm" .+ 0.5 .* pixspacing
   dtframes = acqNumAverages(bMeas)*dfCycle(bMeas)*numAverages*1u"s"
   # initialize raw array
-  Arr=Array{Float32}(undef, numcolors,shp...,L)
+  array = Array{Float32}(undef, numcolors,shp...,L)
   # create image
-  im = AxisArray(Arr, Axis{:color}(1:numcolors),
-		 Axis{:x}(range(offset[1],step=pixspacing[1],length=shp[1])),
-		 Axis{:y}(range(offset[2],step=pixspacing[2],length=shp[2])),
-		 Axis{:z}(range(offset[3],step=pixspacing[3],length=shp[3])),
-		 Axis{:time}(range(0u"ms",step=dtframes,length=L)))
+  im = makeAxisArray(array, pixspacing, offset, dtframes)
   # provide meta data
   if loadOnlineParams
       imMeta = ImageMeta(im,generateHeaderDictOnline(bSF,bMeas))
@@ -252,10 +251,9 @@ end
 """
 Low level reconstruction method
 """
-function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
+function reconstruction(S, u::Array; sparseTrafo = nothing,
                         lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "kaczmarz",
-                        weights=nothing, reshapesolution = true, 
-			enforceReal=true, enforcePositive=true, kargs...)
+                        weights=nothing, enforceReal=true, enforcePositive=true, kargs...)
 
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
@@ -265,25 +263,23 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
   c = zeros(N,L)
   #c = zeros(real(eltype(u)),N,L) Change by J.Dora
 
-  if λ > 0
+  if sum(abs.(λ)) > 0
     trace = calculateTraceOfNormalMatrix(S,weights)
     λ *= trace / N
     setlambda(S,λ)
   end
 
-  #solv = linearSolver(solver)
-  B = linearOperator(sparseTrafo, shape)
-  solv = createLinearSolver(solver, S; shape=shape, weights=weights, λ=λ,
-                            sparseTrafo=B, enforceReal=enforceReal,
-			    enforcePositive=enforcePositive, kargs...)
+  solv = createLinearSolver(solver, S; weights=weights, λ=λ,
+                            sparseTrafo=sparseTrafo, enforceReal=enforceReal,
+			                      enforcePositive=enforcePositive, kargs...)
 
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
   for l=1:L
 
     d = solve(solv, u[:,l])
 
-    if B != nothing
-      d[:] = B*d #backtrafo from dual space
+    if sparseTrafo != nothing
+      d[:] = sparseTrafo*d #backtrafo from dual space
     end
 
     #if typeof(B)==LinearSolver.DSTOperator
@@ -294,8 +290,11 @@ function reconstruction(S, u::Array, shape; sparseTrafo = nothing,
     sleep(0.001)
   end
 
-  if reshapesolution
-    c = reshape(c, shape..., L)
-  end
   return c
 end
+
+# old code
+#if reshapesolution
+#  c = reshape(c, shape..., L)
+#end
+#shape(grid)

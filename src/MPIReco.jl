@@ -9,6 +9,10 @@ module MPIReco
   using LinearAlgebra
   using SparseArrays
   @reexport using Unitful
+  using Distributed
+  using DistributedArrays
+  # using TensorDecompositions
+  import LinearOperators
 
   include("Utils.jl")
   include("MultiContrast.jl")
@@ -18,4 +22,5 @@ module MPIReco
   include("Weighting.jl")
   include("Reconstruction.jl")
   include("MultiPatch.jl")
+  include("SystemMatrixRecovery.jl")
 end # module

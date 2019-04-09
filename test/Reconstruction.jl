@@ -20,7 +20,7 @@ using MPIReco
   # fused lasso
   c2 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
 		      recChannels=1:2, iterations=100, solver="fusedlasso",
-		      loadasreal=true, lambdaTV=0.01, lambdaL1=0.01)
+		      loadasreal=true, λ=[0.01,0.01])
   @test axisnames(c2) == names
   @test axisvalues(c2) == values
   exportImage("./img/Reconstruction2.png", data(data(c2[1,:,:,1,1])))

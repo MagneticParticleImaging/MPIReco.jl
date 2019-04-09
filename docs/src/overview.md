@@ -49,7 +49,7 @@ More details on the return type are discussed in the [Reconstruction Results](@r
 
 One can store the reconstruction result into an MDF file by calling
 ```julia
-saveRecoDataMDF("filename.mdf", c)
+saveRecoData("filename.mdf", c)
 ```
 In order to load the data one calls
 ```julia
