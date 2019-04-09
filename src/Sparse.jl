@@ -13,7 +13,7 @@ end
 # parameter globalComp: if true, each frequency gets the same number of non-zero entries
 #						if false, the number of non-zero entries is determined by a changing threshold
 function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
-    globalComp=true,redFactor=0.1, bgcorrection=false, bgCorrection=bgcorrection,
+    thresh=0.0, redFactor=0.1, bgcorrection=false, bgCorrection=bgcorrection,
     loadasreal=false, compAna=nothing, combine=true, useCOM=false, depth=4, useDFFoV=false, kargs...)
 
     if useDFFoV
@@ -55,17 +55,19 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
 
         buffer[:] = transpose(basisTrafo) * buffer
         # compression
-        if globalComp
+        if thresh == 0.0
             indices[k] = round.(Int32,reverse(sortperm(abs.(buffer)),dims=1)[1:NRed])
         else
             max, = findmax(abs.(buffer))
-            t = redFactor*max
+            t = thresh*max
             indices[k] = findall(x->x>t,abs.(buffer))
         end
         numCoeff[k] = length(indices[k])
         data[k] = buffer[indices[k]]
         #calcSigmaStep(compAna,buffer,indices[k],k)
     end
+
+    @info "compression factor = " sum(numCoeff)/(N*l) 
 
     sparse = loadsparsedata(bSF,data,indices,l,N,numCoeff,loadasreal)
 
@@ -88,7 +90,8 @@ function loadsparsedata(f,data,indices,l,nPos,numCoeff,loadasreal::Bool)
     I = vcat(I,I)
     indptr = collect(0:l*2) .* [0;numCoeff;numCoeff] .+ 1
   else
-    indptr = collect(0:l) .* [0;numCoeff] .+ 1
+    #indptr = collect(0:l) .* [0;numCoeff] .+ 1
+    indptr = cumsum([0;numCoeff]) .+ 1
   end
   return SparseMatrixCSC(N,M,indptr,I[:],S[:])
 end
