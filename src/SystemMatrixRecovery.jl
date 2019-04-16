@@ -47,19 +47,12 @@ end
 # low rank regularization
 #########################
 function lrReg(lrProx::AbstractString, λ::AbstractFloat, params::Dict{Symbol,Any})
-  # if lrProx == "LR"
-  #   reg = Regularization(prox! = proxLR!, λ=λ, params=params)
-  # elseif lrProx == "FR"
-  #   reg = Regularization(prox! = proxFR!, λ=λ, params=params)
-  # elseif lrProx == "Nothing"
-  #   reg = Regularization(prox! = x->x, λ=λ, params=params)
-  # else
-  #   error("proximal map $(lrProx) is not supported")
-  # end
   if lrProx == "LR"
-    error("proximal map $(lrProx) is not yet supported")
+    proxMap = (x,y;kargs...)->proxLR!(x,y,params[:shape];kargs...)
+    reg = Regularization(prox! = proxMap, λ=λ, params=params)
   elseif lrProx == "FR"
-    error("proximal map $(lrProx) is not yet supported")
+    proxMap = (x,y;kargs...)->proxFR!(x,y,params[:shape];kargs...)
+    reg = Regularization(prox! = proxMap, λ=λ, params=params)
   elseif lrProx == "Nothing"
     reg = Regularization(prox! = x->x, λ=λ, params=params)
   else
@@ -68,19 +61,35 @@ function lrReg(lrProx::AbstractString, λ::AbstractFloat, params::Dict{Symbol,An
   return reg
 end
 
-# function proxLR!(x, λ; shape::NTuple{N,Int64}=(1,1,1), kargs...) where N
-#   guvw_r = hosvd(reshape(real.(x), shape),shape)
-#   guvw_i = hosvd(reshape(imag.(x), shape),shape)
-#   proxL1!(guvw_r.core,λ)
-#   proxL1!(guvw_i.core,λ)
-#   x[:] = vec(compose(guvw_r)+1im*compose(guvw_i))
-# end
-#
-# function proxFR!(x, λ; rank::NTuple{N,Int64}=(1,1,1), svtShape::NTuple{N,Int64}=(1,1,1), kargs...) where N
-#   guvw_r = hosvd(reshape(real.(x), svtShape),rank)
-#   guvw_i = hosvd(reshape(imag.(x), svtShape),rank)
-#   x[:] = vec(compose(guvw_r)+1im*compose(guvw_i))
-# end
+# low rank regularization for 3d (using HOSVD)
+function proxLR!(x, λ::Real, shape::NTuple{3,Int64}; kargs...)
+  guvw_r = hosvd(reshape(real.(x), shape),shape)
+  guvw_i = hosvd(reshape(imag.(x), shape),shape)
+  proxL1!(guvw_r.core,λ)
+  proxL1!(guvw_i.core,λ)
+  x[:] .= vec(compose(guvw_r)+1im*compose(guvw_i))
+end
+
+# low rank regularization for 2d (using SVD)
+function proxLR!(x, λ::Real, shape::NTuple{2,Int64}; kargs...)
+  U,S,V = svd(reshape(x,shape))
+  proxL1!(S,λ)
+  x[:] .= vec(U*Matrix(Diagonal(S))*V')
+end
+
+# fixed rank constraing for 3d (using HOSVD)
+function proxFR!(x, λ::Real, shape::NTuple{3,Int64}; rank::NTuple{3,Int64}=(1,1,1), kargs...)
+  guvw_r = hosvd(reshape(real.(x), shape),rank)
+  guvw_i = hosvd(reshape(imag.(x), shape),rank)
+  x[:] = vec(compose(guvw_r)+1im*compose(guvw_i))
+end
+
+# fixed rank constraing for 3d (using SVD)
+function proxFR!(x, λ::Real, shape::NTuple{2,Int64}; rank::Int64=1, kargs...)
+  U,S,V = svd(reshape(x, shape))
+  S[rank+1:end] .= 0.0
+  x[:] .= vec(U*Matrix(Diagonal(S))*V')
+end
 
 ##########################
 # inverse of normal matrix
