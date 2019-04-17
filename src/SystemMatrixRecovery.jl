@@ -15,11 +15,14 @@ function smRecovery(y::Matrix{T}, samplingIdx::Array{Int64}, params::Dict) where
   P = SamplingOp(samplingIdx, shape)
 
   # sparsifying transformation and regularization
-  params[:sparseTrafo] = DCTOp(ComplexF64,params[:shape],2)
-  reg1 = Regularization("L1", 1.0/params[:λ]; params...)
+  if !haskey(params, :sparseTrafo)
+    params[:sparseTrafo] = DCTOp(ComplexF64,params[:shape],2)
+  end
+  reg1Name = get(params, :reg1, "L1")
+  reg1 = Regularization(reg1Name, 1.0/params[:λ]; params...)
 
   # low rank regularization
-  lrProx = get(params, :prox_lr, "Nothing")
+  lrProx = get(params, :reg2, "Nothing")
   λ_lr = get(params, :λ_lr, 1.0)
   reg2 = lrReg(lrProx, λ_lr, params)
 
