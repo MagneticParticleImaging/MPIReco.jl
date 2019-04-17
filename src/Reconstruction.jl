@@ -7,9 +7,11 @@ This is the most high level reconstruction method using the `MDFDatasetStore`
 function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoParams)
 
   !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( MPIFile( recoParams[:measPath] ) ))
+  numReco = findReco(d,study,exp,recoParams)
+
   haskey(recoParams,:emptyMeasPath) && recoParams[:emptyMeasPath]!=nothing && (recoParams[:emptyMeas] = MPIFile( recoParams[:emptyMeasPath] ) )
 
-  numReco = findReco(d,study,exp,recoParams)
+  #numReco = findReco(d,study,exp,recoParams)
   if numReco > 0
     @info "Reconstruction found in MDF dataset store."
     reco = getReco(d,study,exp, numReco)
