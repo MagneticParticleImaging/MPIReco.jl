@@ -20,7 +20,7 @@ function defaultRecoParams()
   params[:frames] = 1
   params[:spectralCleaning] = true
   params[:recChannels] = [1,2,3]
-  params[:reconstructor] = ENV["USER"]
+  params[:reconstructor] = get(ENV,"USER","default")
   params[:firstFrameBG] = 1
   params[:lastFrameBG] = 1
 
