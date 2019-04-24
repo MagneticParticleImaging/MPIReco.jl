@@ -19,7 +19,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
 julia = "0.7, 1.0"
-MPIFiles = ">= 0.5.3"
+MPIFiles = ">= 0.5.2"
 RegularizedLeastSquares = ">= 0.2.3"
 
 [extras]
