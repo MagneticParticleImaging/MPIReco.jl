@@ -1,5 +1,4 @@
 module MPIReco
-  using Pkg
   using Reexport
   @reexport using MPIFiles
   @reexport using RegularizedLeastSquares

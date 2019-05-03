@@ -19,7 +19,7 @@ using MPIReco
   # solver parameters
   params = Dict{Symbol,Any}()
   params[:shape] = Tuple(shape)
-  params[:prox_lr] = "Nothing"
+  params[:reg2] = "Nothing"
   params[:ρ] = 0.0
   params[:λ] = 1.e2
   params[:μ] = 5.e1
@@ -37,7 +37,7 @@ using MPIReco
 
   # DCT and fixed rank
   # @info "recovery using DCT and FR"
-  # params[:prox_lr] = "FR"
+  # params[:reg2] = "FR"
   # params[:svtShape] = Tuple(shape)
   # params[:rank] = (6,6,1)
   # params[:ρ] = 5.e1
