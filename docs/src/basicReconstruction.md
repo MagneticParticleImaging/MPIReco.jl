@@ -38,7 +38,7 @@ The above reconstruction method basically does two things
 
 In turn the next level reconstruction looks like this
 ```julia
-function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...)
+function reconstruction(bSF::MPIFile, bMeas::MPIFile; kargs...)
 ```
 There are, however also some reconstruction methods in-between that look like this
 ```julia
@@ -56,11 +56,11 @@ The middle level reconstruction first checks, whether the dataset is a multi-pat
 or a single-patch file. Then it will call either `reconstructionSinglePatch` or
 `reconstructionMultiPatch`. Both have essentially the signature
 ```julia
-function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
+function reconstructionSinglePatch(bSF::MPIFile, bMeas::MPIFile;
                                   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,
                                   maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
                                   bEmpty = nothing, bgFrames = 1, fgFrames = 1,
-                                  varMeanThresh = 0, minAmplification=2, kargs...) where {T<:MPIFile}
+                                  varMeanThresh = 0, minAmplification=2, kargs...)
 ```
 Here, one can see various parameters that can be used to control, which frequency
 components are being used for reconstruction. All these parameters are passed
@@ -68,11 +68,11 @@ to the `filterFrequencies` function from [MPIFiles.jl](https://github.com/Magnet
 
 The function `reconstructionSinglePatch` performs the frequency filtering and then calls
 ```julia
-function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
+function reconstruction(bSF::MPIFile, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
   loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
-  deadPixels=Int[], bgCorrectionInternal=false, kargs...) where {T<:MPIFile}
+  deadPixels=Int[], bgCorrectionInternal=false, kargs...)
 ```
 One can see that the frequency index is passed to this function as the third argument.
 All new keyword arguments are essentially used for determining the way how the
@@ -81,12 +81,12 @@ it is possible to change the grid at which the system function is being loaded.
 
 Once the system matrix is loaded, the next lower level function is called:
 ```julia
-function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
+function reconstruction(S, bSF::MPIFile, bMeas::MPIFile, freq::Array, grid;
   frames = nothing, bEmpty = nothing, bgFrames = 1, nAverages = 1, numAverages=nAverages,
   sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
   weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
   spectralCleaning=true, fgFrames=1:10, bgCorrectionInternal=false,
-  noiseFreqThresh=0.0, kargs...) where {T<:MPIFile}
+  noiseFreqThresh=0.0, kargs...)
 ```
 This function is responsible for loading the measurement data and potential background
 data that is subtracted from the measurements. For any frame to be reconstructed, the

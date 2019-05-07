@@ -53,6 +53,6 @@ saveRecoData("filename.mdf", c)
 ```
 In order to load the data one calls
 ```julia
-c = loaddata("filename.mdf", c)
+c = loadRecoData("filename.mdf", c)
 ```
 We will next take a closer look at different forms of the `reconstruction` routine.
