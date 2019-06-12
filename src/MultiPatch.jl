@@ -196,6 +196,16 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
     recoGrid = RegularGridPositions(grids)
   else
     recoGrid = grid
+    # Test whether given grid covers all subgrids
+    recoGridTest = RegularGridPositions(grids)
+    testMin = round.(recoGridTest.center,digits=3) - round.(recoGridTest.fov./2,digits=3)
+    testMax = round.(recoGridTest.center,digits=3) + round.(recoGridTest.fov./2,digits=3)
+    gridMin = round.(recoGrid.center,digits=3) - round.(recoGrid.fov./2,digits=3)
+    gridMax = round.(recoGrid.center,digits=3) + round.(recoGrid.fov./2,digits=3)
+    if false in ((gridMin .<= testMin) .* (gridMax .>= testMax))
+        @warn "A larger grid is used for reconstruction, since the given grid does not cover all subgrids: $recoGrid ⊅  $recoGridTest"
+        recoGrid = recoGridTest
+    end
   end
 
 
