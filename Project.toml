@@ -5,6 +5,7 @@ version = "0.1.1"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
+DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 DistributedArrays = "aaf54ef3-cdf8-58ed-94cc-d582ad619b94"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
@@ -18,16 +19,16 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
-julia = "1.0"
 MPIFiles = ">= 0.5.2"
 RegularizedLeastSquares = ">= 0.2.3"
+julia = "1.0"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
 QuartzImageIO = "dca85d43-d64c-5e67-8c65-017450d5d020"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "HTTP", "FileIO", "ImageMagick", "QuartzImageIO"]

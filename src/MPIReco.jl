@@ -22,4 +22,5 @@ module MPIReco
   include("Reconstruction.jl")
   include("MultiPatch.jl")
   include("SystemMatrixRecovery.jl")
+  include("MotionCompensation/MotionCompensation.jl")
 end # module
