@@ -1,7 +1,5 @@
-using ProgressMeter
-
-export findComponentsWithSignifFreq, getMotionFreq, findPeaks, peakHist, 
-       bins2hertz, hertz2bins, generateSpectrum, mpiFFT, dynComps, hannWindow, 
+export findComponentsWithSignifFreq, getMotionFreq, findPeaks, peakHist,
+       bins2hertz, hertz2bins, generateSpectrum, mpiFFT, dynComps, hannWindow,
        parabelFit, parabelMax, peakComps, findNFreqwithhighestSNRinfreqs,
        mpiFFTpixel, mpiFFTeval
 
@@ -19,50 +17,51 @@ function findComponentsWithSignifFreq(u)
 end
 
 """
-    getMotionFreq(b::MPIFile,bSF::MPIFile, choosePeak::Int)
+    getMotionFreq(b::MPIFile, bSF::MPIFile, choosePeak::Int)
 
 Determines frequency [Hz] of signal modulation for each patch and frame
 
 ...
-#Arguments
 - `b::MPIFile`: measurement
 - `bSF::MPIFile`: Systemfunction ==> required because the motion frequency is only determined from components with high SNR
 - `choosePeak::Int`: Within the measurement signal different modulations can be found and also higher harmonics.
  Choose the number of the peak you want
 ...
 """
-function getMotionFreq(b::MPIFile,bSF::MPIFile, choosePeak::Int)
-        snrthresh = 10
-        recChannels=[2]
-        freqs = filterFrequencies(bSF,SNRThresh=snrthresh,minFreq=80e3,recChannels=recChannels)
-        repFreq = 1 / dfCycle(b);
-        peaksInHz = 0
-        selectedPeakInHz = zeros(acqNumFrames(b),acqNumPatches(b))
-        uspec = getMeasurementsFD(b, frequencies=freqs, numAverages=1, spectralLeakageCorrection=false)
-        norm,ind = findComponentsWithSignifFreq(squeeze(uspec[:,1:acqNumPeriodsPerPatch(b),1]))
-        @info "Maximum freq" ind
-	for j=1:acqNumFrames(b)
-        	for i = 1:acqNumPatches(b)
-                	uFT = generateSpectrum(squeeze(uspec[ind,(i-1)*acqNumPeriodsPerPatch(b)+1:i*acqNumPeriodsPerPatch(b),j]))
-                	frind = collect(1:acqNumPeriodsPerPatch(b)/2)
-               		frHz = bins2hertz(frind,repFreq,acqNumPeriodsPerPatch(b))
+function getMotionFreq(b::MPIFile, bSF::MPIFile, choosePeak::Int)
+    snrthresh = 10
+    recChannels=[2]
+    freqs = filterFrequencies(bSF,SNRThresh=snrthresh,minFreq=80e3,recChannels=recChannels)
+    repFreq = 1 / dfCycle(b);
+    peaksInHz = 0
+    selectedPeakInHz = zeros(acqNumFrames(b),acqNumPatches(b))
+    uspec = getMeasurementsFD(b, frequencies=freqs, numAverages=1, spectralLeakageCorrection=false)
+    norm, ind = findComponentsWithSignifFreq(squeeze(uspec[:,1:acqNumPeriodsPerPatch(b),1]))
+    @info "Maximum freq" ind
 
-	                peaksInInt=findPeaks(uFT,stdTh=1)
-	                peaksInHz = bins2hertz(peaksInInt,1000/21.54,acqNumPeriodsPerPatch(b))
-	                @info "Found peaks: " peaksInHz
-			selectedPeak=parabelMax(parabelFit(peaksInInt[choosePeak]-1:peaksInInt[choosePeak]+1,log.(uFT[peaksInInt[choosePeak]-1:peaksInInt[choosePeak]+1])))
+	for j=1:acqNumFrames(b)
+    	for i = 1:acqNumPatches(b)
+        	uFT = generateSpectrum(squeeze(uspec[ind,(i-1)*acqNumPeriodsPerPatch(b)+1:i*acqNumPeriodsPerPatch(b),j]))
+        	frind = collect(1:acqNumPeriodsPerPatch(b)/2)
+       		frHz = bins2hertz(frind,repFreq,acqNumPeriodsPerPatch(b))
+
+            peaksInInt=findPeaks(uFT,stdTh=1)
+            peaksInHz = bins2hertz(peaksInInt,1000/21.54,acqNumPeriodsPerPatch(b))
+            @info "Found peaks: " peaksInHz
+
+			selectedPeak = parabelMax(parabelFit(peaksInInt[choosePeak]-1:peaksInInt[choosePeak]+1,log.(uFT[peaksInInt[choosePeak]-1:peaksInInt[choosePeak]+1])))
 			selectedPeakInHz[j,i] = bins2hertz(selectedPeak,repFreq,acqNumPeriodsPerPatch(b))
 		end
-        end
-        return selectedPeakInHz
+    end
+    return selectedPeakInHz
 end
 
 """
-    findNFreqwithhighestSNRinfreqs(bSF,freqs,N)
+    findNFreqwithhighestSNRinfreqs(bSF, freqs, N)
 
 Return indices of N frequency components with highest SNR.
 """
-function findNFreqwithhighestSNRinfreqs(bSF,freqs,N)
+function findNFreqwithhighestSNRinfreqs(bSF, freqs, N)
 
   snr_freq = reshape(getSNR(bSF),size(getSNR(bSF),1)*3,1)
   indinfreqs = Int[]
@@ -83,18 +82,17 @@ function findNFreqwithhighestSNRinfreqs(bSF,freqs,N)
     snr_freq[maxsnrcomps]=0
   end
 
-
-return indinfreqs
-
+  return indinfreqs
 end
 
 function parabelFit(x,y)
-    p = [x.^2 x ones(x)]\y;
-    return p;
-end;
+    p = [x.^2 x ones(x)]\y
+    return p
+end
+
 function parabelMax(par)
-    return -par[2]/2/par[1];
-end;
+    return -par[2]/2/par[1]
+end
 
 """
     dynComps(u)
@@ -102,48 +100,49 @@ Return indices of components with a variance higher than 0.1 of maximum variance
 """
 function dynComps(u)
 	vc = var(u,2)# ./ abs(mean(u,2));
-	idx = vc .> maximum(vc)*0.1;
-	return find(idx);
-end;
+	idx = vc .> maximum(vc)*0.1
+	return find(idx)
+end
 
 """
-    peakComps(u,peak,t=0.5)
+    peakComps(u, peak, t=0.5)
 """
 function peakComps(u, peak, t=0.5)
-    peak = round(Int32,peak);
-	ft = mpiFFT(u, full=true, raw=true);
-    c = sum(ft[:,peak:peak],2) ./ mean(ft,2);
+    peak = round(Int32, peak)
+	ft = mpiFFT(u, full=true, raw=true)
+    c = sum(ft[:,peak:peak],2) ./ mean(ft,2)
     @debug "" size(ft[:,peak:peak])
-    idx = c .> t*maximum(c);
-	return find(idx);
-end;
+    idx = c .> t*maximum(c)
+	return find(idx)
+end
 
 function peakComps2(u, peak)
-	ft = mpiFFT(u, full=true, raw=true);
-    c = sum(ft[:,peak-3:peak+3]) ./ mean(ft,2);
-    idx = falses(size(ft,1),1);
+	ft = mpiFFT(u, full=true, raw=true)
+    c = sum(ft[:,peak-3:peak+3]) ./ mean(ft,2)
+    idx = falses(size(ft,1),1)
     for i = 1:10
-        m = indmax(c);
-        idx[m] = true;
-        c[m] = 0;
-    end;
+        m = indmax(c)
+        idx[m] = true
+        c[m] = 0
+    end
   return idx
 end
 
-function generateSpectrum(_ofData)
-        _ofData = applyHannWindow(broadcast(-,_ofData,mean(_ofData)))
-        ftc = fft(_ofData)
+function generateSpectrum(data)
+  data = applyHannWindow(broadcast(-, data, mean(data)))
+  ftc = fft(data)
 
-        ft = ftc
-        ft = abs.(ftc[2:div(end,2)+1])
-        helpv = size(ft,1)
-        ft[1:end] += abs.(ftc[end:-1:end-helpv+1])
+  ft = ftc
+  ft = abs.(ftc[2:div(end,2)+1])
+  helpv = size(ft,1)
+  ft[1:end] += abs.(ftc[end:-1:end-helpv+1])
 
-        return ft
+  return ft
 end
 
 """
 	mpiFFT(u)
+
 Compute spectrum of temporal series of measurement vectors.
 
 - u:        series of measurement vectors
@@ -153,28 +152,28 @@ Compute spectrum of temporal series of measurement vectors.
 """
 function mpiFFT(u; dc=false, hann=true, full=false, raw=false, comps=nothing, normalizecomps=false)
 	#u = reshape(u,size(u,1)*size(u,2),size(u,3))
-        if full
-          idx = 1:size(u,1);
-        elseif comps != nothing
-          idx = comps;
-        else
-          idx = dynComps(u);
-        end;
+    if full
+      idx = 1:size(u,1)
+    elseif comps != nothing
+      idx = comps
+    else
+      idx = dynComps(u)
+    end
 	if hann
-		u = hannWindow(broadcast(-,u,mean(u,2)));
-		#u = hannWindow(u-repmat(mean(u,2),1,size(u,2)));
-	end;
-	ftc = fft(u[idx,:],2);
+		u = hannWindow(broadcast(-,u,mean(u,2)))
+		#u = hannWindow(u-repmat(mean(u,2),1,size(u,2)))
+	end
+	ftc = fft(u[idx,:],2)
 
-        ft = ftc;
-        ft = abs.(ftc[:,2-dc:div(end,2)+1]);
-        helpv = size(ft,2)-dc
-        ft[:,1+dc:end] += abs.(ftc[:,end:-1:end-helpv+1]);
-        
-        if (normalizecomps == true)
-          maxima = maximum(ft,2)
-          ft = broadcast(/,ft,maxima)
-        end    
+    ft = ftc
+    ft = abs.(ftc[:,2-dc:div(end,2)+1])
+    helpv = size(ft,2)-dc
+    ft[:,1+dc:end] += abs.(ftc[:,end:-1:end-helpv+1])
+
+    if (normalizecomps == true)
+      maxima = maximum(ft,2)
+      ft = broadcast(/,ft,maxima)
+    end
 
     if raw
         return ft
@@ -184,15 +183,15 @@ function mpiFFT(u; dc=false, hann=true, full=false, raw=false, comps=nothing, no
 end
 
 
-function mpiFFTeval(u, freqRange; dc=false, hann=true,window=63,freqdecrfac=1)
-  
+function mpiFFTeval(u, freqRange; dc=false, hann=true, window=63, freqdecrfac=1)
+
   sampleFreq = 1/(21.54e-3)
   minfreq = maximum([1, floor(Int64,hertz2bins(freqRange[1], sampleFreq, window))])
   maxfreq = ceil(Int64,hertz2bins(freqRange[2], sampleFreq, window))
   halfwindow = div(window,2)
   result = Float64[];
   freqint = floor(Int64,(maxfreq-minfreq+1)*freqdecrfac)
-  
+
   f = 1
   while f < length(u)-window
     ft = mpiFFTpixel(u[f:f+window])
@@ -202,9 +201,9 @@ function mpiFFTeval(u, freqRange; dc=false, hann=true,window=63,freqdecrfac=1)
     push!(result,vhz)
     minfreq = maximum([1,m - freqint])
     maxfreq = m + freqint
-    f+=1 
+    f+=1
   end
-  
+
   return result
 end
 
@@ -228,11 +227,9 @@ function applyHannWindow(data)
 end
 
 
-
-
 """
 	hannWindow(data)
-Apply a Hann window function to a vector of data. If a matrix is passed 
+Apply a Hann window function to a vector of data. If a matrix is passed
 the window is applied row-wise.
 
 - data:	   data
@@ -261,7 +258,7 @@ Histogram of the peaks in the FFTs of each single frequency component.
 - minBin:       no peaks in bins below minBin
 - return:       histogram of peaks
 """
-function peakHist(data; stdTh=1.5,minBinDist=0,minBin=1)
+function peakHist(data; stdTh=1.5, minBinDist=0, minBin=1)
     th = stdTh
     N = size(data,1)
     h = zeros(size(data,2))
@@ -274,8 +271,7 @@ function peakHist(data; stdTh=1.5,minBinDist=0,minBin=1)
     return h
 end
 
-function reduceHighSpectralValuesToPeaks(data,isHigh)
-  
+function reduceHighSpectralValuesToPeaks(data, isHigh)
   diracpeaks = []
   idx = 1
   while !isempty(findall(isHigh[idx:end]))
@@ -287,8 +283,7 @@ function reduceHighSpectralValuesToPeaks(data,isHigh)
   return diracpeaks
 end
 
-function enforceMinDistanceOfPeaks(diracpeaks,minBinDist,data)
-
+function enforceMinDistanceOfPeaks(diracpeaks, minBinDist, data)
   keep = false
   while sum(.!keep) > 0
       keep = ( diracpeaks[2:end]-diracpeaks[1:end-1] ) .> minBinDist
@@ -297,7 +292,7 @@ function enforceMinDistanceOfPeaks(diracpeaks,minBinDist,data)
       rem = findall(.!keep)
       println(rem)
       for i in rem
-	  println(diracpeaks[i])
+	      println(diracpeaks[i])
           if data[diracpeaks[i]] > data[diracpeaks[i+1]]
               keep[i] = true
               keep[i+1] = false
@@ -310,7 +305,7 @@ function enforceMinDistanceOfPeaks(diracpeaks,minBinDist,data)
 end
 
 """
-	findPeaks(data; stdTh=1.5,minBinDist=0,minBin=1)
+	findPeaks(data; stdTh=1.5, minBinDist=0, minBin=1)
 Find peaks in the data.
 
 - data:         column vector of data
@@ -319,14 +314,14 @@ Find peaks in the data.
 - minBin:       no peaks in bins below minBin
 - return:       peak bins
 """
-function findPeaks(data; stdTh=1.5,minBinDist=0,minBin=1)
+function findPeaks(data; stdTh=1.5, minBinDist=0, minBin=1)
     # smooth data??
-    
+
     if length(findall(data[1:end-1].<data[2:end])) == 0 || length(findall(data[1:end-1].>data[2:end])) == 0
 	warn("This should not happen... No variation of data")
 	return []
     end
-    
+
     # exclude beginning and end of data
     frst = maximum( [findfirst( data[1:end-1].<data[2:end] ), ceil(Int32, minBin)] )
     lst = minimum( [findlast( data[1:end-1].>data[2:end] ), floor(Int32, length(data)-minBin+1)] ) # last entry of data never used
@@ -336,25 +331,25 @@ function findPeaks(data; stdTh=1.5,minBinDist=0,minBin=1)
     #x = 1:length(data)
     #linPar = [x ones(x)]\data
     #data = data - (linPar[1]*x+linPar[2])
-    
+
     # mean,std
     mu = mean(data)
     sigma = std(data)
-    
+
     # threshold on diff to mean
     peaks = data .> (mu + stdTh*sigma)
     if isempty(peaks)
         @error "No peaks were found!"
     end
-   
+
     # no maximum at last position
     peaks[end] = false
-	    
+
     diracpeaks = reduceHighSpectralValuesToPeaks(data,peaks)
     diracpeaks = enforceMinDistanceOfPeaks(diracpeaks,minBinDist,data)
-	
+
     diracpeaks = diracpeaks .+ frst.-1
-    return diracpeaks    
+    return diracpeaks
 end
 
 
@@ -384,4 +379,3 @@ Convert Hertz to FFT bin index.
 function hertz2bins(hz, fs, nSamples)
   return nSamples/fs*hz
 end
-

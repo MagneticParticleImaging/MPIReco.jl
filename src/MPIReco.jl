@@ -12,6 +12,7 @@ module MPIReco
   using DistributedArrays
   # using TensorDecompositions
   import LinearOperators
+  using DSP
 
   include("Utils.jl")
   include("MultiContrast.jl")
