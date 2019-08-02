@@ -57,12 +57,14 @@ function calculateBeginningInms(firstFrame, tsc, numPeriodsPerPatch, numPatches,
 end
 
 """
-    getRepetitionsOfSameState(MotFreq,b,firstFrame,lastFrame[;DFCyclesSwitch==7])
+    getRepetitionsOfSameState(motFreq,b,firstFrame,lastFrame[;DFCyclesSwitch==7])
+
 Based on the motion frequency the repetitions of the same state are calculated. I.e. the frame, patch, and period of the repetition
+
 #Arguments:
-- `MotFreq::Float`: Assumed motion frequency in Hz
+- `motFreq::Float`: Assumed motion frequency in Hz
 """
-function getRepetitionsOfSameState(MotFreq, b, firstFrame, lastFrame;
+function getRepetitionsOfSameState(motFreq, b, firstFrame, lastFrame;
                                    tsc = 0.02154, DFCyclesSwitch=7)
 
   numPeriodsPerFrame = acqNumPeriodsPerFrame(b)
@@ -73,7 +75,7 @@ function getRepetitionsOfSameState(MotFreq, b, firstFrame, lastFrame;
                                            numPatches, DFCyclesSwitch)
   totalduration = endtime-currentTimeInms
 
-  tmot = calculateRepetitionsInFramePatchPeriod(totalduration, MotFreq, currentTimeInms,
+  tmot = calculateRepetitionsInFramePatchPeriod(totalduration, motFreq, currentTimeInms,
                           endtime, numPeriodsPerPatch, numPeriodsPerFrame, numPatches,tsc)
 
   return tmot
@@ -225,7 +227,7 @@ function getavrgusubPeriod(motFreq, tmot, b, freq, firstFrame, lastFrame, sigma,
       currentPatch = Int(tmot[i,2])
       # Counting is required for averaging to ensure same signal level for all patches
       count[currentPatch] += 1
-      currentMotFreq = MotFreq[currentFrame,currentPatch]
+      currentMotFreq = motFreq[currentFrame,currentPatch]
       # The number of full DF cycles within one motion cycle varies for different patches and frames
       # For consistent images, the same number is required for all patches. Thus for higher motion in a patch, the increment per Period is lowered
       incrementPerPeriod = 1/numMotPeriods*(1/currentMotFreq/tsc)
