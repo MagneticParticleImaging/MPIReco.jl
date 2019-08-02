@@ -41,9 +41,7 @@ function reconstructionPeriodicMotion(b::MPIFile, bSF::MPIFile, bBG::MPIFile,
     uReco[:,i,:] = uReco[:,i,:] .- mean(uBG[:,frBG[i],:], dims=2)
   end
   mapping = ones(Int,acqNumPatches(b))
-  FFOp = FFOperator(bSF, b, freq, false,
-                    #OverscanSF=[0.0179,0.01,0.0105]./2,   # not used anymore
-                    #OffsetFF=[0.0179,0.01,0.0105]./2,     # not used anymore
+  FFOp = MultiPatchOperator(bSF, b, freq, false,
 					indFFPos=resortedInd[:,1],
 					FFPos=FFP[:,resortedInd[:,1]], mapping=mapping, FFPosSF=FFP[:,resortedInd[:,1]])
 
