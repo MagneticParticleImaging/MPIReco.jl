@@ -2,8 +2,9 @@ using MPIReco
 
 @testset "motion compensation reconstruction" begin
 
-  bSF = MultiMPIFile(["SF1Small.mdf", "SF2Small.mdf", "SF3Small.mdf", "SF4Small.mdf"])
-  bBG = MPIFile("measBG.mdf")
-  b = MPIFile("measFast.mdf") # "measSlow.mdf"
+  bSF = MultiMPIFile(["motionComp/SF1Small.mdf", "motionComp/SF2Small.mdf",
+                      "motionComp/SF3Small.mdf", "motionComp/SF4Small.mdf"])
+  bBG = MPIFile("motionComp/measBG.mdf")
+  b = MPIFile("motionComp/measFast.mdf") # "measSlow.mdf"
 
 end
