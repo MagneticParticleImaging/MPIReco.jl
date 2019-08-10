@@ -137,7 +137,8 @@ end
 """
    calculateSubDFPeriodShift(currentPeriod, incr, samplesInOneDFCycle)
 
-CurrentPeriod is given as floating number (not an Integer although this seems to be right). The decimal digits give the shift < DF duration.
+currentPeriod is given as floating number (not an Integer although this seems to be right).
+The decimal digits give the shift < DF duration.
 """
 function calculateSubDFPeriodShift(currentPeriod, incr, samplesInOneDFCycle, samplingPrecision)
   delta = floor(Int,(currentPeriod+incr-floor(Int,currentPeriod+incr))*samplesInOneDFCycle)
@@ -164,14 +165,14 @@ function fillDataIntoVirtualFrame(ui, ufinal, numMotPeriods, incrementPerPeriod,
               ui[:,:,centralPeriod+1,currentPatch],
               ui[:,:,centralPeriod+2,currentPatch],dims=1)
 
-    buf2 = broadcast(*,buf[delta+1:delta+size(ui)[1]*3,:,:,:],windowFunction)
+    buf2 = broadcast(*,buf[delta+1:delta+size(ui,1)*3,:,:,:],windowFunction)
     buf3 = circshift(buf2,(delta,0,0,0))
 
-    ufinal[:,:,period,currentPatch] += buf3[1:size(ui)[1],:,:,:] +
-                                       buf3[size(ui)[1]+1:2*size(ui)[1],:,:,:] +
-                                       buf3[2*size(ui)[1]+1:end,:,:,:]
+    ufinal[:,:,period,currentPatch] += buf3[1:size(ui,1),:,:,:] +
+                                       buf3[size(ui,1)+1:2*size(ui,1),:,:,:] +
+                                       buf3[2*size(ui,1)+1:end,:,:,:]
   end
-  return ufinal
+  return nothing
 end
 
 """
@@ -232,7 +233,7 @@ function getavrgusubPeriod(motFreq, tmot, b, freq, firstFrame, lastFrame, sigma,
       # For consistent images, the same number is required for all patches. Thus for higher motion in a patch, the increment per Period is lowered
       incrementPerPeriod = 1/numMotPeriods*(1/currentMotFreq/tsc)
       currentPeriod = tmot[i,3]
-      ufinal = fillDataIntoVirtualFrame(ui, ufinal, numMotPeriods, incrementPerPeriod,
+      fillDataIntoVirtualFrame(ui, ufinal, numMotPeriods, incrementPerPeriod,
                                size(ui)[1], currentPeriod, currentPatch, window,
                                count, samplingPrecision)
     end
