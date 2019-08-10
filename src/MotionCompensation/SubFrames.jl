@@ -97,7 +97,7 @@ If totalLength > filledLength, window function is filled with zeros.
 """
 function determineWindow(totalLength, filledLength, windowType)
   window = zeros(totalLength)
-  empty = floor(Int,(totalLength-filledLength)/2)
+  empty = 0#floor(Int,(totalLength-filledLength)/2)
   if windowType == 1
     window[empty+1:empty+filledLength] = hanning(filledLength)
   elseif windowType == 2
@@ -152,7 +152,6 @@ function fillDataIntoVirtualFrame(ui, ufinal, numMotPeriods, incrementPerPeriod,
                    samplesInOneDFCycle, currentPeriod, currentPatch, windowFunction,
                    count, samplingPrecision)
 
-  # numMotPeriods,incrementPerPeriod,size(ui)[1],currentPeriod,currentPatch,windowFunction,count
   for period = 1:numMotPeriods
     incr = incrementPerPeriod*(period-1)
     delta = calculateSubDFPeriodShift(currentPeriod,incr,samplesInOneDFCycle,samplingPrecision)
