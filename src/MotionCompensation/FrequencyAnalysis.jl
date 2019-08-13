@@ -17,40 +17,40 @@ function findComponentsWithSignifFreq(u)
 end
 
 """
-    getMotionFreq(b::MPIFile, bSF::MPIFile, choosePeak::Int)
+    getMotionFreq(bMeas::MPIFile, bSF::MPIFile, choosePeak::Int)
 
 Determines frequency [Hz] of signal modulation for each patch and frame
 
 ...
-- `b::MPIFile`: measurement
+- `bMeas::MPIFile`: measurement
 - `bSF::MPIFile`: Systemfunction ==> required because the motion frequency is only determined from components with high SNR
 - `choosePeak::Int`: Within the measurement signal different modulations can be found and also higher harmonics.
  Choose the number of the peak you want
 ...
 """
-function getMotionFreq(b::MPIFile, bSF::MPIFile, choosePeak::Int)
+function getMotionFreq(bMeas::MPIFile, bSF::MPIFile, choosePeak::Int)
     snrthresh = 10
     recChannels=[2]
     freqs = filterFrequencies(bSF,SNRThresh=snrthresh,minFreq=80e3,recChannels=recChannels)
-    repFreq = 1 / dfCycle(b);
+    repFreq = 1 / dfCycle(bMeas);
     peaksInHz = 0
-    selectedPeakInHz = zeros(acqNumFrames(b),acqNumPatches(b))
-    uspec = getMeasurementsFD(b, frequencies=freqs, numAverages=1, spectralLeakageCorrection=false)
-    norm, ind = findComponentsWithSignifFreq(squeeze(uspec[:,1:acqNumPeriodsPerPatch(b),1]))
+    selectedPeakInHz = zeros(acqNumFrames(bMeas),acqNumPatches(bMeas))
+    uspec = getMeasurementsFD(bMeas, frequencies=freqs, numAverages=1, spectralLeakageCorrection=false)
+    norm, ind = findComponentsWithSignifFreq(squeeze(uspec[:,1:acqNumPeriodsPerPatch(bMeas),1]))
     @info "Maximum freq" ind
 
-	for j=1:acqNumFrames(b)
-    	for i = 1:acqNumPatches(b)
-        	uFT = generateSpectrum(squeeze(uspec[ind,(i-1)*acqNumPeriodsPerPatch(b)+1:i*acqNumPeriodsPerPatch(b),j]))
-        	frind = collect(1:acqNumPeriodsPerPatch(b)/2)
-       		frHz = bins2hertz(frind,repFreq,acqNumPeriodsPerPatch(b))
+	for j=1:acqNumFrames(bMeas)
+    	for i = 1:acqNumPatches(bMeas)
+        	uFT = generateSpectrum(squeeze(uspec[ind,(i-1)*acqNumPeriodsPerPatch(bMeas)+1:i*acqNumPeriodsPerPatch(bMeas),j]))
+        	frind = collect(1:acqNumPeriodsPerPatch(bMeas)/2)
+       		frHz = bins2hertz(frind,repFreq,acqNumPeriodsPerPatch(bMeas))
 
             peaksInInt=findPeaks(uFT,stdTh=1)
-            peaksInHz = bins2hertz(peaksInInt,1000/21.54,acqNumPeriodsPerPatch(b))
+            peaksInHz = bins2hertz(peaksInInt,1000/21.54,acqNumPeriodsPerPatch(bMeas))
             @info "Found peaks: " peaksInHz
 
 			selectedPeak = parabelMax(parabelFit(peaksInInt[choosePeak]-1:peaksInInt[choosePeak]+1,log.(uFT[peaksInInt[choosePeak]-1:peaksInInt[choosePeak]+1])))
-			selectedPeakInHz[j,i] = bins2hertz(selectedPeak,repFreq,acqNumPeriodsPerPatch(b))
+			selectedPeakInHz[j,i] = bins2hertz(selectedPeak,repFreq,acqNumPeriodsPerPatch(bMeas))
 		end
     end
     return selectedPeakInHz

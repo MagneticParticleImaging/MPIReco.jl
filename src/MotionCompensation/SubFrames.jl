@@ -64,12 +64,12 @@ Based on the motion frequency the repetitions of the same state are calculated. 
 #Arguments:
 - `motFreq::Float`: Assumed motion frequency in Hz
 """
-function getRepetitionsOfSameState(motFreq, b, firstFrame, lastFrame;
+function getRepetitionsOfSameState(f::MPIFile, motFreq, firstFrame, lastFrame;
                                    tsc = 0.02154, DFCyclesSwitch=7)
 
-  numPeriodsPerFrame = acqNumPeriodsPerFrame(b)
-  numPatches = acqNumPatches(b)
-  numPeriodsPerPatch = acqNumPeriodsPerPatch(b)
+  numPeriodsPerFrame = acqNumPeriodsPerFrame(f)
+  numPatches = acqNumPatches(f)
+  numPeriodsPerPatch = acqNumPeriodsPerPatch(f)
   endtime = (lastFrame)*tsc*(numPeriodsPerPatch*numPatches+DFCyclesSwitch*numPatches)
   currentTimeInms = calculateBeginningInms(firstFrame, tsc, numPeriodsPerPatch,
                                            numPatches, DFCyclesSwitch)
@@ -190,13 +190,13 @@ function normalizeSignalLevelandFormatData(numPatches, ufinal, freq, count)
 end
 
 """
-	getavrgusubPeriod(motFreq, tmot, b, freq, firstFrame, lastFrame, sigma,
+	getMeasurementsMotionCompFD(f::MPIFile, motFreq, tmot, freq, firstFrame, lastFrame, sigma,
                       samplingPrecision, windowType)
 	Averages over raw data corresponding to the same motion state and creates the virtual frames
 
+- f:			Meas data
 - motFreq:		Array containing dominant motion frequencies for each patch and frame
 - tmot:			Array containing repetitions of the same state (frame,patch,period)
-- b:			Meas data
 - freq:			Selected frequencies for reconstruction
 - firstFrame/lastframe:	Selected frames
 - sigma:		Window width for spectral leakage correction sigma = 1 <=> 3*DF repetition time
@@ -204,16 +204,16 @@ end
 - window:		1: Hann window, 2:FT1A05, 3: Rectangle
 
 """
-function getavrgusubPeriod(motFreq, tmot, b, freq, firstFrame, lastFrame, sigma,
+function getMeasurementsMotionCompFD(f::MPIFile, motFreq, tmot, freq, firstFrame, lastFrame, sigma,
                            samplingPrecision, windowType; tsc=0.02154)
   oldFrame = firstFrame
 
   numMotPeriods = numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame, tsc=tsc)
 
-  ui = getMeasurements(b,frames=oldFrame,spectralLeakageCorrection=false)
-  ui = reshape(ui,size(ui)[1],3,Int(size(ui)[3]/acqNumPatches(b)),acqNumPatches(b))
+  ui = getMeasurements(f,frames=oldFrame,spectralLeakageCorrection=false)
+  ui = reshape(ui,size(ui)[1],3,Int(size(ui)[3]/acqNumPatches(f)),acqNumPatches(f))
   ufinal = zeros(Float32,size(ui)[1],size(ui)[2],numMotPeriods,size(ui)[4])
-  count = zeros(acqNumPatches(b))
+  count = zeros(acqNumPatches(f))
   window = determineWindow(size(ui)[1]*3,floor(Int,sigma*size(ui)[1]*3), windowType)
 
   #numPeriods = acqNumPeriodsPerPatch(b)
@@ -222,7 +222,7 @@ function getavrgusubPeriod(motFreq, tmot, b, freq, firstFrame, lastFrame, sigma,
   for i = 1:size(tmot)[1]
     currentFrame=Int(tmot[i,1])
     if currentFrame > firstFrame-1 && currentFrame < lastFrame+1
-      (oldFrame, ui) = loadingDataIfNecessary(b,oldFrame,currentFrame,ui)
+      (oldFrame, ui) = loadingDataIfNecessary(f,oldFrame,currentFrame,ui)
 
       currentPatch = Int(tmot[i,2])
       # Counting is required for averaging to ensure same signal level for all patches
@@ -238,7 +238,7 @@ function getavrgusubPeriod(motFreq, tmot, b, freq, firstFrame, lastFrame, sigma,
     end
   end
 
-  return normalizeSignalLevelandFormatData(acqNumPatches(b), ufinal, freq, count)
+  return normalizeSignalLevelandFormatData(acqNumPatches(f), ufinal, freq, count)
 end
 
 function getPeriod(b, freq)
