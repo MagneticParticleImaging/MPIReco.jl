@@ -46,6 +46,6 @@ using MPIReco
 		lambda=lambda, iterations=iterations,
 		windowType=windowType, higherHarmonic=choosePeak)
 
-  exportImage("./img/MotionComp.png", maximum(arraydata(c[:,:,:,1]),dims=3)[:,:,1])
+  exportImage("./img/MotionComp.png", maximum(c[:,:,:,1],dims=3)[:,:,1])
 
 end
