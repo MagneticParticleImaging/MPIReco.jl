@@ -290,9 +290,9 @@ function enforceMinDistanceOfPeaks(diracpeaks, minBinDist, data)
       push!(keep,true) # append last index
       # keep the greater ones
       rem = findall(.!keep)
-      println(rem)
+      @debug rem
       for i in rem
-	      println(diracpeaks[i])
+	  @debug diracpeaks[i]
           if data[diracpeaks[i]] > data[diracpeaks[i+1]]
               keep[i] = true
               keep[i+1] = false
