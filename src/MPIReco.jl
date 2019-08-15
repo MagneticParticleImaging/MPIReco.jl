@@ -12,6 +12,7 @@ module MPIReco
   using DistributedArrays
   # using TensorDecompositions
   import LinearOperators
+  import LinearAlgebra: ldiv!, \
   using DSP
 
   include("Utils.jl")
