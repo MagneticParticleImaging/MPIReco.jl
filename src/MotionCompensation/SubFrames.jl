@@ -1,5 +1,5 @@
 export currentFramePatchPeriod, getRepetitionsOfSameState, manualCorrection, FT1A05,
-       determineWindow, getavrgusubPeriod, getPeriod
+       determineWindow, getMeasurementsMotionCompFD, getPeriod
 
 """
     currentFramePatchPeriod(currentTimeInms, numPeriodsPerFrame, numPeriodsPerPatch,

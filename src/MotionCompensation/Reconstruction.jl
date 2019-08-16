@@ -50,7 +50,10 @@ function reconstructionPeriodicMotion(bMeas::MPIFile, bSF::MPIFile, bBG::MPIFile
 			    indFFPos=resortedInd[:,1],
 			    FFPos=FFP[:,resortedInd[:,1]], mapping=mapping, 
 			    FFPosSF=FFP[:,resortedInd[:,1]])
+  
+  image = initImage(bSF[1],bMeas,size(uReco,3),acqNumAverages(bMeas),FFOp.grid,false)
+  c =  reconstruction(FFOp, uReco, λ=lambda, iterations=iterations)
+  writePartToImage!(image, c, 1, 1:size(uReco,3), acqNumAverages(bMeas))
 
-  c_ =  reconstruction(FFOp, uReco, λ=lambda, iterations=iterations)
-  return reshape(c_, shape(FFOp.grid)..., :)
+  return image
 end
