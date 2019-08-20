@@ -43,7 +43,7 @@ using MPIReco
                                 alpha = alpha, choosePeak = choosePeak, recoFrame = recoFrame,
                                 windowType=windowType,higherHarmonic=choosePeak,
                                 lambda=lambda,iterations=iterations, # reconstruction parameter
-                                SNRThresh=2,minFreq=80e3,recChannels=[1,2,3]) #frequency selection
+                                SNRThresh=10,minFreq=80e3,recChannels=[1,2,3]) #frequency selection
 
   exportImage("./img/MotionComp.png", maximum(arraydata(data(c[1,:,:,:,1])),dims=3)[:,:,1])
 
