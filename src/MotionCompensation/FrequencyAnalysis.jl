@@ -17,21 +17,21 @@ function findComponentsWithSignifFreq(u)
 end
 
 """
-    getMotionFreq(bMeas::MPIFile, bSF::MPIFile, choosePeak::Int)
+    getMotionFreq(bSF::MPIFile, bMeas::MPIFile, choosePeak::Int)
 
 Determines frequency [Hz] of signal modulation for each patch and frame
 
 ...
-- `bMeas::MPIFile`: measurement
 - `bSF::MPIFile`: Systemfunction ==> required because the motion frequency is only determined from components with high SNR
+- `bMeas::MPIFile`: measurement
 - `choosePeak::Int`: Within the measurement signal different modulations can be found and also higher harmonics.
  Choose the number of the peak you want
 ...
 """
-function getMotionFreq(bMeas::MPIFile, bSF::MPIFile, choosePeak::Int)
-    snrthresh = 10
-    recChannels=[2]
-    freqs = filterFrequencies(bSF,SNRThresh=snrthresh,minFreq=80e3,recChannels=recChannels)
+function getMotionFreq(bSF::MPIFile, bMeas::MPIFile, choosePeak::Int,
+		       SNRThreshMF = 10, minFreqMF = 80e3, recChannelsMF = [2]) # frequency selection
+
+    freqs = filterFrequencies(bSF,SNRThresh=SNRThreshMF,minFreq=minFreqMF,recChannels=recChannelsMF)
     repFreq = 1 / dfCycle(bMeas);
     peaksInHz = 0
     selectedPeakInHz = zeros(acqNumFrames(bMeas),acqNumPatches(bMeas))
@@ -57,11 +57,11 @@ function getMotionFreq(bMeas::MPIFile, bSF::MPIFile, choosePeak::Int)
 end
 
 """
-    findNFreqwithhighestSNRinfreqs(bSF, freqs, N)
+    findNFreqwithhighestSNRinfreqs(bSF::MPIFile, freqs, N)
 
 Return indices of N frequency components with highest SNR.
 """
-function findNFreqwithhighestSNRinfreqs(bSF, freqs, N)
+function findNFreqwithhighestSNRinfreqs(bSF::MPIFile, freqs, N)
 
   snr_freq = reshape(getSNR(bSF),size(getSNR(bSF),1)*3,1)
   indinfreqs = Int[]

@@ -16,16 +16,13 @@ using MPIReco
 
   # Measurement data
   datadirMeas = "./motionComp/"
-  b = MPIFile(datadirMeas*"measFast.mdf") # high frequency
+  bMeas = MPIFile(datadirMeas*"measFast.mdf") # high frequency
   bBG = MPIFile(datadirMeas*"measBG.mdf") # background measurement
 
   # System matrices
   datadirSF = "./motionComp/"
   SFall = ["SF1Small.mdf","SF2Small.mdf","SF3Small.mdf","SF4Small.mdf"]
   bSF = MultiMPIFile(datadirSF.*SFall)
-
-  # Frequency selection # TODO: reconstructionPeriodicMotion basteln, die das tut
-  freq = filterFrequencies(bSF,SNRThresh=2,minFreq=80e3,recChannels=[1,2,3])
 
   # Background frames
   frBG = [1:200,201:400, 401:600 ,601:800]
@@ -41,10 +38,12 @@ using MPIReco
   lambda = 0.01 
   iterations = 1
 
-  c = reconstructionPeriodicMotion(b, bSF, bBG,
-		frBG, choosePeak, alpha, freq, recoFrame,
-		lambda=lambda, iterations=iterations,
-		windowType=windowType, higherHarmonic=choosePeak)
+  c = reconstructionPeriodicMotion(bSF, bMeas, 
+                                bEmpty = bBG, frBG = frBG, #background measurement
+                                alpha = alpha, choosePeak = choosePeak, recoFrame = recoFrame,
+                                windowType=windowType,higherHarmonic=choosePeak,
+                                lambda=lambda,iterations=iterations, # reconstruction parameter
+                                SNRThresh=2,minFreq=80e3,recChannels=[1,2,3]) #frequency selection
 
   exportImage("./img/MotionComp.png", maximum(arraydata(data(c[1,:,:,:,1])),dims=3)[:,:,1])
 
