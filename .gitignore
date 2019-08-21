@@ -4,6 +4,7 @@
 test/data*
 test/SF*
 test/*.mdf
+test/motionComp/*.mdf
 deps/build.log
 test/img/*
 
