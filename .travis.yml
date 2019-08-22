@@ -3,10 +3,11 @@ language: julia
 sudo: required
 os:
   - linux
+  - windows
 #  - osx
 julia:
   - 1.0
-  - 1.1
+  - 1.2
 #  - nightly
 notifications:
   email: false
