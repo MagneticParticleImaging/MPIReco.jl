@@ -1,5 +1,6 @@
 module MPIReco
   using Reexport
+  using IniFile
   @reexport using MPIFiles
   @reexport using RegularizedLeastSquares
   @reexport using Images
@@ -12,6 +13,7 @@ module MPIReco
   using DistributedArrays
   # using TensorDecompositions
   import LinearOperators
+  using IniFile
 
   include("Utils.jl")
   include("MultiContrast.jl")
