@@ -97,18 +97,29 @@ end
 ##########################
 # inverse of normal matrix
 ##########################
+mutable struct diagPrecon{T}
+  diag::Vector{T}
+end
+
+function ldiv!(y::Vector{T},P::diagPrecon{T},x::Vector{T}) where T
+  y[:] .= P.diag .* x
+end
+
+function ldiv!(P::diagPrecon{T},x::Vector{T}) where T
+  x[:] .= P.diag .* x
+end
+
+\(P::diagPrecon{T}, x::Vector{T}) where T = P.diag .* x
+
 function invPrecon(samplingIdx, ncol; μ::Float64 = 1.e-2, λ::Float64 = 1.e2, ρ::Float64=1.0, kargs...)
   normalP = normalPDiag(samplingIdx, ncol)
   diag = [μ*normalP[i]+λ+ρ for i=1:length(normalP)]
   diag = diag.^-1
-  return LinearOperators.LinearOperator(length(normalP),length(normalP),true,false
-          , x->diag .* x
-          , nothing
-          , nothing)
+  return diagPrecon(diag)
 end
 
-function normalPDiag(samplingIdx, ncol)
-  normalP = zeros(ncol)
+function normalPDiag(samplingIdx, ncol; T=ComplexF64)
+  normalP = zeros(T,ncol)
   for i=1:length(samplingIdx)
     normalP[samplingIdx[i]] = 1.0
   end

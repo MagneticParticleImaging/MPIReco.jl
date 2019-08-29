@@ -14,6 +14,8 @@ module MPIReco
   # using TensorDecompositions
   import LinearOperators
   using IniFile
+  import LinearAlgebra: ldiv!, \
+  using DSP
 
   include("Utils.jl")
   include("MultiContrast.jl")
@@ -24,4 +26,5 @@ module MPIReco
   include("Reconstruction.jl")
   include("MultiPatch.jl")
   include("SystemMatrixRecovery.jl")
+  include("MotionCompensation/MotionCompensation.jl")
 end # module

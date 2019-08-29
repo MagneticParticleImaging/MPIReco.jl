@@ -23,7 +23,7 @@ end
 
 function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
             frames=nothing, bEmpty=nothing, nAverages=1, numAverages=nAverages,
-	    spectralLeakageCorrection=true, kargs...)
+	    spectralLeakageCorrection=true, voxelsize=voxelSize(bSF), kargs...)
 
   bgCorrection = (bEmpty != nothing)
 
@@ -50,8 +50,9 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
 
   # calculate axis
   shp = size(c)
-  pixspacing = (voxelSize(bSF) ./ sfGradient(bMeas,3) .* sfGradient(bSF,3)) * 1000u"mm"
+  pixspacing = (voxelsize ./ sfGradient(bMeas,3) .* sfGradient(bSF,3)) * 1000u"mm"
   offset = (fieldOfViewCenter(FFOp.grid) .- 0.5.*fieldOfView(FFOp.grid) .+ 0.5.*spacing(FFOp.grid)) * 1000u"mm"
+
   # TODO does this provide the correct value in the multi-patch case?
   dtframes = acqNumAverages(bMeas)*dfCycle(bMeas)*numAverages*1u"s"
   # create image
@@ -149,6 +150,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
                     SFGridCenter = zeros(0,0),
                     systemMatrices = nothing,
                     mapping=zeros(0),
+		    calibsize = nothing,
                     grid = nothing, kargs...)
 
   @debug "Loading System matrix"
@@ -186,7 +188,9 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
 
     diffFFPos = FFPosSF[:,idx] .- FFPos[:,k]
 
-    push!(grids, RegularGridPositions(calibSize(SF),calibFov(SF),SFGridCenter[:,idx].-diffFFPos))
+    calibsizeTmp = (calibsize == nothing) ? calibSize(SF) : calibsize
+ 
+    push!(grids, RegularGridPositions(calibsizeTmp,calibFov(SF),SFGridCenter[:,idx].-diffFFPos))
   end
 
   # We now know all the subgrids for each patch, if the corresponding system matrix would be taken as is
@@ -196,6 +200,16 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
     recoGrid = RegularGridPositions(grids)
   else
     recoGrid = grid
+    # Test whether given grid covers all subgrids
+    recoGridTest = RegularGridPositions(grids)
+    testMin = round.(recoGridTest.center,digits=3) - round.(recoGridTest.fov./2,digits=3)
+    testMax = round.(recoGridTest.center,digits=3) + round.(recoGridTest.fov./2,digits=3)
+    gridMin = round.(recoGrid.center,digits=3) - round.(recoGrid.fov./2,digits=3)
+    gridMax = round.(recoGrid.center,digits=3) + round.(recoGrid.fov./2,digits=3)
+    if false in ((gridMin .<= testMin) .* (gridMax .>= testMax))
+        @warn "A larger grid is used for reconstruction, since the given grid does not cover all subgrids: $recoGrid ⊅  $recoGridTest"
+        recoGrid = recoGridTest
+    end
   end
 
 
@@ -411,8 +425,8 @@ end
 
 function initkaczmarz(Op::MultiPatchOperator,λ,weights::Vector)
   T = typeof(real(Op.S[1][1]))
-  denom = zeros(T,Op.M)
-  rowindex = zeros(Int64,Op.M)
+  denom = T[] #zeros(T,Op.M)
+  rowindex = Int64[] #zeros(Int64,Op.M)
 
   MSub = div(Op.M,Op.nPatches)
 
@@ -422,8 +436,8 @@ function initkaczmarz(Op::MultiPatchOperator,λ,weights::Vector)
       if s²>0
         for l=1:Op.nPatches
           k = i+MSub*(l-1)
-          denom[k] = weights[i]^2/(s²+λ)
-          rowindex[k] = k
+          push!(denom,weights[i]^2/(s²+λ)) #denom[k] = weights[i]^2/(s²+λ)
+          push!(rowindex,k) #rowindex[k] = k
         end
       end
     end
@@ -433,8 +447,8 @@ function initkaczmarz(Op::MultiPatchOperator,λ,weights::Vector)
         s² = rownorm²(Op.S[Op.patchToSMIdx[l]],i)*weights[i]^2
         if s²>0
           k = i+MSub*(l-1)
-          denom[k] = weights[i]^2/(s²+λ)
-          rowindex[k] = k
+          push!(denom,weights[i]^2/(s²+λ)) #denom[k] = weights[i]^2/(s²+λ)
+          push!(rowindex,k) #rowindex[k] = k
         end
       end
     end

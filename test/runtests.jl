@@ -1,4 +1,4 @@
-import ImageMagick 
+import ImageMagick
 using HTTP
 using Test
 using FileIO
@@ -30,6 +30,20 @@ if !isfile(filenameMeas)
   end
 end
 
+mkpath("./motionComp/")
+for f in ["SF1Small.mdf", "SF2Small.mdf", "SF3Small.mdf", "SF4Small.mdf",
+          "measBG.mdf", "measFast.mdf"] #, "measSlow.mdf"]
+  filename = joinpath("./motionComp/", f)
+  if !isfile(filename)
+    HTTP.open("GET", joinpath("http://media.tuhh.de/ibi/motionComp/",f)) do http
+      open(filename, "w") do file
+          write(file, http)
+      end
+    end
+  end
+
+end
+
 mkpath("./img/")
 
 function exportImage(filename, I::AbstractMatrix)
@@ -38,6 +52,7 @@ function exportImage(filename, I::AbstractMatrix)
   save(filename, Icolored )
 end
 
+include("MotionCompensation.jl")
 include("Reconstruction.jl")
 include("MultiPatch.jl")
 include("MultiGradient.jl")

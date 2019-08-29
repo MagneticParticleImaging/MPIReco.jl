@@ -1,5 +1,5 @@
 export reconstruction
-export writePartToImage, initImage
+export writePartToImage!, initImage
 
 """
 This is the most high level reconstruction method using the `MDFDatasetStore`
