@@ -1,4 +1,4 @@
-import Base: size
+import Base: size, eltype
 import RegularizedLeastSquares: initkaczmarz, dot_with_matrix_row, kaczmarz_update!
 
 export reconstructionMultiPatch, MultiPatchOperator
@@ -77,6 +77,8 @@ mutable struct MultiPatchOperator{V<:AbstractMatrix, U<:Positions}
   nPatches::Int
   patchToSMIdx::Vector{Int}
 end
+
+eltype(FFOp::MultiPatchOperator) = eltype(FFOp.S[1])
 
 function MultiPatchOperatorHighLevel(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
   return MultiPatchOperatorHighLevel(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
@@ -189,7 +191,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
     diffFFPos = FFPosSF[:,idx] .- FFPos[:,k]
 
     calibsizeTmp = (calibsize == nothing) ? calibSize(SF) : calibsize
- 
+
     push!(grids, RegularGridPositions(calibsizeTmp,calibFov(SF),SFGridCenter[:,idx].-diffFFPos))
   end
 
@@ -367,6 +369,8 @@ function size(FFOp::MultiPatchOperator,i::Int)
     error("bounds error")
   end
 end
+
+size(FFOp::MultiPatchOperator) = (FFOp.M,FFOp.N)
 
 length(FFOp::MultiPatchOperator) = size(FFOp,1)*size(FFOp,2)
 
