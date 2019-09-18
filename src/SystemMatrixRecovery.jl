@@ -66,7 +66,7 @@ function lrReg(lrProx::AbstractString, λ::AbstractFloat, params::Dict{Symbol,An
     proxMap = (x,y;kargs...)->proxFR!(x,y,params[:shape];kargs...)
     reg = Regularization(prox! = proxMap, λ=λ, params=params)
   elseif lrProx == "Nothing"
-    reg = Regularization(prox! = x->x, λ=λ, params=params)
+    reg = Regularization(prox! = (x,y;kargs...)->x, λ=λ, params=params)
   else
     error("proximal map $(lrProx) is not supported")
   end
