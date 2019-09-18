@@ -20,9 +20,9 @@ using MPIReco
   params = Dict{Symbol,Any}()
   params[:shape] = Tuple(shape)
   params[:reg2] = "Nothing"
-  params[:ρ] = 0.0
-  params[:λ] = 1.e2
-  params[:μ] = 5.e1
+  params[:ρ1] = 2.0
+  params[:ρ2] = 0.0
+  params[:λ1] = 2.e-2
   params[:iterationsInner] = 50
   params[:iterations] = 10
   params[:relTol] = 1.e-2
