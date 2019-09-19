@@ -3,8 +3,8 @@ using MPIReco
 # multi-gradient is a special case of multi-patch
 @testset "multi-gradient in-memory reconstruction" begin
   # low gradient with patch no 3
-  b = MultiMPIFile(["dataMG_G1", "dataMG_G2_03"])
-  bSFs = MultiMPIFile(["SF_MG_G1", "SF_MG_G2"])
+  b = MultiMPIFile(["./data/MG_G1", "./data/MG_G2_03"])
+  bSFs = MultiMPIFile(["./data/SF_MG_G1", "./data/SF_MG_G2"])
   names = names = (:color, :x, :y, :z, :time)
 
   c1 = reconstruction(bSFs, b;
@@ -21,7 +21,7 @@ using MPIReco
   #FileIO.save("./img/MultiGradient1.png", Icolored )
 
   # low gradient with all 3 high gradient patches
-  b = MultiMPIFile(["dataMG_G1", "dataMG_G2_01", "dataMG_G2_02", "dataMG_G2_03"])
+  b = MultiMPIFile(["./data/MG_G1", "./data/MG_G2_01", "./data/MG_G2_02", "./data/MG_G2_03"])
 
   c2 = reconstruction(bSFs, b;
 			    SNRThresh=2, frames=1, lambd=0.003, minFreq=80e3,
@@ -39,8 +39,8 @@ using MPIReco
 
 
   # low gradient only
-  b = MultiMPIFile(["dataMG_G1"])
-  bSFs = MultiMPIFile(["SF_MG_G1"])
+  b = MultiMPIFile(["./data/MG_G1"])
+  bSFs = MultiMPIFile(["./data/SF_MG_G1"])
 
   c3 = reconstruction(bSFs, b;
 			    SNRThresh=2, frames=1, lambd=0.003, minFreq=80e3,

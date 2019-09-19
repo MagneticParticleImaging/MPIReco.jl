@@ -1,11 +1,8 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-test/data*
-test/SF*
-test/*.mdf
-test/motionComp/*.mdf
+test/data
 deps/build.log
-test/img/*
+test/img
 
 Manifest.toml

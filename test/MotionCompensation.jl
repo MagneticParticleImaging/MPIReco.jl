@@ -15,12 +15,12 @@ using MPIReco
   windowType = 1  # 1: Hann, 2: FT1A05, 3: Rectangle
 
   # Measurement data
-  datadirMeas = "./motionComp/"
+  datadirMeas = "./data/mdf/"
   bMeas = MPIFile(datadirMeas*"measFast.mdf") # high frequency
   bBG = MPIFile(datadirMeas*"measBG.mdf") # background measurement
 
   # System matrices
-  datadirSF = "./motionComp/"
+  datadirSF = "./data/mdf/"
   SFall = ["SF1Small.mdf","SF2Small.mdf","SF3Small.mdf","SF4Small.mdf"]
   bSF = MultiMPIFile(datadirSF.*SFall)
 

@@ -1,7 +1,7 @@
 using MPIReco
 
 @testset "system matrix center estimation" begin
-  SFs = ["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"]
+  SFs = ["./data/SF_MP01", "./data/SF_MP02", "./data/SF_MP03", "./data/SF_MP04"]
   center = [[9.0,23.0,1.0],[9.0,10.0,1.0],[22.0,23.0,1.0],[22.0,10.0,1.0]]
 
   for (l,SF) in enumerate(SFs)

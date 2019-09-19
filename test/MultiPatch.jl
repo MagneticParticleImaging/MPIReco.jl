@@ -1,8 +1,8 @@
 using MPIReco
 
 @testset "multi-patch in-memory reconstruction" begin
-  bSF = MultiMPIFile(["SF_MP"])
-  b = MultiMPIFile(["dataMP01", "dataMP02", "dataMP03", "dataMP04"])
+  bSF = MultiMPIFile(["./data/SF_MP"])
+  b = MultiMPIFile(["./data/MP01", "./data/MP02", "./data/MP03", "./data/MP04"])
   names = (:color, :x, :y, :z, :time)
   values1 = (1:1,
 	    -27.5u"mm":1.25u"mm":27.5u"mm",
@@ -31,7 +31,7 @@ using MPIReco
   exportImage("./img/MultiPatch2.png", arraydata(data(c2[1,:,:,1,1])))
 
   # multi-patch reconstruction using multiple system matrices
-  bSFs = MultiMPIFile(["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"])
+  bSFs = MultiMPIFile(["./data/SF_MP01", "./data/SF_MP02", "./data/SF_MP03", "./data/SF_MP04"])
   c3 = reconstruction(bSFs, b;
 			    SNRThresh=5, frames=1, minFreq=80e3,
 			    recChannels=1:2,iterations=1,
@@ -41,7 +41,7 @@ using MPIReco
   exportImage("./img/MultiPatch3.png", arraydata(data(c3[1,:,:,1,1])))
 
   # flexible multi-patch reconstruction
-  bSFs = MultiMPIFile(["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"])
+  bSFs = MultiMPIFile(["./data/SF_MP01", "./data/SF_MP02", "./data/SF_MP03", "./data/SF_MP04"])
   mapping = [1,2,3,4]
   freq = filterFrequencies(bSFs, SNRThresh=5, minFreq=80e3)
   S = [getSF(SF,freq,nothing,"kaczmarz", bgcorrection=false)[1] for SF in bSFs]

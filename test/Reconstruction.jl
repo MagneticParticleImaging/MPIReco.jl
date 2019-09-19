@@ -1,8 +1,8 @@
 using MPIReco
 
 @testset "single- and multi-channel in-memory reconstruction" begin
-  bSF = MPIFile("SF_MP")
-  b = MPIFile("dataMP01")
+  bSF = MPIFile("./data/SF_MP")
+  b = MPIFile("./data/MP01")
   names = (:color, :x, :y, :z, :time)
   values = (1:1,
 	    -27.375u"mm":1.25u"mm":11.375u"mm",

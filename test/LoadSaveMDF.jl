@@ -2,8 +2,8 @@ using MPIReco
 using Test
 
 @testset "test saving and loading of MPI images to and from MDF's" begin
-  bSF = MPIFile("SF_MP")
-  b = MPIFile("dataMP01")
+  bSF = MPIFile("./data/SF_MP")
+  b = MPIFile("./data/MP01")
   r = defaultRecoParams()
   r[:measPath] = filepath(b)
   r[:SFPath] = filepath(bSF)
@@ -19,10 +19,10 @@ using Test
   values =  axisvalues(c)
 
   # save c as MDF
-  saveRecoData("reco.mdf",c)
+  saveRecoData("./img/reco.mdf",c)
 
   # load MDF
-  cmdf = loadRecoData("reco.mdf")
+  cmdf = loadRecoData("./img/reco.mdf")
   @test axisnames(cmdf) == names
   @test axisvalues(cmdf) == values
 end
