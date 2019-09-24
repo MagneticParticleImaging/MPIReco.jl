@@ -82,7 +82,7 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
 
   nFreq = rxNumFrequencies(bSF)
 
-  S = getSystemMatrix(bSF, frequencies, bgCorrection=bgCorrection)
+  S = getSystemMatrix(bSF, frequencies, bgCorrection=bgCorrection; kargs...)
 
   if !isempty(deadPixels)
     repairDeadPixels(S,gridsize,deadPixels)
