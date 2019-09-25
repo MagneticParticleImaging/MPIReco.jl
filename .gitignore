@@ -1,6 +1,7 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
+*.mdf
 test/data
 deps/build.log
 test/img
