@@ -109,13 +109,13 @@ function determineWindow(totalLength, filledLength, windowType)
 end
 
 """
-    numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame[; tsc=0.02154])
+    numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame, tsc)
 
 Based on the motion frequency in every frame and patch, the maximum number of
 complete DF cycles is caluclated for the completion of one motion cycle
 
 """
-function numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame; tsc=0.02154)
+function numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame, tsc)
   return floor(Int,1/minimum(motFreq[firstFrame:lastFrame,:])/tsc)
 end
 
@@ -199,22 +199,22 @@ end
 - tmot:			Array containing repetitions of the same state (frame,patch,period)
 - freq:			Selected frequencies for reconstruction
 - firstFrame/lastframe:	Selected frames
-- alpha:		Window width for spectral leakage correction sigma = 1 <=> 3*DF repetition time
+- Δt:			Window width for spectral leakage correction (Δt = 3 <=> window width = 3*DF repetition time)
 - samplingPrecision:	true: rounding motion period to sampling precision, false: rounding to DF period precision
 - window:		1: Hann window, 2:FT1A05, 3: Rectangle
 
 """
-function getMeasurementsMotionCompFD(bMeas::MPIFile, motFreq, tmot, freq, firstFrame, lastFrame, alpha,
+function getMeasurementsMotionCompFD(bMeas::MPIFile, motFreq, tmot, freq, firstFrame, lastFrame, Δt,
                            samplingPrecision, windowType)
   oldFrame = firstFrame
 
-  numMotPeriods = numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame, tsc=dfCycle(bMeas))
+  numMotPeriods = numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame, dfCycle(bMeas))
 
   ui = getMeasurements(bMeas,frames=oldFrame,spectralLeakageCorrection=false)
   ui = reshape(ui,size(ui)[1],3,Int(size(ui)[3]/acqNumPatches(bMeas)),acqNumPatches(bMeas))
   ufinal = zeros(Float32,size(ui)[1],size(ui)[2],numMotPeriods,size(ui)[4])
   count = zeros(acqNumPatches(bMeas))
-  window = determineWindow(size(ui)[1]*3,floor(Int,alpha*size(ui)[1]*3), windowType)
+  window = determineWindow(size(ui)[1]*3,floor(Int,Δt*size(ui)[1]), windowType)
 
   #numPeriods = acqNumPeriodsPerPatch(b)
 

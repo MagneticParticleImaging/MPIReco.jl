@@ -12,7 +12,12 @@ end
 
 
 """
-	reconstructionPeriodicMotion(b::MPIFile, bSF::MPIFile, bBG::MPIFile, frBG::Array{UnitRange{Int64},1}, choosePeak::Int64, sigma::Float64, freq::Array{Int64,1},recoFrame::Int64;lambd=0.1,iterations=2,samplingPrecision=true,windowFunction=1,bSFFrequencyAnalysis=bSF)
+    reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile, freq::Array{Int64,1};
+				bEmpty=nothing, frBG=nothing, 
+				alpha::Float64=3.0, choosePeak::Int64=1, recoFrame::Int64=1,
+				samplingPrecision::Bool=true, windowType::Int64=1,
+				bSFFrequencyAnalysis::MPIFile=bSF,higherHarmonic::Int64=1,
+				kargs...)
 
 	Performs multi-patch reconstruction of raw data from an object with periodic motion
 
@@ -22,7 +27,7 @@ end
 - bEmpty:		Background measurement
 - frBG:			Background frames
 - choosePeak:		Number of chosen peak for motion frequency
-- alpha:                Window width for spectral leakage correction alpha = 1 <=> 3*DF repetition time
+- Δt: 	                Window width for spectral leakage correction (Δt = 3 <=> window width = 3*DF repetition time)
 - recoFrame: 		Selected frame
 - lambda:		Regularization parameter for reconstruction
 - iterations:		Number of iterations
@@ -33,7 +38,7 @@ end
 """
 function reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile, freq::Array{Int64,1};
 				bEmpty=nothing, frBG=nothing, 
-				alpha::Float64=1.0, choosePeak::Int64=1, recoFrame::Int64=1,
+				Δt::Float64=3.0, choosePeak::Int64=1, recoFrame::Int64=1,
 				samplingPrecision::Bool=true, windowType::Int64=1,
 				bSFFrequencyAnalysis::MPIFile=bSF,higherHarmonic::Int64=1,
 				kargs...)
@@ -44,14 +49,14 @@ function reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile, freq::Array{
   tmot = getRepetitionsOfSameState(bMeas,motFreq,recoFrame,recoFrame)
 
   # sort measured data in virtual frames
-  uReco = getMeasurementsMotionCompFD(bMeas, motFreq, tmot, freq, recoFrame, recoFrame, alpha,
+  uReco = getMeasurementsMotionCompFD(bMeas, motFreq, tmot, freq, recoFrame, recoFrame, Δt,
                             samplingPrecision, windowType)
   #println(size(uReco))
   # subtract background measurement
   if bEmpty != nothing
     uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=1, numAverages=1, spectralLeakageCorrection=true)
     if frBG == nothing
-      numFrames = Int(acqNumPeriods(bBG)/acqNumFrames(bBG)/acqNumPatches(bBG))
+      numFrames = acqNumPeriodsPerPatch(bMeas)#Int(acqNumPeriods(bBG)/acqNumFrames(bBG)/acqNumPatches(bBG))
       frBG = [1+(i-1)*numFrames:i*numFrames for i=1:acqNumPatches(bBG)]
     end
     for i=1:acqNumPatches(bMeas)
