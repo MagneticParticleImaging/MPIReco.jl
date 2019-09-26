@@ -13,6 +13,11 @@ using Pkg
 Pkg.add("MPIReco")
 ```
 
+Load the package by entering
+```julia
+using MPIReco
+```
+
 You can the switch to the directory of this example by entering
 ```julia
 dir = joinpath(dirname(pathof(MPIReco)), "..","examples","MotionCompensation")
