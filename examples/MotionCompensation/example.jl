@@ -5,21 +5,11 @@ for P in ["HTTP", "PyPlot"]
   !haskey(Pkg.installed(), P) && Pkg.add(P)
 end
 
-
-using HTTP
+useCompressedMatrices = true
+suffixSM = useCompressedMatrices ? "Small" : "Large"
 
 # Doanload data
-if !isdir("data")
-  @info "download data.zip"
-  HTTP.open("GET", "http://media.tuhh.de/ibi/MotionCompensation/data.zip") do http
-    open("data.zip", "w") do file
-        write(file, http)
-    end
-  end
-  @info "extracting data.zip"
-  run(`unzip -oq data.zip`)
-  rm("data.zip")
-end
+include("downloadData.jl")
 
 using MPIReco, PyPlot
 
@@ -42,7 +32,7 @@ bBG = MPIFile(datadirMeas*"measBG.mdf") # background measurement
 
 # System matrices
 datadirSF = "./data/"
-SFall = ["SF1Small.mdf","SF2Small.mdf","SF3Small.mdf","SF4Small.mdf"]
+SFall = ["SF$(d)$(suffixSM).mdf" for d=1:4]
 bSF = MultiMPIFile(datadirSF.*SFall)
 
 # Background frames
