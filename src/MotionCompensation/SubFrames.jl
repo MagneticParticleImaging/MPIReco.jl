@@ -150,7 +150,7 @@ end
 
 function fillDataIntoVirtualFrame!(ui, ufinal, numMotPeriods, incrementPerPeriod,
                    samplesInOneDFCycle, currentPeriod, currentPatch, windowFunction,
-                   count, samplingPrecision)
+                   count, samplingPrecision, normalization)
 
   for period = 1:numMotPeriods
     incr = incrementPerPeriod*(period-1)
@@ -164,12 +164,17 @@ function fillDataIntoVirtualFrame!(ui, ufinal, numMotPeriods, incrementPerPeriod
               ui[:,:,centralPeriod+1,currentPatch],
               ui[:,:,centralPeriod+2,currentPatch],dims=1)
 
-    buf2 = broadcast(*,buf[delta+1:delta+size(ui,1)*3,:,:,:],windowFunction)
-    buf3 = circshift(buf2,(delta,0,0,0))
+    buf2 = broadcast(*,buf[delta+1:delta+size(ui,1)*3,:],windowFunction)
+    buf3 = circshift(buf2,(delta,0))
 
-    ufinal[:,:,period,currentPatch] += buf3[1:size(ui,1),:,:,:] +
-                                       buf3[size(ui,1)+1:2*size(ui,1),:,:,:] +
-                                       buf3[2*size(ui,1)+1:end,:,:,:]
+    ufinal[:,:,period,currentPatch] += buf3[1:size(ui,1),:] +
+                                       buf3[size(ui,1)+1:2*size(ui,1),:] +
+                                       buf3[2*size(ui,1)+1:end,:]
+                                       
+    shiftedWindow = circshift(windowFunction,(delta,))
+    normalization[:,:,period,currentPatch] .+= shiftedWindow[1:size(ui,1)] +
+                                       shiftedWindow[size(ui,1)+1:2*size(ui,1)] +
+                                       shiftedWindow[2*size(ui,1)+1:end]
   end
   return nothing
 end
@@ -179,10 +184,12 @@ end
 
 Normalize data based on number of repetitions to ensure same signal level for all patches and reformatting
 """
-function normalizeSignalLevelandFormatData(ufinal, numPatches, freq, count)
-  for patch in 1:numPatches
-    ufinal[:,:,:,patch] /= count[patch]
-  end
+function normalizeSignalLevelandFormatData(ufinal, numPatches, freq, count, normalization)
+  #for patch in 1:numPatches
+  #  ufinal[:,:,:,patch] /= count[patch]
+  #end
+  ufinal ./= normalization
+  
   ufinal = rfft(ufinal,1)
   ufinal = permutedims(reshape(ufinal,size(ufinal)[1]*size(ufinal)[2],
                                size(ufinal)[3],size(ufinal)[4])[freq,:,:],[1,3,2])
@@ -211,10 +218,11 @@ function getMeasurementsMotionCompFD(bMeas::MPIFile, motFreq, tmot, freq, firstF
   numMotPeriods = numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame, dfCycle(bMeas))
 
   ui = getMeasurements(bMeas,frames=oldFrame,spectralLeakageCorrection=false)
-  ui = reshape(ui,size(ui)[1],3,Int(size(ui)[3]/acqNumPatches(bMeas)),acqNumPatches(bMeas))
-  ufinal = zeros(Float32,size(ui)[1],size(ui)[2],numMotPeriods,size(ui)[4])
+  ui = reshape(ui,size(ui,1),3,Int(size(ui,3)/acqNumPatches(bMeas)),acqNumPatches(bMeas))
+  ufinal = zeros(Float32,size(ui,1),size(ui,2),numMotPeriods,size(ui,4))
+  normalization = zeros(Float32,size(ui,1),size(ui,2),numMotPeriods,size(ui,4))
   count = zeros(acqNumPatches(bMeas))
-  window = determineWindow(size(ui)[1]*3,floor(Int,Δt*size(ui)[1]), windowType)
+  window = determineWindow(size(ui,1)*3,floor(Int,Δt*size(ui)[1]), windowType)
 
   #numPeriods = acqNumPeriodsPerPatch(b)
 
@@ -235,11 +243,11 @@ function getMeasurementsMotionCompFD(bMeas::MPIFile, motFreq, tmot, freq, firstF
       currentPeriod = tmot[i,3]
       fillDataIntoVirtualFrame!(ui, ufinal, numMotPeriods, incrementPerPeriod,
                                size(ui)[1], currentPeriod, currentPatch, window,
-                               count, samplingPrecision)
+                               count, samplingPrecision, normalization)
     end
   end
 
-  return normalizeSignalLevelandFormatData(ufinal, acqNumPatches(bMeas), freq, count)
+  return normalizeSignalLevelandFormatData(ufinal, acqNumPatches(bMeas), freq, count, normalization)
 end
 
 function getPeriod(bMeas::MPIFile, freq)
