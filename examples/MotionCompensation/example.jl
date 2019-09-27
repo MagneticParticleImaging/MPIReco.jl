@@ -8,9 +8,9 @@ end
 useCompressedMatrices = true
 suffixSM = useCompressedMatrices ? "Small" : "Large"
 useFastData = true
-suffixMeas = useFastData ? "Fast" : "Small"
+suffixMeas = useFastData ? "Fast" : "Slow"
 
-# Doanload data
+# Download data
 include("downloadData.jl")
 
 using MPIReco, PyPlot
