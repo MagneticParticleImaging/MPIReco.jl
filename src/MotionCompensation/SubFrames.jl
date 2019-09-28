@@ -1,6 +1,13 @@
 export currentFramePatchPeriod, getRepetitionsOfSameState, manualCorrection, FT1A05,
        determineWindow, getMeasurementsMotionCompFD, getPeriod
 
+
+struct LocationInMeasurement
+  frame::Int
+  patch::Int
+  period::Float64
+end
+
 """
     currentFramePatchPeriod(currentTimeInms, numPeriodsPerFrame, numPeriodsPerPatch,
                             numPatches, tsc[; DFCyclesSwitch==7])
@@ -9,18 +16,17 @@ Determine frame, patch, and period from time within the measurement sequence.
 function currentFramePatchPeriod(currentTimeInms, numPeriodsPerFrame, numPeriodsPerPatch,
                                  numPatches, tsc; DFCyclesSwitch=7)
 
-  fr = ceil(Int, currentTimeInms/((numPeriodsPerFrame+DFCyclesSwitch*numPatches)*tsc))
-  rest = currentTimeInms-(fr-1)*(numPeriodsPerFrame+DFCyclesSwitch*numPatches)*tsc
+  frame = ceil(Int, currentTimeInms/((numPeriodsPerFrame+DFCyclesSwitch*numPatches)*tsc))
+  rest = currentTimeInms-(frame-1)*(numPeriodsPerFrame+DFCyclesSwitch*numPatches)*tsc
   patch = ceil(Int, rest/((numPeriodsPerPatch+DFCyclesSwitch)*tsc))
   rest2 = rest-(patch-1)*(numPeriodsPerPatch+DFCyclesSwitch)*tsc
   period = rest2/tsc
   if currentTimeInms == 0
-    fr = 1
+    frame = 1
     patch = 1
-    period = 1
+    period = 1.0
   end
-
-  return fr, patch, period
+  return LocationInMeasurement(frame, patch, period)
 end
 
 """
@@ -35,18 +41,18 @@ the endtime is reached. The times are converted to frame, patch, and period.
 function calculateRepetitionsInFramePatchPeriod(totalduration, motFreq, currentTimeInms, endtime,
                                         numPeriodsPerPatch, numPeriodsPerFrame, numPatches, tsc)
 
-  tmot = zeros(ceil(Int,totalduration*maximum(motFreq))+1,3)
-  j = 1
-  while (currentTimeInms < endtime)
-    (frame,patch,period) = currentFramePatchPeriod(currentTimeInms, numPeriodsPerFrame,
-                                            numPeriodsPerPatch, numPatches,tsc)
-    currentTimeInms += 1 / motFreq[frame,patch]
+  #N = ceil(Int, totalduration*maximum(motFreq)) + 1
+  tmot = Vector{LocationInMeasurement}()
 
-     if (period+1/(motFreq[frame,patch])/tsc < numPeriodsPerPatch-1 && period >= 2)
-       tmot[j,1] = frame
-       tmot[j,2] = patch
-       tmot[j,3] = period
-       j += 1
+  while (currentTimeInms < endtime)
+    loc = currentFramePatchPeriod(currentTimeInms, numPeriodsPerFrame,
+                                            numPeriodsPerPatch, numPatches,tsc)
+
+    currentTimeInms += 1 / motFreq[loc.frame,loc.patch]
+
+     if (loc.period+1/(motFreq[loc.frame,loc.patch])/tsc < numPeriodsPerPatch-1 &&
+         loc.period >= 2)
+       push!(tmot, loc)
      end
   end
   return tmot
@@ -57,26 +63,26 @@ function calculateBeginningInms(firstFrame, tsc, numPeriodsPerPatch, numPatches,
 end
 
 """
-    getRepetitionsOfSameState(bMeas::MPIFile,motFreq,firstFrame,lastFrame[;DFCyclesSwitch==7])
+    getRepetitionsOfSameState(bMeas::MPIFile,motFreq,frames[;DFCyclesSwitch==7])
 
 Based on the motion frequency the repetitions of the same state are calculated. I.e. the frame, patch, and period of the repetition
 
 #Arguments:
 - `motFreq::Float`: Assumed motion frequency in Hz
 """
-function getRepetitionsOfSameState(bMeas::MPIFile, motFreq, firstFrame, lastFrame;
+function getRepetitionsOfSameState(bMeas::MPIFile, motFreq, frames::UnitRange;
                                    DFCyclesSwitch=7)
 
   numPeriodsPerFrame = acqNumPeriodsPerFrame(bMeas)
   numPatches = acqNumPatches(bMeas)
   numPeriodsPerPatch = acqNumPeriodsPerPatch(bMeas)
-  endtime = (lastFrame)*dfCycle(bMeas)*(numPeriodsPerPatch*numPatches+DFCyclesSwitch*numPatches)
-  currentTimeInms = calculateBeginningInms(firstFrame, dfCycle(bMeas), numPeriodsPerPatch,
+  endtime = last(frames)*dfCycle(bMeas)*(numPeriodsPerPatch*numPatches+DFCyclesSwitch*numPatches)
+  currentTimeInms = calculateBeginningInms(first(frames), dfCycle(bMeas), numPeriodsPerPatch,
                                            numPatches, DFCyclesSwitch)
   totalduration = endtime-currentTimeInms
 
   tmot = calculateRepetitionsInFramePatchPeriod(totalduration, motFreq, currentTimeInms,
-                          endtime, numPeriodsPerPatch, numPeriodsPerFrame, numPatches,dfCycle(bMeas))
+                          endtime, numPeriodsPerPatch, numPeriodsPerFrame, numPatches, dfCycle(bMeas))
 
   return tmot
 end
@@ -109,29 +115,18 @@ function determineWindow(totalLength, filledLength, windowType)
 end
 
 """
-    numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame, tsc)
+    numDFPeriodsInMotionCycle(motFreq, frames, tsc)
 
 Based on the motion frequency in every frame and patch, the maximum number of
 complete DF cycles is caluclated for the completion of one motion cycle
 
 """
-function numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame, tsc)
-  return floor(Int,1/minimum(motFreq[firstFrame:lastFrame,:])/tsc)
+function numDFPeriodsInMotionCycle(motFreq::Matrix, frames, tsc)
+  return floor(Int, 1.0 / (minimum(motFreq[frames,:])*tsc) )
 end
 
-"""
-    loadingDataIfNecessary!(bMeas::MPIFile,ui,oldFrame,currentFrame)
-The data are loaded frame-wise
-"""
-function loadingDataIfNecessary!(bMeas::MPIFile, ui, oldFrame, currentFrame)
-
-  if (currentFrame != oldFrame)
-    ui = getMeasurements(bMeas,frames=Int(currentFrame),spectralLeakageCorrection=false)
-    ui = reshape(ui,size(ui)[1],3,Int(size(ui)[3]/acqNumPatches(bMeas)),acqNumPatches(bMeas))
-    oldFrame = currentFrame
-  end
-
-  return nothing#oldFrame, ui
+function numDFPeriodsInMotionCycle(motFreq::Number, tsc)
+  return floor(Int, 1.0 / (motFreq*tsc) )
 end
 
 """
@@ -148,33 +143,32 @@ function calculateSubDFPeriodShift(currentPeriod, incr, samplesInOneDFCycle, sam
   return delta
 end
 
-function fillDataIntoVirtualFrame!(ui, ufinal, numMotPeriods, incrementPerPeriod,
-                   samplesInOneDFCycle, currentPeriod, currentPatch, windowFunction,
-                   count, samplingPrecision, normalization)
+function fillDataIntoVirtualFrame!(ui, ufinal, normalization, numMotPeriods,
+                   incrementPerPeriod, samplesInOneDFCycle, currentPeriod,
+                   currentPatch, window, samplingPrecision)
+
+  numDFCyclesPerWindowLength = div(length(window), size(ui,1))
+  N = size(ui,1)
 
   for period = 1:numMotPeriods
     incr = incrementPerPeriod*(period-1)
     delta = calculateSubDFPeriodShift(currentPeriod,incr,samplesInOneDFCycle,samplingPrecision)
 
-    centralPeriod = floor(Int,currentPeriod+incr)
-    mixture = incr - centralPeriod
+    centralPeriod = floor(Int, currentPeriod+incr)
+    shiftedWindow = circshift(window, delta)
 
-    buf = cat(ui[:,:,centralPeriod-1,currentPatch],
-              ui[:,:,centralPeriod,currentPatch],
-              ui[:,:,centralPeriod+1,currentPatch],
-              ui[:,:,centralPeriod+2,currentPatch],dims=1)
+    for recChan = 1:size(ui,2)
+      p = (centralPeriod-1):(centralPeriod-1+numDFCyclesPerWindowLength)
+      buf = vec(ui[:,recChan,p,currentPatch])
+      buf2 = circshift(buf[delta+1:delta+N*numDFCyclesPerWindowLength,:], delta)
+      buf3 = buf2 .* shiftedWindow
 
-    buf2 = broadcast(*,buf[delta+1:delta+size(ui,1)*3,:],windowFunction)
-    buf3 = circshift(buf2,(delta,0))
-
-    ufinal[:,:,period,currentPatch] += buf3[1:size(ui,1),:] +
-                                       buf3[size(ui,1)+1:2*size(ui,1),:] +
-                                       buf3[2*size(ui,1)+1:end,:]
-                                       
-    shiftedWindow = circshift(windowFunction,(delta,))
-    normalization[:,:,period,currentPatch] .+= shiftedWindow[1:size(ui,1)] +
-                                       shiftedWindow[size(ui,1)+1:2*size(ui,1)] +
-                                       shiftedWindow[2*size(ui,1)+1:end]
+      for l=1:numDFCyclesPerWindowLength
+        ufinal[:,recChan,period,currentPatch] += buf3[((l-1)*N+1):(l*N)]
+        normalization[:,recChan,period,currentPatch] +=
+                             shiftedWindow[((l-1)*N+1):(l*N)]
+      end
+    end
   end
   return nothing
 end
@@ -184,12 +178,9 @@ end
 
 Normalize data based on number of repetitions to ensure same signal level for all patches and reformatting
 """
-function normalizeSignalLevelandFormatData(ufinal, numPatches, freq, count, normalization)
-  #for patch in 1:numPatches
-  #  ufinal[:,:,:,patch] /= count[patch]
-  #end
+function normalizeSignalLevelandFormatData(ufinal, normalization, freq)
   ufinal ./= normalization
-  
+
   ufinal = rfft(ufinal,1)
   ufinal = permutedims(reshape(ufinal,size(ufinal)[1]*size(ufinal)[2],
                                size(ufinal)[3],size(ufinal)[4])[freq,:,:],[1,3,2])
@@ -197,7 +188,7 @@ function normalizeSignalLevelandFormatData(ufinal, numPatches, freq, count, norm
 end
 
 """
-	getMeasurementsMotionCompFD(bMeas::MPIFile, motFreq, tmot, freq, firstFrame, lastFrame, sigma,
+	getMeasurementsMotionCompFD(bMeas::MPIFile, motFreq, tmot, freq, frames, sigma,
                       samplingPrecision, windowType)
 	Averages over raw data corresponding to the same motion state and creates the virtual frames
 
@@ -205,52 +196,51 @@ end
 - motFreq:		Array containing dominant motion frequencies for each patch and frame
 - tmot:			Array containing repetitions of the same state (frame,patch,period)
 - freq:			Selected frequencies for reconstruction
-- firstFrame/lastframe:	Selected frames
-- Δt:			Window width for spectral leakage correction (Δt = 3 <=> window width = 3*DF repetition time)
+- frames:       Selected frames
+- alpha:        Window width relative to the DF cycle.
 - samplingPrecision:	true: rounding motion period to sampling precision, false: rounding to DF period precision
 - window:		1: Hann window, 2:FT1A05, 3: Rectangle
 
 """
-function getMeasurementsMotionCompFD(bMeas::MPIFile, motFreq, tmot, freq, firstFrame, lastFrame, Δt,
-                           samplingPrecision, windowType)
-  oldFrame = firstFrame
+function getMeasurementsMotionCompFD(bMeas::MPIFile, motFreq, tmot, freq, frames::UnitRange,
+                                     alpha, samplingPrecision, windowType)
+  oldFrame = first(frames)
 
-  numMotPeriods = numDFPeriodsInMotionCycle(motFreq, firstFrame, lastFrame, dfCycle(bMeas))
+  numMotPeriods = numDFPeriodsInMotionCycle(motFreq, frames, dfCycle(bMeas))
 
-  ui = getMeasurements(bMeas,frames=oldFrame,spectralLeakageCorrection=false)
-  ui = reshape(ui,size(ui,1),3,Int(size(ui,3)/acqNumPatches(bMeas)),acqNumPatches(bMeas))
-  ufinal = zeros(Float32,size(ui,1),size(ui,2),numMotPeriods,size(ui,4))
-  normalization = zeros(Float32,size(ui,1),size(ui,2),numMotPeriods,size(ui,4))
+  ui_ = getMeasurements(bMeas, frames=first(frames), spectralLeakageCorrection=false)
+  ui = reshape(ui_, size(ui_,1), 3, div(size(ui_,3), acqNumPatches(bMeas)), acqNumPatches(bMeas))
+  ufinal = zeros(Float32, size(ui,1), size(ui,2), numMotPeriods, size(ui,4))
+  normalization = zeros(Float32, size(ui,1), size(ui,2), numMotPeriods, size(ui,4))
   count = zeros(acqNumPatches(bMeas))
-  window = determineWindow(size(ui,1)*3,floor(Int,Δt*size(ui)[1]), windowType)
-
-  #numPeriods = acqNumPeriodsPerPatch(b)
+  numDFCyclesPerWindowLength = ceil(Int, alpha)
+  window = determineWindow(size(ui,1)*numDFCyclesPerWindowLength,
+                           floor(Int, alpha*size(ui,1)), windowType)
 
   # collect data from all repetitions from first till last frame and fill into virtual frame ufinal
-  for i = 1:size(tmot)[1]
-    currentFrame=Int(tmot[i,1])
-    if currentFrame > firstFrame-1 && currentFrame < lastFrame+1
-      loadingDataIfNecessary!(bMeas,ui,oldFrame,currentFrame)
-      #(oldFrame, ui) = loadingDataIfNecessary(bMeas,oldFrame,currentFrame,ui)
+  for i = 1:length(tmot)
+    currentFrame = tmot[i].frame
+    if currentFrame > first(frames)-1 && currentFrame < last(frames)+1
+      # loading new data if frame has changed
+      if currentFrame != oldFrame
+        ui[:] = vec(getMeasurements(bMeas, frames=currentFrame, spectralLeakageCorrection=false))
+        oldFrame = currentFrame
+      end
 
-      currentPatch = Int(tmot[i,2])
-      # Counting is required for averaging to ensure same signal level for all patches
-      count[currentPatch] += 1
+      currentPatch = tmot[i].patch
+
       currentMotFreq = motFreq[currentFrame,currentPatch]
       # The number of full DF cycles within one motion cycle varies for different patches and frames
-      # For consistent images, the same number is required for all patches. Thus for higher motion in a patch, the increment per Period is lowered
-      incrementPerPeriod = 1/numMotPeriods*(1/currentMotFreq/dfCycle(bMeas))
-      currentPeriod = tmot[i,3]
-      fillDataIntoVirtualFrame!(ui, ufinal, numMotPeriods, incrementPerPeriod,
-                               size(ui)[1], currentPeriod, currentPatch, window,
-                               count, samplingPrecision, normalization)
+      # For consistent images, the same number is required for all patches.
+      # Thus for higher motion in a patch, the increment per Period is lowered
+      incrementPerPeriod = numDFPeriodsInMotionCycle(currentMotFreq, dfCycle(bMeas)) / numMotPeriods
+
+      currentPeriod = tmot[i].period
+      fillDataIntoVirtualFrame!(ui, ufinal, normalization, numMotPeriods, incrementPerPeriod,
+                               size(ui,1), currentPeriod, currentPatch, window,
+                               samplingPrecision)
     end
   end
 
-  return normalizeSignalLevelandFormatData(ufinal, acqNumPatches(bMeas), freq, count, normalization)
-end
-
-function getPeriod(bMeas::MPIFile, freq)
-  period = 1 / (dfCycle(bMeas)*freq)
-  return period
+  return normalizeSignalLevelandFormatData(ufinal, normalization, freq)
 end

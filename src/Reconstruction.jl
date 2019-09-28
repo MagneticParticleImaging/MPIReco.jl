@@ -85,7 +85,9 @@ function reconstruction(filenameSF::AbstractString, filenameMeas::AbstractString
 end
 
 function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...) where {T<:MPIFile}
-  if acqNumPeriodsPerFrame(bMeas) > 1
+  if haskey(kargs, :periodicMotionCorrection) && kargs[:periodicMotionCorrection]
+    return reconstructionPeriodicMotion(bSF, bMeas; kargs...)
+  elseif acqNumPeriodsPerFrame(bMeas) > 1
     return reconstructionMultiPatch(bSF, bMeas; kargs...)
   else
     return reconstructionSinglePatch(bSF, bMeas;  kargs...)

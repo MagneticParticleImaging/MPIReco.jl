@@ -18,7 +18,7 @@ using MPIReco, PyPlot
 ################
 ## Parameters ##
 ################
-Δt = 1.2
+alpha = 1.2
 
 # Choose the peak number according to the expected approximate value. Be careful, if there are peaks not corresponding to object motion, division by choosePeak can be false.
 # For experiments with different periodic motions it is used to pick one motion frequency (then don't divide by choosePeak)
@@ -37,10 +37,10 @@ SFall = ["SF$(d)$(suffixSM).mdf" for d=1:4]
 bSF = MultiMPIFile(datadirSF.*SFall)
 
 # Background frames
-frBG = [1:200, 201:400, 401:600, 601:800]
+bgFrames = [1:200, 201:400, 401:600, 601:800]
 
 # Selected frames
-recoFrame = 1
+frames = 1:2
 
 ####################
 ## Reconstruction ##
@@ -50,12 +50,12 @@ recoFrame = 1
 lambda = 0.01
 iterations = 1
 
-c = reconstructionPeriodicMotion(bSF, bMeas,
-                              bEmpty = bBG, frBG = frBG, #background measurement
-                              Δt = Δt, choosePeak = choosePeak, recoFrame = recoFrame,
+c = reconstruction(bSF, bMeas, periodicMotionCorrection = true,
+                              bEmpty = bBG, bgFrames = bgFrames, #background measurement
+                              alpha = alpha, choosePeak = choosePeak, frames = frames,
                               windowType=windowType, higherHarmonic=choosePeak,
                               lambda=lambda, iterations=iterations, # reconstruction parameter
                               SNRThresh=2,minFreq=80e3,recChannels=[1,2,3]) #frequency selection
 
-figure(1)
+figure(2)
 imshow( maximum(arraydata(data(c[1,:,:,:,1])),dims=3)[:,:,1] )
