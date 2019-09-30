@@ -13,8 +13,8 @@ end
 
 """
     reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile, freq::Array{Int64,1};
-				bEmpty=nothing, frBG=nothing,
-				alpha::Float64=3.0, choosePeak::Int64=1, frames::Int64=1,
+				bEmpty=nothing, bgFrames=nothing,
+				alpha::Float64=3.0, choosePeak::Int64=1, frames::UnitRange=1:acqNumFrames(bMeas),
 				samplingPrecision::Bool=true, windowType::Int64=1,
 				bSFFrequencyAnalysis::MPIFile=bSF,higherHarmonic::Int64=1,
 				kargs...)
@@ -25,9 +25,9 @@ end
 - bMeas:		Raw data of the measurement
 - freq:                 Selected frequencies for reconstruction
 - bEmpty:		Background measurement
-- bgFrames:			Background frames
+- bgFrames:		Background frames
 - choosePeak:		Number of chosen peak for motion frequency
-- alpha:        Window width relative to DF cycle
+- alpha:        	Window width relative to DF cycle
 - frames: 		Selected frame
 - lambda:		Regularization parameter for reconstruction
 - iterations:		Number of iterations
@@ -39,7 +39,7 @@ end
 function reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile, freq::Array{Int64,1};
 				bEmpty=nothing, bgFrames=nothing,
 				alpha::Float64=3.0, choosePeak::Int64=1,
-                frames::UnitRange=1:acqNumFrames(bMeas),
+		                frames::UnitRange=1:acqNumFrames(bMeas),
 				samplingPrecision::Bool=true, windowType::Int64=1,
 				bSFFrequencyAnalysis::MPIFile=bSF, higherHarmonic::Int64=1,
 				kargs...)
@@ -57,8 +57,8 @@ function reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile, freq::Array{
   if bEmpty != nothing
     uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=1, numAverages=1, spectralLeakageCorrection=true)
     if bgFrames == nothing
-      numFrames = acqNumPeriodsPerPatch(bMeas)
-      bgFrames = [1+(i-1)*numFrames:i*numFrames for i=1:acqNumPatches(bBG)]
+      numFrames = acqNumPeriodsPerPatch(bEmpty)
+      bgFrames = [1+(i-1)*numFrames:i*numFrames for i=1:acqNumPatches(bEmpty)]
     end
     for i=1:acqNumPatches(bMeas)
       uReco[:,i,:] = uReco[:,i,:] .- mean(uEmpty[:,bgFrames[i],:], dims=2)
