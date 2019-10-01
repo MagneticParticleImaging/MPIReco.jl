@@ -4,6 +4,7 @@ module MPIReco
   @reexport using MPIFiles
   @reexport using RegularizedLeastSquares
   @reexport using Images
+  @reexport using ImageUtils
   using AxisArrays
   using ProgressMeter
   using LinearAlgebra
