@@ -1,4 +1,4 @@
-import ImageMagick
+#import ImageMagick
 using MPIReco, Documenter
 
 makedocs(
