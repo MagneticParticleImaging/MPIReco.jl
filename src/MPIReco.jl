@@ -1,10 +1,11 @@
 module MPIReco
   using Reexport
+  @reexport using ImageUtils
   using IniFile
   @reexport using MPIFiles
   @reexport using RegularizedLeastSquares
   @reexport using Images
-  @reexport using ImageUtils
+
   using AxisArrays
   using ProgressMeter
   using LinearAlgebra
