@@ -24,6 +24,7 @@ addons:
             - xauth
             - libgtk-3-dev
             - hdf5-tools
+            - strace
 
 ## uncomment following lines to deploy documentation
 jobs:
@@ -33,7 +34,7 @@ jobs:
        os: linux
        script:
          - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.add(PackageSpec(path=pwd()))'
-         - julia --project=docs docs/make.jl
+         - strace -e open -f julia --project=docs docs/make.jl
        after_success: skip
 
 after_success:
