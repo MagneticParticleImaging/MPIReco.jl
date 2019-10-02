@@ -179,6 +179,9 @@ end
 Normalize data based on number of repetitions to ensure same signal level for all patches and reformatting
 """
 function normalizeSignalLevelandFormatData(ufinal, normalization, freq)
+  if any(normalization .== 0)
+    error("Could not construct virtual frame!")
+  end 
   ufinal ./= normalization
 
   ufinal = rfft(ufinal,1)

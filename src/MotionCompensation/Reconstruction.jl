@@ -55,13 +55,13 @@ function reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile, freq::Array{
 
   # subtract background measurement
   if bEmpty != nothing
-    uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, frames=1, numAverages=1, spectralLeakageCorrection=true)
+    uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, numAverages=1, spectralLeakageCorrection=true)
     if bgFrames == nothing
       numFrames = acqNumPeriodsPerPatch(bEmpty)
       bgFrames = [1+(i-1)*numFrames:i*numFrames for i=1:acqNumPatches(bEmpty)]
     end
     for i=1:acqNumPatches(bMeas)
-      uReco[:,i,:] = uReco[:,i,:] .- mean(uEmpty[:,bgFrames[i],:], dims=2)
+      uReco[:,i,:] = uReco[:,i,:] .- mean(uEmpty[:,bgFrames[i],:],dims=(2,3))
     end
   end
 
