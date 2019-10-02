@@ -1,4 +1,4 @@
-using Documenter, MPIReco
+using MPIReco, Documenter 
 
 makedocs(
     format = :html,
