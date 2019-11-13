@@ -257,7 +257,8 @@ Low level reconstruction method
 """
 function reconstruction(S, u::Array; sparseTrafo = nothing,
                         lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "kaczmarz",
-                        weights=nothing, enforceReal=true, enforcePositive=true, kargs...)
+                        weights=nothing, enforceReal=true, enforcePositive=true,
+                        relativeLambda=true, kargs...)
 
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
@@ -267,7 +268,7 @@ function reconstruction(S, u::Array; sparseTrafo = nothing,
   c = zeros(N,L)
   #c = zeros(real(eltype(u)),N,L) Change by J.Dora
 
-  if sum(abs.(λ)) > 0 && solver != "fusedlasso"
+  if sum(abs.(λ)) > 0 && solver != "fusedlasso" && relativeLambda
     trace = calculateTraceOfNormalMatrix(S,weights)
     λ *= trace / N
     setlambda(S,λ)
