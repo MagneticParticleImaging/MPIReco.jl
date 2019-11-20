@@ -1,23 +1,19 @@
 module MPIReco
-  using Reexport
-  @reexport using ImageUtils
-  using IniFile
-  @reexport using MPIFiles
+  using RegularizedLeastSquares
   @reexport using RegularizedLeastSquares
-  @reexport using Images
+  @reexport using ImageUtils
+  @reexport using MPIFiles
+  const shape = MPIFiles.shape
+  @reexport using DSP
 
-  using AxisArrays
-  using ProgressMeter
   using LinearAlgebra
   using SparseArrays
-  @reexport using Unitful
   using Distributed
   using DistributedArrays
   # using TensorDecompositions
-  import LinearOperators
   using IniFile
   import LinearAlgebra: ldiv!, \
-  using DSP
+
 
   include("Utils.jl")
   include("MultiContrast.jl")
