@@ -21,6 +21,7 @@ module MPIReco
   include("SystemMatrixCenter.jl")
   include("SystemMatrix.jl")
   include("Weighting.jl")
+  include("Background.jl")
   include("Reconstruction.jl")
   include("MultiPatch.jl")
   include("SystemMatrixRecovery.jl")

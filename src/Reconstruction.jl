@@ -84,10 +84,17 @@ function reconstruction(filenameSF::AbstractString, filenameMeas::AbstractString
   reconstruction(bSF,bMeas,freq; kargs...)
 end
 
+
+
 function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...) where {T<:MPIFile}
   if haskey(kargs, :periodicMotionCorrection) && kargs[:periodicMotionCorrection]
     return reconstructionPeriodicMotion(bSF, bMeas; kargs...)
-  elseif acqNumPeriodsPerFrame(bMeas) > 1
+  elseif acqNumPeriodsPerFrame(bMeas) > 1 &&
+      (acqNumPeriodsPerFrame(bSF) == 1 || typeof(bSF) == MultiMPIFile)
+    # This branch is only used of the measurements are multi-patch and if the
+    # system matrix is not fully sampled. This is the case if either we have a
+    # single system matrix that is reused for-multiple patches, or if we have
+    # a MultiMPIFile
     return reconstructionMultiPatch(bSF, bMeas; kargs...)
   else
     return reconstructionSinglePatch(bSF, bMeas;  kargs...)
@@ -122,7 +129,7 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, emptyMeas = bEmpty, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = 0.0,
   loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
-  deadPixels=Int[], bgCorrectionInternal=false, kargs...) where {T<:MPIFile}
+  deadPixels=Int[], bgCorrectionInternal=false, bgDictSize=nothing, kargs...) where {T<:MPIFile}
 
   (typeof(bgFrames) <: AbstractRange && emptyMeas==nothing) && (emptyMeas = bMeas)
   bgCorrection = emptyMeas != nothing ? true : bgCorrectionInternal
@@ -140,14 +147,17 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
     denoiseSF!(S, shape, weight=denoiseWeight)
   end
 
+  bgDict = getBackgroundDictionary(bSF, freq, bgDictSize)
+
   return reconstruction(S, bSF, bMeas, freq, grid, emptyMeas=emptyMeas, bgFrames=bgFrames,
-                        sparseTrafo=sparseTrafo, loadasreal=loadasreal,
+                        sparseTrafo=sparseTrafo, loadasreal=loadasreal, bgDictSize=bgDictSize,
+                        bgDict = bgDict,
                         solver=solver, bgCorrectionInternal=bgCorrectionInternal; kargs...)
 end
 
 function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
   frames = nothing, bEmpty = nothing, emptyMeas= bEmpty, bgFrames = 1, nAverages = 1,
-  numAverages=nAverages,
+  numAverages=nAverages, bgDict = nothing,
   sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
   weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
   spectralCleaning=true, spectralLeakageCorrection=spectralCleaning,
@@ -201,7 +211,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
       u = map(eltype(S),u)
     end
     @debug "Reconstruction ..."
-    c = reconstruction(S, u; sparseTrafo=B, progress=p,
+    c = reconstruction(S, u, bgDict; sparseTrafo=B, progress=p,
 		       weights=weights, solver=solver, shape=shape(grid), kargs...)
 
     currentIndex = writePartToImage!(image, c, currentIndex, partframes, numAverages)
@@ -255,7 +265,7 @@ end
 """
 Low level reconstruction method
 """
-function reconstruction(S, u::Array; sparseTrafo = nothing,
+function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = nothing,
                         lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "kaczmarz",
                         weights=nothing, enforceReal=true, enforcePositive=true,
                         relativeLambda=true, kargs...)
