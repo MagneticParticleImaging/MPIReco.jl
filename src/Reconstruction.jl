@@ -126,7 +126,8 @@ end
 
 
 function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
-  bEmpty = nothing, emptyMeas = bEmpty, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = 0.0,
+  bEmpty = nothing, emptyMeas = bEmpty, bgFrames = 1,
+  denoiseWeight = 0, redFactor = 0.0, thresh = 0.0,
   loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
   deadPixels=Int[], bgCorrectionInternal=false, bgDictSize=nothing, kargs...) where {T<:MPIFile}
@@ -157,7 +158,7 @@ end
 
 function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
   frames = nothing, bEmpty = nothing, emptyMeas= bEmpty, bgFrames = 1, nAverages = 1,
-  numAverages=nAverages, bgDict = nothing,
+  numAverages=nAverages, bgDict = nothing, bgFramesPost = nothing,
   sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
   weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
   spectralCleaning=true, spectralLeakageCorrection=spectralCleaning,
@@ -169,14 +170,19 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
 
   @debug "Loading emptymeas ..."
   if emptyMeas!=nothing
-    if acqNumBGFrames(emptyMeas) > 0
-      uEmpty = getMeasurementsFD(emptyMeas, false, frequencies=freq, frames=bgFrames, #frames=measBGFrameIdx(bEmpty),
-                numAverages = acqNumBGFrames(emptyMeas), bgCorrection=bgCorrectionInternal,
-               loadasreal=loadasreal, spectralLeakageCorrection=spectralLeakageCorrection)
-    else
+    #if acqNumBGFrames(emptyMeas) > 0
+    #  uEmpty = getMeasurementsFD(emptyMeas, false, frequencies=freq, frames=bgFrames, #frames=measBGFrameIdx(bEmpty),
+    #            numAverages = =length(bgFrames), bgCorrection=bgCorrectionInternal,
+    #           loadasreal=loadasreal, spectralLeakageCorrection=spectralLeakageCorrection)
+    #else
       uEmpty = getMeasurementsFD(emptyMeas, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
-      loadasreal = loadasreal,spectralLeakageCorrection=spectralLeakageCorrection)
-    end
+      loadasreal = loadasreal,spectralLeakageCorrection=spectralLeakageCorrection, bgCorrection=bgCorrectionInternal)
+      if bgFramesPost != nothing
+        uEmptyPost = getMeasurementsFD(emptyMeas, false, frequencies=freq, frames=bgFramesPost,
+                    numAverages = length(bgFramesPost), bgCorrection=bgCorrectionInternal,
+                    loadasreal = loadasreal, spectralLeakageCorrection=spectralLeakageCorrection)
+      end
+    #end
   end
 
   frames == nothing && (frames = 1:acqNumFrames(bMeas))
@@ -201,7 +207,16 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
     u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=numAverages,
                           loadasreal=loadasreal, spectralLeakageCorrection=spectralLeakageCorrection,
                           bgCorrection=bgCorrectionInternal)
-    emptyMeas!=nothing && (u = u .- uEmpty)
+    if emptyMeas!=nothing
+      if bgFramesPost == nothing
+        u = u .- uEmpty
+      else
+        for l=1:length(partframes)
+          alpha = (partframes[l] - mean(bgFrames)) / (mean(bgFramesPost) - mean(bgFrames))
+          u[:,:,l] .-=  (1-alpha).*uEmpty[:,:,1] .+ alpha.*uEmptyPost[:,:,1]
+        end
+      end
+    end
 
     noiseFreqThresh > 0 && setNoiseFreqToZero(u, freq, noiseFreqThresh, bEmpty = emptyMeas, bMeas = bMeas, bgFrames=bgFrames)
 
