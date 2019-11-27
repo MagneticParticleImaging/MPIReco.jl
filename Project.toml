@@ -21,6 +21,7 @@ IniFile = "0.5"
 MPIFiles = "0.8"
 RegularizedLeastSquares = "0.5"
 ImageUtils = "0.2"
+DistributedArrays = "0.6"
 
 [extras]
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
