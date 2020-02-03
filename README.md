@@ -9,3 +9,7 @@
 MPIReco.jl is a Julia package for the reconstruction of magnetic particle imaging (MPI) data. The documentation is hosted under the following link:
 
 [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://magneticparticleimaging.github.io/MPIReco.jl/dev)
+
+# Community Standards
+
+This project is part of the Julia community and follows the [Julia community standards](https://julialang.org/community/standards/). 
