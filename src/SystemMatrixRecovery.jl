@@ -120,9 +120,9 @@ end
 
 \(P::diagPrecon{T}, x::Vector{T}) where T = P.diag .* x
 
-function invPrecon(samplingIdx, ncol; μ::Float64 = 1.e-2, λ::Float64 = 1.e2, ρ::Float64=1.0, kargs...)
+function invPrecon(samplingIdx, ncol; ρ::Vector{Float64}=[1.0], kargs...)
   normalP = normalPDiag(samplingIdx, ncol)
-  diag = [μ*normalP[i]+λ+ρ for i=1:length(normalP)]
+  diag = [normalP[i]+sum(ρ) for i=1:length(normalP)]
   diag = diag.^-1
   return diagPrecon(diag)
 end
