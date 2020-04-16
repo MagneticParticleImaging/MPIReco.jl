@@ -6,9 +6,6 @@ export smRecovery
 # System Matrix recovery using DCT-sparsity and low-rank constraing
 ###################################################################
 function smRecovery(y::Matrix{T}, samplingIdx::Array{Int64}, params::Dict) where T
-  # constrain number of threads for distributed computation
-  BLAS.set_num_threads(1)
-
   shape = params[:shape]
 
   # sampling operator
@@ -19,12 +16,28 @@ function smRecovery(y::Matrix{T}, samplingIdx::Array{Int64}, params::Dict) where
     params[:sparseTrafo] = DCTOp(ComplexF64,params[:shape],2)
   end
   reg1Name = get(params, :reg1, "L1")
-  reg1 = Regularization(reg1Name, params[:λ1]; params...)
+  reg1 = Regularization(reg1Name, params[:λ_l1]; params...)
 
-  # low rank regularization
-  lrProx = get(params, :reg2, "Nothing")
-  λ_lr = get(params, :λ_lr, 1.0)
-  reg2 = lrReg(lrProx, λ_lr, params)
+  # setup low rank regularization
+  λ_lr = get(params, :λ_lr, 0.0)
+  ρ_lr = get(params, :ρ_lr, 0.0)
+  if λ_lr==0 || ρ_lr==0
+    # no LR regularization
+    reg = [reg1]
+    ρ = [params[:ρ_l1]]
+  elseif length(shape)==2
+    # 2d case (use nuclear norm)
+    regNN = regularizationNN(λ_lr, shape)
+    reg = [reg1, regNN]
+    ρ = [params[:ρ_l1], ρ_lr]
+  else
+    # 3d case (use tensor nuclear norm)
+    regTNN1 = regularizationTNN(λ_lr, shape, 1)
+    regTNN2 = regularizationTNN(λ_lr, shape, 2)
+    regTNN3 = regularizationTNN(λ_lr, shape, 3)
+    reg = [reg1, regTNN1, regTNN2, regTNN3]
+    ρ = [params[:ρ_l1], ρ_lr, ρ_lr, ρ_lr]
+  end
 
   # precalculate inverse for split Bregman iteration
   precon = invPrecon(samplingIdx, prod(shape); params...)
@@ -34,21 +47,14 @@ function smRecovery(y::Matrix{T}, samplingIdx::Array{Int64}, params::Dict) where
   # normalized measurement
   y2, y_norm = getNormalizedMeasurement(y)
 
-  # # reconstruction
-  # sf = map(x->splitBregman(P,x,[reg1,reg2]; params...),y2)
-  #
-  # sfMat = zeros(ComplexF64,prod(shape),size(y,2))
-  # for i=1:size(y,2)
-  #   # undo normalization
-  #   sfMat[:,i] .= y_norm[i]*sf[i]
-  # end
-
   # reconstruction
   sfMat = zeros(ComplexF64,prod(shape),size(y,2))
-  solver = SplitBregman(P;reg=[reg1,reg2], params...)
+  solver = SplitBregman(P; reg=reg, ρ=ρ, params...)
+  # sf = map(x->splitBregman(P,x,[reg1,reg2]; params...),y2) # old Version using DArrays
   for k=1:size(y,2)
     sfMat[:,k] = solve(solver, y2[k])
     # undo normalization
+    # sfMat[:,i] .= y_norm[i]*sf[i]  # old version using DArrays
     sfMat[:,k] *= y_norm[k]
   end
 
@@ -58,46 +64,61 @@ end
 #########################
 # low rank regularization
 #########################
-function lrReg(lrProx::AbstractString, λ::AbstractFloat, params::Dict{Symbol,Any})
-  if lrProx == "LR"
-    proxMap = (x,y;kargs...)->proxLR!(x,y,params[:shape];kargs...)
-    reg = Regularization(prox! = proxMap, λ=λ, params=params)
-  elseif lrProx == "FR"
-    proxMap = (x,y;kargs...)->proxFR!(x,y,params[:shape];kargs...)
-    reg = Regularization(prox! = proxMap, λ=λ, params=params)
-  elseif lrProx == "Nothing"
-    reg = Regularization(prox! = (x,y;kargs...)->x, λ=λ, params=params)
-  else
-    error("proximal map $(lrProx) is not supported")
-  end
-  return reg
+function regularizationTNN(λ::AbstractFloat, shape::NTuple{3,Int64}, mode::Int64)
+  proxMap = (x,y;kargs...)->proxTNN!(x,y,shape,mode)
+  reg = Regularization(prox! = proxMap, λ=λ, params=Dict{Symbol,Any}())
 end
 
-# low rank regularization for 3d (using HOSVD)
-function proxLR!(x, λ::Real, shape::NTuple{3,Int64}; kargs...)
-  guvw_r = hosvd(reshape(real.(x), shape),shape)
-  guvw_i = hosvd(reshape(imag.(x), shape),shape)
-  proxL1!(guvw_r.core,λ)
-  proxL1!(guvw_i.core,λ)
-  x[:] .= vec(compose(guvw_r)+1im*compose(guvw_i))
+function proxTNN!(x, λ::Real, shape::NTuple{3,Int64},mode::Int64; kargs...)
+  nx,ny,nz = shape
+  # flattened tensor
+  x = reshape(x,shape)
+  if mode==1
+    x_flat = reshape(x,nx,ny*nz)
+  elseif mode==2
+    x_flat = reshape(permutedims(x,[2,3,1]),ny,nx*nz)
+  else
+    if mode!=3
+      @error "mode in proxTNN! should be 1,2 or 3"
+    end
+    x_flat = reshape(permutedims(x,[3,1,2]),nz,nx*ny)
+  end
+  # perform singular value thresholding
+  U,S,V = svd(x_flat)
+  proxL1!(S,λ)
+  x_flat[:] .= vec(U*Matrix(Diagonal(S))*V')
+  # undo flattening operation
+  if mode==1
+    x[:] .= vec(x_flat)
+  elseif mode==2
+    x[:] .= vec(permutedims(reshape(x_flat,ny,nz,nx),[3,1,2]))
+  else
+    x[:] .= vec(permutedims(reshape(x_flat,nz,nx,ny),[2,3,1]))
+  end
 end
 
 # low rank regularization for 2d (using SVD)
-function proxLR!(x, λ::Real, shape::NTuple{2,Int64}; kargs...)
+function regularizationNN(λ::Real, shape::NTuple{2,Int64} )
+  proxMap = (x,y;kargs...)->proxNN!(x,y,shape;kargs...)
+  return Regularization(prox! = proxMap, λ=λ)
+end
+
+# singular-value thresholding
+function proxNN!(x, λ::Real, shape::NTuple{2,Int64}; kargs...)
   U,S,V = svd(reshape(x,shape))
   proxL1!(S,λ)
   x[:] .= vec(U*Matrix(Diagonal(S))*V')
 end
 
 # fixed rank constraing for 3d (using HOSVD)
-function proxFR!(x, λ::Real, shape::NTuple{3,Int64}; rank::NTuple{3,Int64}=(1,1,1), kargs...)
+function FRTruncation!(x::Array{T,3}, rank::NTuple{3,Int64}) where T
   guvw_r = hosvd(reshape(real.(x), shape),rank)
   guvw_i = hosvd(reshape(imag.(x), shape),rank)
   x[:] = vec(compose(guvw_r)+1im*compose(guvw_i))
 end
 
-# fixed rank constraing for 3d (using SVD)
-function proxFR!(x, λ::Real, shape::NTuple{2,Int64}; rank::Int64=1, kargs...)
+# fixed rank constraing for 2d (using SVD)
+function FRTruncation!(x, rank::Int64)
   U,S,V = svd(reshape(x, shape))
   S[rank+1:end] .= 0.0
   x[:] .= vec(U*Matrix(Diagonal(S))*V')
@@ -120,9 +141,9 @@ end
 
 \(P::diagPrecon{T}, x::Vector{T}) where T = P.diag .* x
 
-function invPrecon(samplingIdx, ncol; μ::Float64 = 1.e-2, λ::Float64 = 1.e2, ρ::Float64=1.0, kargs...)
+function invPrecon(samplingIdx, ncol; ρ::Vector{Float64}=[1.0], kargs...)
   normalP = normalPDiag(samplingIdx, ncol)
-  diag = [μ*normalP[i]+λ+ρ for i=1:length(normalP)]
+  diag = [normalP[i]+sum(ρ) for i=1:length(normalP)]
   diag = diag.^-1
   return diagPrecon(diag)
 end

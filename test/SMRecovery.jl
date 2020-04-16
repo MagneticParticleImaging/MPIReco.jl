@@ -19,10 +19,8 @@ using MPIReco
   # solver parameters
   params = Dict{Symbol,Any}()
   params[:shape] = Tuple(shape)
-  params[:reg2] = "Nothing"
-  params[:ρ1] = 2.0
-  params[:ρ2] = 0.0
-  params[:λ1] = 2.e-2
+  params[:ρ_l1] = 2.0
+  params[:λ_l1] = 2.e-2
   params[:iterationsInner] = 50
   params[:iterations] = 10
   params[:relTol] = 1.e-2
@@ -35,14 +33,12 @@ using MPIReco
     @test norm(S[:,k] - S_dct[:,k]) / norm(S[:,k]) ≈ 0 atol=0.11
   end
 
-  # DCT and fixed rank
-  # @info "recovery using DCT and FR"
-  # params[:reg2] = "FR"
-  # params[:svtShape] = Tuple(shape)
-  # params[:rank] = (6,6,1)
-  # params[:ρ] = 5.e1
-  # S_dctfr = smRecovery(y,samplingIdx,params)
-  # for k=1:numFreqs
-  #   @test norm(S[:,k] - S_dct[:,k]) / norm(S[:,k]) ≈ 0 atol=0.11
-  # end
+  # DCT and low rank
+  @info "recovery using DCT and LR"
+  params[:λ_lr] = 2.e-2
+  params[:ρ_lr] = 2.e-1
+  S_dctlr = smRecovery(y,samplingIdx,params)
+  for k=1:numFreqs
+    @test norm(S[:,k] - S_dct[:,k]) / norm(S[:,k]) ≈ 0 atol=0.11
+  end
 end
