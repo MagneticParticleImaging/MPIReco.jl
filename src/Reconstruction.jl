@@ -130,7 +130,8 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   denoiseWeight = 0, redFactor = 0.0, thresh = 0.0,
   loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
-  deadPixels=Int[], bgCorrectionInternal=false, bgDictSize=nothing, kargs...) where {T<:MPIFile}
+  deadPixels=Int[], bgCorrectionInternal=false, bgDictSize=nothing, bgFramesDict=nothing,
+  kargs...) where {T<:MPIFile}
 
   (typeof(bgFrames) <: AbstractRange && emptyMeas==nothing) && (emptyMeas = bMeas)
   bgCorrection = emptyMeas != nothing ? true : bgCorrectionInternal
@@ -148,10 +149,10 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
     denoiseSF!(S, shape, weight=denoiseWeight)
   end
 
-  bgDict = getBackgroundDictionary(bSF, freq, bgDictSize)
+  bgDict = getBackgroundDictionary(bSF, bMeas, freq, bgDictSize, bgFramesDict)
 
   return reconstruction(S, bSF, bMeas, freq, grid, emptyMeas=emptyMeas, bgFrames=bgFrames,
-                        sparseTrafo=sparseTrafo, loadasreal=loadasreal, bgDictSize=bgDictSize,
+                        sparseTrafo=sparseTrafo, loadasreal=loadasreal,
                         bgDict = bgDict,
                         solver=solver, bgCorrectionInternal=bgCorrectionInternal; kargs...)
 end
