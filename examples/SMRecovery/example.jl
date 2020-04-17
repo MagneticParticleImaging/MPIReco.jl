@@ -1,13 +1,12 @@
 using Pkg
 
 # Install required packages
-for P in ["TensorDecompositions", "PyPlot"]
+for P in ["HTTP","TensorDecompositions", "PyPlot"]
   !haskey(Pkg.installed(), P) && Pkg.add(P)
 end
 
 # Download data
 include("downloadData.jl")
-
 
 using MPIReco, DelimitedFiles, PyPlot
 include("./utils/subsampling.jl")
