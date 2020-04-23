@@ -18,7 +18,8 @@ bSF = MPIFile(datadirSM*"SM.mdf")
 # backup for local testing
 # bSF = MPIFile("/opt/mpidata/20180228_180048_OpenMPIData_1_1/9")
 nx,ny,nz = calibSize(bSF);
-S = ComplexF64.( getSystemMatrix(bSF,[2145,8629,60903],bgCorrection=true) )
+f = [2145,8629,60903]
+S = ComplexF64.( getSystemMatrix(bSF,f,bgCorrection=true, tfCorrection=false) )
 
 # sampling locations (linear index)
 samplingIdx = vec( readdlm("./data/pdSamplingIdx.txt", '\t', Int64) )
@@ -64,14 +65,14 @@ S_csfr = FRTruncation3d(S_cslr,r)
 # plot frequency components
 figure()
 subplot(4,3,1)
-title("k=1")
+title("k=$(f[1])")
 ylabel("measured")
 imshow(abs.(S[:,:,17,1]),cmap="gray"); xticks([]); yticks([])
 subplot(4,3,2)
-title("k=2")
+title("k=$(f[2])")
 imshow(abs.(S[:,:,17,2]),cmap="gray"); xticks([]); yticks([])
 subplot(4,3,3)
-title("k=3")
+title("k=$(f[3])")
 imshow(abs.(S[:,:,17,3]),cmap="gray"); xticks([]); yticks([])
 subplot(4,3,4)
 ylabel("CS")

@@ -14,5 +14,5 @@ end
 mkpath("./data/")
 
 # Download data
-download_("calibrations/6.mdf", "./data/SM.mdf")
+download_("calibrations/16.mdf", "./data/SM.mdf")
 
