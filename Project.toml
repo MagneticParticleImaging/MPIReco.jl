@@ -19,7 +19,7 @@ julia = "0.7, 1.0"
 DSP = "0.6"
 IniFile = "0.5"
 MPIFiles = "0.8"
-RegularizedLeastSquares = "0.5, 0.6"
+RegularizedLeastSquares = "0.6.1"
 ImageUtils = "0.2"
 DistributedArrays = "0.6"
 
