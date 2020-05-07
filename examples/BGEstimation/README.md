@@ -1,7 +1,9 @@
-# Motion Compensation Example
+# Background Estimation Example
 
-This folder contains example code for applying motion compensation to multi-patch
-MPI data.
+This folder contains example code for applying a joint reconstruction of
+background and particle concentration of MPI data. The method uses a background
+dictionary that is setup using the background scans measured during system
+matrix acquisition.
 
 ## Installation
 
@@ -20,7 +22,7 @@ using MPIReco
 
 You can then switch to the directory of this example by entering
 ```julia
-dir = joinpath(dirname(pathof(MPIReco)), "..","examples","MotionCompensation")
+dir = joinpath(dirname(pathof(MPIReco)), "..","examples","BGEstimation")
 cd(dir)
 ```
 
@@ -32,8 +34,7 @@ executed by entering
 include("example.jl")
 ```
 
-This will first download all data (about 2 GB) and then perform a reconstruction.
+This will first download all data (about 134 MB) and then perform a reconstruction.
 Parameters of the reconstruction are documented in the Julia script and can be
 changed. After the reconstruction is done, the script will open a PyPlot window
-and show the reconstruction result. Additionally, an animated gif will be stored
-into the `img/` folder.
+and show the reconstruction result. 
