@@ -1,5 +1,3 @@
-# @everywhere using RegularizedLeastSquares, LinearOperators, TensorDecompositions, LinearAlgebra
-#@everywhere using RegularizedLeastSquares, LinearOperators, LinearAlgebra
 export smRecovery
 
 ###################################################################
@@ -47,14 +45,13 @@ function smRecovery(y::Matrix{T}, samplingIdx::Array{Int64}, params::Dict) where
   # normalized measurement
   y2, y_norm = getNormalizedMeasurement(y)
 
-  # reconstruction
+  solver = [SplitBregman(P; reg=deepcopy(reg), ρ=ρ, params...) for i=1:Threads.nthreads()]
+
   sfMat = zeros(ComplexF64,prod(shape),size(y,2))
-  solver = SplitBregman(P; reg=reg, ρ=ρ, params...)
-  # sf = map(x->splitBregman(P,x,[reg1,reg2]; params...),y2) # old Version using DArrays
-  for k=1:size(y,2)
-    sfMat[:,k] = solve(solver, y2[k])
+  @time Threads.@threads for k=1:size(y,2)
+    t = Threads.threadid()
+    sfMat[:,k] .= solve(solver[t], y2[k])
     # undo normalization
-    # sfMat[:,i] .= y_norm[i]*sf[i]  # old version using DArrays
     sfMat[:,k] *= y_norm[k]
   end
 

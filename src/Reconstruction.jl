@@ -196,7 +196,9 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   p = Progress(L, 1, "Reconstructing data...")
 
   # initialize sparseTrafo
-  B = linearOperator(sparseTrafo, shape(grid))
+  B = linearOperator(sparseTrafo, shape(grid), eltype(S))
+  @info "S: $(eltype(S))"
+  @info "B: $(eltype(B))"
 
   #initialize output
   image = initImage(bSF,bMeas,L,numAverages,grid,false)
