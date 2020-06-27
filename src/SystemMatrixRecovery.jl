@@ -155,6 +155,6 @@ end
 
 function getNormalizedMeasurement(y::Matrix{T}) where T
   y_norm = [norm(y[:,k]) for k=1:size(y,2)]
-  y2 = @DArray [ComplexF64.(y[:,k]/y_norm[k]) for k=1:size(y,2)]
+  y2 = [ComplexF64.(y[:,k]/y_norm[k]) for k=1:size(y,2)]
   return y2, y_norm
 end

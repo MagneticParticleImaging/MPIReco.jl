@@ -58,7 +58,7 @@ function reconstruction(recoParams::Dict)
 
   c = reconstruction(bSF, bMeas; recoParams...)
   # store reco params with image
-  c["recoParams"] = recoParams
+  c[:recoParams] = recoParams
   return c
 end
 

@@ -11,9 +11,9 @@ squeeze(A) = dropdims(A, dims=tuple(findall(([size(A)...].==1))...))
 function generateHeaderDict(bSF::MPIFile, b::MPIFile)
   #header["spatialorder"] TODO
   header = loadMetadata(b)
-  header["datatype"] = "MPI"
-  header["dim"] = ndims(b)
-  header["size"] = calibSize(bSF)
+  header[:datatype] = "MPI"
+  header[:dim] = ndims(b)
+  header[:size] = calibSize(bSF)
   return header
 end
 

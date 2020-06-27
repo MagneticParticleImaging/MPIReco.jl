@@ -58,4 +58,4 @@ c = reconstruction(bSF, bMeas, periodicMotionCorrection = true,
                               SNRThresh=2,minFreq=80e3,recChannels=[1,2,3]) #frequency selection
 
 figure(2)
-imshow( maximum(arraydata(data(c[1,:,:,:,1])),dims=3)[:,:,1] )
+imshow( maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1] )

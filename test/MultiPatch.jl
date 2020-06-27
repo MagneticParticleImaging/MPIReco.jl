@@ -19,7 +19,7 @@ using MPIReco
 			    spectralLeakageCorrection=false)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values1
-  exportImage("./img/MultiPatch1.png", arraydata(data(c1[1,:,:,1,1])))
+  exportImage("./img/MultiPatch1.png", arraydata(c1[1,:,:,1,1]))
 
   # TODO test description
   c2 = reconstruction(bSF, b;
@@ -28,7 +28,7 @@ using MPIReco
 			    spectralLeakageCorrection=false)
   @test axisnames(c2) == names
   @test axisvalues(c2) == values1
-  exportImage("./img/MultiPatch2.png", arraydata(data(c2[1,:,:,1,1])))
+  exportImage("./img/MultiPatch2.png", arraydata(c2[1,:,:,1,1]))
 
   # multi-patch reconstruction using multiple system matrices
   bSFs = MultiMPIFile(["./data/SF_MP01", "./data/SF_MP02", "./data/SF_MP03", "./data/SF_MP04"])
@@ -38,7 +38,7 @@ using MPIReco
 			    spectralLeakageCorrection=false)
   @test axisnames(c3) == names
   @test axisvalues(c3) == values2
-  exportImage("./img/MultiPatch3.png", arraydata(data(c3[1,:,:,1,1])))
+  exportImage("./img/MultiPatch3.png", arraydata(c3[1,:,:,1,1]))
 
   # flexible multi-patch reconstruction
   bSFs = MultiMPIFile(["./data/SF_MP01", "./data/SF_MP02", "./data/SF_MP03", "./data/SF_MP04"])
@@ -59,6 +59,6 @@ using MPIReco
 			    FFPos=FFPos, FFPosSF=FFPos)
   @test axisnames(c4) == names
   @test axisvalues(c4) == values2
-  exportImage("./img/MultiPatch4.png", arraydata(data(c4[1,:,:,1,1])))
+  exportImage("./img/MultiPatch4.png", arraydata(c4[1,:,:,1,1]))
   # TODO the last test shows odd results
 end

@@ -45,6 +45,6 @@ using MPIReco
                                 lambda=lambda, iterations=iterations, # reconstruction parameter
                                 SNRThresh=10, minFreq=80e3, recChannels=[1,2,3]) #frequency selection
 
-  exportImage("./img/MotionComp.png", maximum(arraydata(data(c[1,:,:,:,1])),dims=3)[:,:,1])
+  exportImage("./img/MotionComp.png", maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
 
 end
