@@ -33,8 +33,6 @@ using MPIReco
 
   exportImage("./img/Cartesian2.png", arraydata(c2[1,:,:,1,1]))
 
-
-
   ####  Low Level ####
 
   N = calibSize(bSF)
@@ -76,4 +74,14 @@ using MPIReco
 
   exportImage("./img/Cartesian4.png", c4)
 
+  ####  Multi Color ####
+
+  @time c5 = reconstruction(MultiContrastFile([bSF,bSF]), b, frames=1:10, numAverages=10,
+           numPeriodGrouping=numPeriodGrouping, numPeriodAverages=numPeriodAverages,
+           minFreq=30e3, maxFreq=600e3, maxMixingOrder=maxMixingOrder,
+           lambd=0.01, iterations=100, bgCorrectionInternal=bgCorrection,
+           spectralLeakageCorrection=false)
+
+  exportImage("./img/Cartesian5.png", arraydata(c5[1,:,:,1,1]))
+  
 end
