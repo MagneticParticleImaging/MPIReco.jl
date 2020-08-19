@@ -5,7 +5,7 @@ for P in ["HTTP", "PyPlot"]
   !haskey(Pkg.installed(), P) && Pkg.add(P)
 end
 
-useCompressedMatrices = false#true
+useCompressedMatrices = true
 suffixSM = useCompressedMatrices ? "Small" : "Large"
 useFastData = true
 suffixMeas = useFastData ? "Fast" : "Slow"
