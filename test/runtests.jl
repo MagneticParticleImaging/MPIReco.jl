@@ -23,6 +23,7 @@ function exportImage(filename, I::AbstractMatrix)
   save(filename, Icolored )
 end
 
+include("Cartesian.jl")
 include("MotionCompensation.jl")
 include("Reconstruction.jl")
 include("MultiPatch.jl")

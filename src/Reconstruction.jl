@@ -103,9 +103,12 @@ end
 
 function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
-  bEmpty = nothing, emptyMeas=bEmpty, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, kargs...) where {T<:MPIFile}
+  bEmpty = nothing, emptyMeas=bEmpty, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, 
+  numPeriodAverages=1, numPeriodGrouping=1, kargs...) where {T<:MPIFile}
 
-  freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
+  freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, 
+                           numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR, numPeriodAverages=numPeriodAverages, 
+                           numPeriodGrouping=numPeriodGrouping)
 
   if varMeanThresh > 0
     bEmptyTmp = (emptyMeas == nothing) ? bMeas : emptyMeas
@@ -117,11 +120,13 @@ function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
   end
 
   # Ensure that no frequencies are used that are not present in the measurement
-  freq = intersect(freq, filterFrequencies(bMeas))
+  freq = intersect(freq, filterFrequencies(bMeas, numPeriodAverages=numPeriodAverages, 
+                                           numPeriodGrouping=numPeriodGrouping))
 
   @debug "selecting $(length(freq)) frequencies"
 
-  return reconstruction(bSF, bMeas, freq; emptyMeas=emptyMeas, bgFrames=bgFrames, fgFrames=fgFrames, kargs...)
+  return reconstruction(bSF, bMeas, freq; emptyMeas=emptyMeas, bgFrames=bgFrames, fgFrames=fgFrames, 
+                         numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping, kargs...)
 end
 
 
@@ -131,7 +136,7 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
   deadPixels=Int[], bgCorrectionInternal=false, bgDictSize=nothing, bgFramesDict=nothing,
-  kargs...) where {T<:MPIFile}
+  numPeriodAverages=1, numPeriodGrouping=1, kargs...) where {T<:MPIFile}
 
   (typeof(bgFrames) <: AbstractRange && emptyMeas==nothing) && (emptyMeas = bMeas)
   bgCorrection = emptyMeas != nothing ? true : bgCorrectionInternal
@@ -143,7 +148,8 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
             bgCorrection=bgCorrection, loadasreal=loadasreal,
             thresh=thresh, redFactor=redFactor, saveTrafo=saveTrafo,
             useDFFoV=useDFFoV, gridsize=gridsize, fov=fov, center=center,
-            deadPixels=deadPixels)
+            deadPixels=deadPixels,numPeriodAverages=numPeriodAverages, 
+            numPeriodGrouping=numPeriodGrouping)
 
   if denoiseWeight > 0 && sparseTrafo == nothing
     denoiseSF!(S, shape, weight=denoiseWeight)
@@ -154,7 +160,8 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   return reconstruction(S, bSF, bMeas, freq, grid, emptyMeas=emptyMeas, bgFrames=bgFrames,
                         sparseTrafo=sparseTrafo, loadasreal=loadasreal,
                         bgDict = bgDict,
-                        solver=solver, bgCorrectionInternal=bgCorrectionInternal; kargs...)
+                        solver=solver, bgCorrectionInternal=bgCorrectionInternal,
+                        numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping; kargs...)
 end
 
 function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
@@ -164,7 +171,8 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
   spectralCleaning=true, spectralLeakageCorrection=spectralCleaning,
   fgFrames=1:10, bgCorrectionInternal=false,
-  noiseFreqThresh=0.0, channelWeights=ones(3), kargs...) where {T<:MPIFile}
+  noiseFreqThresh=0.0, channelWeights=ones(3), 
+  numPeriodAverages=1, numPeriodGrouping=1, kargs...) where {T<:MPIFile}
 
   #(typeof(bgFrames) <: AbstractRange && bEmpty==nothing) && (bEmpty = bMeas)
   bgCorrection = emptyMeas != nothing ? true : false
@@ -177,11 +185,13 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
     #           loadasreal=loadasreal, spectralLeakageCorrection=spectralLeakageCorrection)
     #else
       uEmpty = getMeasurementsFD(emptyMeas, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
-      loadasreal = loadasreal,spectralLeakageCorrection=spectralLeakageCorrection, bgCorrection=bgCorrectionInternal)
+      loadasreal = loadasreal,spectralLeakageCorrection=spectralLeakageCorrection, bgCorrection=bgCorrectionInternal,
+      numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping)
       if bgFramesPost != nothing
         uEmptyPost = getMeasurementsFD(emptyMeas, false, frequencies=freq, frames=bgFramesPost,
                     numAverages = length(bgFramesPost), bgCorrection=bgCorrectionInternal,
-                    loadasreal = loadasreal, spectralLeakageCorrection=spectralLeakageCorrection)
+                    loadasreal = loadasreal, spectralLeakageCorrection=spectralLeakageCorrection,
+                    numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping)
       end
     #end
   end
@@ -197,8 +207,8 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
 
   # initialize sparseTrafo
   B = linearOperator(sparseTrafo, shape(grid), eltype(S))
-  @info "S: $(eltype(S))"
-  @info "B: $(eltype(B))"
+  @debug "S: $(eltype(S))"
+  @debug "B: $(eltype(B))"
 
   #initialize output
   image = initImage(bSF,bMeas,L,numAverages,grid,false)
@@ -209,7 +219,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
     @debug "Loading measurements ..."
     u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=numAverages,
                           loadasreal=loadasreal, spectralLeakageCorrection=spectralLeakageCorrection,
-                          bgCorrection=bgCorrectionInternal)
+                          bgCorrection=bgCorrectionInternal, numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping)
     if emptyMeas!=nothing
       if bgFramesPost == nothing
         u = u .- uEmpty

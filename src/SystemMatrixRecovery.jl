@@ -81,9 +81,9 @@ function proxTNN!(x, λ::Real, shape::NTuple{3,Int64},mode::Int64; kargs...)
     x_flat = reshape(permutedims(x,[3,1,2]),nz,nx*ny)
   end
   # perform singular value thresholding
-  U,S,V = svd(x_flat)
-  proxL1!(S,λ)
-  x_flat[:] .= vec(U*Matrix(Diagonal(S))*V')
+  usv = svd!(x_flat)
+  proxL1!(usv.S,λ)
+  x_flat[:] .= vec(usv.U*Diagonal(usv.S)*usv.Vt)
   # undo flattening operation
   if mode==1
     x[:] .= vec(x_flat)
@@ -109,9 +109,9 @@ end
 
 # fixed rank constraing for 3d (using HOSVD)
 function FRTruncation!(x::Array{T,3}, rank::NTuple{3,Int64}) where T
-  guvw_r = hosvd(reshape(real.(x), shape),rank)
-  guvw_i = hosvd(reshape(imag.(x), shape),rank)
-  x[:] = vec(compose(guvw_r)+1im*compose(guvw_i))
+  guvw_r = hosvd(real.(x),rank)
+  guvw_i = hosvd(imag.(x),rank)
+  x[:] .= compose(guvw_r)+1im*compose(guvw_i)
 end
 
 # fixed rank constraing for 2d (using SVD)

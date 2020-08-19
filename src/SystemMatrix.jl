@@ -77,12 +77,16 @@ end
 
 function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer=1,
                bgcorrection=false, bgCorrection=bgcorrection, loadasreal=false,
-	       gridsize=collect(calibSize(bSF)),
-	       fov=calibFov(bSF), center=[0.0,0.0,0.0], deadPixels=Int[], kargs...)
+	             gridsize=collect(calibSize(bSF)), numPeriodAverages=1,numPeriodGrouping=1,
+	             fov=calibFov(bSF), center=[0.0,0.0,0.0], deadPixels=Int[], kargs...)
 
   nFreq = rxNumFrequencies(bSF)
 
-  S = getSystemMatrix(bSF, frequencies, bgCorrection=bgCorrection; kargs...)
+  numPeriods = div(acqNumPeriodsPerFrame(bSF),numPeriodGrouping*numPeriodAverages)
+
+  S = getSystemMatrix(bSF, frequencies, bgCorrection=bgCorrection,
+                      numPeriodAverages=numPeriodAverages,
+                      numPeriodGrouping=numPeriodGrouping; kargs...)
 
   if !isempty(deadPixels)
     repairDeadPixels(S,gridsize,deadPixels)
@@ -96,8 +100,8 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
     origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
     target = RegularGridPositions(gridsize,fov,center)
 
-    SInterp = zeros(eltype(S),prod(gridsize),length(frequencies)*acqNumPeriodsPerFrame(bSF))
-    for k=1:length(frequencies)*acqNumPeriodsPerFrame(bSF)
+    SInterp = zeros(eltype(S),prod(gridsize),length(frequencies)*numPeriods)
+    for k=1:length(frequencies)*numPeriods
       A = MPIFiles.interpolate(reshape(S[:,k],calibSize(bSF)...), origin, target)
       SInterp[:,k] = vec(A)
     end
@@ -109,9 +113,9 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
 
   if loadasreal
     S = converttoreal(S,bSF)
-    resSize = [gridsize..., 2*length(frequencies)*acqNumPeriodsPerFrame(bSF)]
+    resSize = [gridsize..., 2*length(frequencies)*numPeriods]
   else
-    resSize = [gridsize...,length(frequencies)*acqNumPeriodsPerFrame(bSF)]
+    resSize = [gridsize...,length(frequencies)*numPeriods]
   end
 
   if returnasmatrix
