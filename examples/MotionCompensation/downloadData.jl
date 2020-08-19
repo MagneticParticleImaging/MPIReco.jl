@@ -25,6 +25,7 @@ else
   download_("measurements/rotationPhantom/1.mdf", "./data/measSlow.mdf")
 end
 download_("measurements/rotationPhantom/3.mdf", "./data/measBG.mdf")
+download_("measurements/rotationPhantom/4.mdf", "./data/measStatic.mdf")
 
 if !useCompressedMatrices
   download_("calibrations/8.mdf", "./data/SF1Large.mdf")
