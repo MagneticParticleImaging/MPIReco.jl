@@ -36,7 +36,7 @@ for op in [:filepath, :version, :uuid, :time, :studyName, :studyNumber, :studyUu
             :acqStartTime, :acqNumFrames, :acqNumPeriodsPerFrame,
             :dfNumChannels, :dfBaseFrequency, :dfDivider, :dfStrength, :dfPhase,
             :dfCycle, :dfWaveform, :rxNumChannels, :acqNumAverages, :rxBandwidth,
-            :rxNumSamplingPoints, :rxTransferFunction, :rxInductionFactor, :rxUnit,
+            :rxNumSamplingPoints, :rxTransferFunction, :rxHasTransferFunction, :rxTransferFunctionFileName, :rxInductionFactor, :rxUnit,
             :rxDataConversionFactor,
             :calibSNR, :calibFov, :calibFovCenter, #:calibSize,
             :calibOrder, :calibPositions, :calibOffsetField,

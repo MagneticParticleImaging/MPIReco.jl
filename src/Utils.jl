@@ -51,6 +51,21 @@ function consistenceCheck(bSF::MPIFile, bMeas::MPIFile)
     @warn("The drive-field strength of the system matrix ($dfSF mT) does not fit to the measurements ($dfMeas mT)!")
   end
 
+  hasTransSF = rxHasTransferFunction(bSF)
+  hasTransMeas = rxHasTransferFunction(bMeas)
+  if (hasTransSF == hasTransMeas) && (hasTransSF == true)
+    if (rxTransferFunctionFileName(bSF) == rxTransferFunctionFileName(bMeas))
+      if (rxTransferFunction(bSF) != rxTransferFunction(bMeas))
+        @warn("Transfer functions of system matrix and measurement have the same file name but the actual transfer function data is different!!!")
+      end
+    elseif (rxTransferFunctionFileName(bSF) != rxTransferFunctionFileName(bMeas))
+      @warn("Sytem matrix and measurement has been corrected with different transfer functions!!!.
+      SF correction: $(rxTransferFunctionFileName(bSF)), Meas correction: $(rxTransferFunctionFileName(bMeas))")
+    end
+  elseif (hasTransSF != hasTransMeas)
+    @warn("Check transfer function correction: SF corrected: $(hasTransSF), Meas corrected: $(hasTransMeas) .")
+  end
+
 end
 
 function consistenceCheck(bSFs::Vector{T}, bMeas::MPIFile) where {T<:MPIFile}
