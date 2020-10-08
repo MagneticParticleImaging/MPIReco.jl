@@ -12,6 +12,7 @@ MPIReco.jl is a Julia package for the reconstruction of magnetic particle imagin
 
 ## How to give credit
 If you use this package please acknowledge us by citing:
+
 T. Knopp, P. Szwargulski, F. Griese, M. Grosser, M. Boberg, M. Möddel (2019). *MPIReco.jl: Julia Package for Image Reconstruction in MPI. International Journal on Magnetic Particle Imaging.* **5** (1), 9 pp.
 
 A BibTeX file is directly contained within this package `MPIReco.bib`.
