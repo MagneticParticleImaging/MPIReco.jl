@@ -23,7 +23,8 @@ end
 
 function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
             frames=nothing, bEmpty=nothing, nAverages=1, numAverages=nAverages,
-	    spectralLeakageCorrection=true, voxelsize=voxelSize(bSF), kargs...)
+	    spectralLeakageCorrection=true, voxelsize=voxelSize(bSF), tfCorrection=rxHasTransferFunction(bSF),
+	    kargs...)
 
   bgCorrection = (bEmpty != nothing)
 
@@ -35,13 +36,23 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   nFrames=length(frames)
 
   uTotal_ = getMeasurementsFD(bMeas,frequencies=freq, frames=frames, numAverages=numAverages,
-                             spectralLeakageCorrection=spectralLeakageCorrection)
+                             spectralLeakageCorrection=spectralLeakageCorrection, tfCorrection=tfCorrection)
 
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos(bMeas))
   uTotal = similar(uTotal_,size(uTotal_,1),length(periodsSortedbyFFPos),size(uTotal_,3))
 
   for k=1:length(periodsSortedbyFFPos)
       uTotal[:,k,:] = mean(uTotal_[:,periodsSortedbyFFPos[k],:], dims=2)
+  end
+
+  # subtract background measurement
+  if bEmpty != nothing
+    uEmpty = getMeasurementsFD(bEmpty, frequencies=freq, numAverages=1, spectralLeakageCorrection=true, tfCorrection=tfCorrection)
+    numFrames = acqNumPeriodsPerPatch(bEmpty)
+    bgFrames = [1+(i-1)*numFrames:i*numFrames for i=1:acqNumPatches(bEmpty)]
+    for i=1:acqNumPatches(bMeas)
+      uTotal[:,i,:] = uTotal[:,i,:] .- mean(uEmpty[:,bgFrames[i],:],dims=(2,3))
+    end
   end
 
   # Here we call a regular reconstruction function
@@ -85,7 +96,7 @@ function MultiPatchOperatorHighLevel(SF::MPIFile, bMeas, freq, bgCorrection::Boo
 end
 
 function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
-        FFPos = zeros(0,0), FFPosSF = zeros(0,0), kargs...)
+        FFPos = zeros(0,0), FFPosSF = zeros(0,0), tfCorrection=rxHasTransferFunction(bSF), kargs...)
 
   FFPos_ = ffPos(bMeas)
 
@@ -106,10 +117,17 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
 
   gradient = acqGradient(bMeas)[:,:,1,idxFirstPeriod]
 
+  # Use transfer function correction only if all system matrices and measurements have one     
+  if !rxHasTransferFunction(bSF) && !rxHasTransferFunction(bMeas) && tfCorrection
+    @warn "One or multiple system matrices or the measurement don't have a transfer function. No transfer function correction will be applied."
+    tfCorrection = false
+  end
+
   FFOp = MultiPatchOperator(bSF, bMeas, freq, bgCorrection,
                   FFPos = FFPos_,
                   gradient = gradient,
-                  FFPosSF = FFPosSF_; kargs...)
+                  FFPosSF = FFPosSF_,
+		  tfCorrection = tfCorrection; kargs...)
   return FFOp
 end
 
@@ -153,7 +171,9 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
                     systemMatrices = nothing,
                     mapping=zeros(0),
 		    calibsize = nothing,
-                    grid = nothing, kargs...)
+                    grid = nothing, 
+		    tfCorrection = true,
+		    kargs...)
 
   @debug "Loading System matrix"
   numPatches = size(FFPos,2)
@@ -161,7 +181,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
 
   if systemMatrices == nothing
-    S = [getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection)[1] for SF in SFs]
+      S = [getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection)[1] for SF in SFs]
   else
     S = systemMatrices
   end
@@ -238,6 +258,7 @@ end
 function MultiPatchOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
                     denoiseWeight=0, gradient=zeros(0,0,0),
                     roundPatches = false, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
+		    tfCorrection = true,
                     kargs...)
 
   @debug "Loading System matrix"
@@ -277,7 +298,6 @@ function MultiPatchOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection:
   @debug "Calculate Reconstruction Grid"
   recoGrid = RegularGridPositions(grids)
 
-
   # Within the next loop we will refine our grid since we now know our reconstruction grid
   for k=1:numPatches
     idx = matchingSMIdx[k]
@@ -307,7 +327,7 @@ function MultiPatchOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection:
       if u > 0 # its already in memory
         patchToSMIdx[k] = u
       else     # not yet in memory  -> load it
-        S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection)
+        S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection)
         push!(S,S_)
         push!(SOrigIdx,idx)
         push!(SIsPlain,true) # mark this as a plain system matrix (without interpolation)
@@ -322,7 +342,8 @@ function MultiPatchOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection:
       S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection,
                    gridsize=shape(newGrid),
                    fov=fieldOfView(newGrid),
-                   center=fieldOfViewCenter(newGrid).-fieldOfViewCenter(grids[k]))
+                   center=fieldOfViewCenter(newGrid).-fieldOfViewCenter(grids[k]),
+		   tfCorrection=tfCorrection)
                    # @TODO: I don't know the sign of aboves statement
 
       grids[k] = newGrid # we need to change the stored Grid since we now have a true subgrid

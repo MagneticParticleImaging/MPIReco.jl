@@ -72,7 +72,7 @@ function reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile, freq::Array{
   for i=1:acqNumPatches(bMeas)
     resortedInd[i,:] = unflattenOffsetFieldShift(FFP)[i][1:P]
   end
-  FFOp = MultiPatchOperator(bSF, bMeas, freq, false,
+  FFOp = MultiPatchOperatorHighLevel(bSF, bMeas, freq, false,
 			    indFFPos=resortedInd[:,1],
 			    FFPos=FFP[:,resortedInd[:,1]], mapping=mapping,
 			    FFPosSF=FFP[:,resortedInd[:,1]])
