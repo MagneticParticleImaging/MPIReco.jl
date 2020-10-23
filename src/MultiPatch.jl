@@ -170,7 +170,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
                     SFGridCenter = zeros(0,0),
                     systemMatrices = nothing,
                     mapping=zeros(0),
-		    calibsize = nothing,
+		    calibsize = nothing, calibfov = nothing,
                     grid = nothing, 
 		    tfCorrection = true,
 		    kargs...)
@@ -206,13 +206,15 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
   # the system matrix with the closes focus field shift
   for k=1:numPatches
     idx = mapping[k]
-    SF = SFs[idx]
+    SF = (length(SFs) == 1) ? SFs[1] : SFs[idx] # systemMatrices can contain more system matrices than SFs
 
     diffFFPos = FFPosSF[:,idx] .- FFPos[:,k]
 
-    calibsizeTmp = (calibsize == nothing) ? calibSize(SF) : calibsize
+    # use the grid parameters of the SM or use given parameter
+    calibsizeTmp = (calibsize == nothing) ? calibSize(SF) : calibsize[:,idx]
+    calibfovTmp = (calibfov == nothing) ? calibFov(SF) : calibfov[:,idx]
 
-    push!(grids, RegularGridPositions(calibsizeTmp,calibFov(SF),SFGridCenter[:,idx].-diffFFPos))
+    push!(grids, RegularGridPositions(calibsizeTmp,calibfovTmp,SFGridCenter[:,idx].-diffFFPos))
   end
 
   # We now know all the subgrids for each patch, if the corresponding system matrix would be taken as is
@@ -237,8 +239,8 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
 
   # Within the next loop we will refine our grid since we now know our reconstruction grid
   for k=1:numPatches
-    idx = mapping[k]
-    SF = SFs[idx]
+    #idx = mapping[k]
+    #SF = SFs[idx]
 
     issubgrid = isSubgrid(recoGrid,grids[k])
     if !issubgrid
