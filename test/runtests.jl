@@ -3,19 +3,28 @@ using HTTP
 using Test
 using FileIO
 
-if !isdir("data")
-  @info "download data.zip"
-  HTTP.open("GET", "http://media.tuhh.de/ibi/MPIReco/data.zip") do http
-    open("data.zip", "w") do file
-        write(file, http)
-    end
+using Scratch
+using Artifacts
+
+# TODO: Don't use ZIP, instead upload a tar.gz to somewhere (like Github)
+#       https://github.com/JuliaPackaging/Scratch.jl#can-i-use-a-scratch-space-as-a-temporary-workspace-then-turn-it-into-an-artifact
+
+# To create a new Artifact.toml use https://github.com/simeonschaub/ArtifactUtils.jl
+
+scratch = @get_scratch!("data")
+if isempty(readdir(scratch))
+
+  @info "download data"
+  datapath = joinpath(artifact"data", "data.zip")
+
+  @info "extracting data"
+  cd(scratch) do
+    run(`unzip -oq $datapath`)
   end
-  @info "extracting data.zip"
-  run(`unzip -oq data.zip`)
-  rm("data.zip")
 end
 
-mkpath("./img/")
+const datadir = joinpath(scratch, "data")
+const imgdir  = @get_scratch!("img")
 
 function exportImage(filename, I::AbstractMatrix)
   Iabs = abs.(I)
