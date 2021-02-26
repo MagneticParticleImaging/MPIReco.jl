@@ -24,7 +24,7 @@ function getBackgroundDictionary(fSF::MPIFile, f::MPIFile, frequencies,
   U,S,V = getBackgroundDictionaryComplete(fSF, f, frequencies, bgFrames)
 
   for l=1:bgDictSize
-    U[:,l] *= 1#(S[l] / S[1])^(1/4)
+    U[:,l] *= (S[l] / S[1])^(1/2)
   end
   #return transpose(bgdata)[:,1:bgDictSize]
   return U[:,1:bgDictSize]
