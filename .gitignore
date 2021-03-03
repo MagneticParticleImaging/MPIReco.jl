@@ -5,5 +5,7 @@
 test/data
 deps/build.log
 test/img
+*/__MACOSX/
+test/data.zip
 
 Manifest.toml
