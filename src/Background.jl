@@ -43,7 +43,7 @@ function reconstruction(S, u::Array, bgDict::AbstractMatrix;
                         lambd=0.0, lambda=lambd, λ=lambda, progress=nothing,
                         solver = "kaczmarz",
                         weights=nothing, enforceReal=false, enforcePositive=false,
-                        relativeLambda=true, kargs...)
+                        relativeLambda=true, backgroundCoefficients = nothing, kargs...)
 
   N = size(S,2)
   M = div(length(S), N)
@@ -56,6 +56,9 @@ function reconstruction(S, u::Array, bgDict::AbstractMatrix;
 
   if sum(abs.(λ)) > 0 && solver != "fusedlasso" && relativeLambda
     trace = calculateTraceOfNormalMatrix(S,weights)
+
+    @debug "REL λ =  $(trace / N) "
+
     λ *= trace / N
     setlambda(S,λ)
   end
@@ -72,7 +75,12 @@ function reconstruction(S, u::Array, bgDict::AbstractMatrix;
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
   for l=1:L
 
-    d = solve(solv, u[:,l])[1:N,:] ./ sqrt(λ)
+    y = solve(solv, u[:,l])
+    d = y[1:N,:] ./ sqrt(λ)
+
+    if backgroundCoefficients != nothing
+      append!(backgroundCoefficients, vec(y[(N+1):end,:] ./ sqrt(β)))
+    end
 
     if sparseTrafo != nothing
       d[:] = sparseTrafo*d # backtrafo from dual space
