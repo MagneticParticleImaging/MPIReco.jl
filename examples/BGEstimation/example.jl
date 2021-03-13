@@ -37,11 +37,11 @@ recChannels = 1:1
 
 # Solver parameters
 λ = 1.0
-iterations = 100
+iterations = 20
 
 # Parameters for the joint estimation of BG and particle concentration
-beta = 2.56e-4
-dictSize = 5
+beta = 1.0*5.0.^(-8)
+dictSize = 10
 
 # Put all parameters into a dictionary
 params = Dict{Symbol,Any}(
