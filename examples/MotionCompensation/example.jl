@@ -1,19 +1,22 @@
-using Pkg
+using Pkg, MPIReco
 
 # Install required packages
-for P in ["HTTP", "PyPlot"]
-  !haskey(Pkg.installed(), P) && Pkg.add(P)
+for P in [:HTTP, :PyPlot]
+ try
+   @eval using $P
+ catch
+   Pkg.add(String(P))
+   @eval using $P
+ end
 end
 
-useCompressedMatrices = true
+useCompressedMatrices = false
 suffixSM = useCompressedMatrices ? "Small" : "Large"
 useFastData = true
 suffixMeas = useFastData ? "Fast" : "Slow"
 
 # Download data
 include("downloadData.jl")
-
-using MPIReco, PyPlot
 
 ################
 ## Parameters ##

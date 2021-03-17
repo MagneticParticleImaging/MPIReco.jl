@@ -1,5 +1,3 @@
-using HTTP
-
 function download_(filenameServer, filenameLocal)
   if !isfile(filenameLocal)
     @info "download $(filenameLocal)..."

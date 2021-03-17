@@ -1,5 +1,3 @@
-using TensorDecompositions
-
 function FRTruncation3d(S::Array{T,4},r::NTuple{3,Int64}) where T
   S_lr = zeros(T,size(S));
   for k=1:size(S,4)

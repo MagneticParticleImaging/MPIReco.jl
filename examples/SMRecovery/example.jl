@@ -1,14 +1,18 @@
-using Pkg
+using Pkg, DelimitedFiles, MPIReco
 
 # Install required packages
-for P in ["HTTP","TensorDecompositions", "PyPlot"]
-  !haskey(Pkg.installed(), P) && Pkg.add(P)
+for P in [:HTTP,:TensorDecompositions, :PyPlot]
+ try 
+   @eval using $P
+ catch
+   Pkg.add(String(P))
+   @eval using $P
+ end
 end
 
 # Download data
 include("downloadData.jl")
 
-using MPIReco, DelimitedFiles, PyPlot
 include("./utils/subsampling.jl")
 include("./utils/FRTruncation.jl")
 
@@ -22,7 +26,7 @@ f = [2145,8629,60903]
 S = ComplexF64.( getSystemMatrix(bSF,f,bgCorrection=true, tfCorrection=false) )
 
 # sampling locations (linear index)
-samplingIdx = vec( readdlm("./data/pdSamplingIdx.txt", '\t', Int64) )
+samplingIdx = vec( readdlm(joinpath(@__DIR__,"data/pdSamplingIdx.txt"), '\t', Int64) )
 
 # get undersampled data
 y = sfMeas(S, samplingIdx)
