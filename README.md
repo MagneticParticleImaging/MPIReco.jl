@@ -1,6 +1,6 @@
 # MPIReco
 
-[![Build Status](https://travis-ci.org/MagneticParticleImaging/MPIReco.jl.svg?branch=master)](https://travis-ci.com/MagneticParticleImaging/MPIReco.jl)
+[![CI](https://github.com/MagneticParticleImaging/MPIReco.jl/workflows/CI/badge.svg)](https://github.com/MagneticParticleImaging/MPIReco.jl/actions?query=workflow%3ACI)
 
 [![Build status](https://ci.appveyor.com/api/projects/status/vc0d2tt8bxdv3dnk/branch/master?svg=true)](https://ci.appveyor.com/project/tknopp/mpireco-jl/branch/master)
 
