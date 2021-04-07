@@ -1,8 +1,7 @@
-import ImageMagick
 using MPIReco, Documenter
 
 makedocs(
-    format = :html,
+    format = Documenter.HTML(prettyurls = false),
     modules = [MPIReco],
     sitename = "MPI Reconstruction",
     authors = "Tobias Knopp,...",
@@ -16,7 +15,6 @@ makedocs(
         "Multi-Patch" => "multiPatch.md",
         "Compression" => "matrixCompression.md"
     ],
-    html_prettyurls = false, #!("local" in ARGS),
 )
 
 deploydocs(repo   = "github.com/MagneticParticleImaging/MPIReco.jl.git",
