@@ -1,8 +1,8 @@
 using MPIReco
 
 @testset "sparse single- and multi-channel in-memory reconstruction" begin
-  bSF = MPIFile("./data/mdf/systemMatrix.mdf")
-  b = MPIFile("./data/mdf/measurement.mdf")
+  bSF = MPIFile("$datadir/mdf/systemMatrix.mdf")
+  b = MPIFile("$datadir/mdf/measurement.mdf")
   redFactor = 0.01
   names = (:color, :x, :y, :z, :time)
   values = (1:1,
@@ -22,7 +22,7 @@ using MPIReco
 		      spectralLeakageCorrection=false)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values
-  exportImage("./img/Sparse1.png", arraydata(c1[1,:,:,1,1]))
+  exportImage("$imgdir/Sparse1.png", arraydata(c1[1,:,:,1,1]))
 
   c2 = reconstruction(bSF, b; lambd=0.1,SNRThresh = 2, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="FFT",
@@ -31,7 +31,7 @@ using MPIReco
 		      useDFFoV = false)
   @test axisnames(c2) == names
   @test axisvalues(c2) == values
-  exportImage("./img/Sparse2.png", arraydata(c2[1,:,:,1,1]))
+  exportImage("$imgdir/Sparse2.png", arraydata(c2[1,:,:,1,1]))
 
   c3 = reconstruction(bSF, b; lambd=0.1, SNRThresh = 2, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="FFT",
@@ -40,7 +40,7 @@ using MPIReco
 		      useDFFoV = true)
   @test axisnames(c3) == names
   @test axisvalues(c3) == valuesDF
-  exportImage("./img/Sparse3.png", arraydata(c3[1,:,:,1,1]))
+  exportImage("$imgdir/Sparse3.png", arraydata(c3[1,:,:,1,1]))
 
   c4 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="DCT-IV",
@@ -49,7 +49,7 @@ using MPIReco
 		      useDFFoV = false)
   @test axisnames(c4) == names
   @test axisvalues(c4) == values
-  exportImage("./img/Sparse4.png", arraydata(c4[1,:,:,1,1]))
+  exportImage("$imgdir/Sparse4.png", arraydata(c4[1,:,:,1,1]))
 
   c5 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="DCT-IV",
@@ -58,7 +58,7 @@ using MPIReco
 		      useDFFoV = true)
   @test axisnames(c5) == names
   @test axisvalues(c5) == valuesDF
-  exportImage("./img/Sparse5.png", arraydata(c5[1,:,:,1,1]))
+  exportImage("$imgdir/Sparse5.png", arraydata(c5[1,:,:,1,1]))
 
   c6 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="DST",
@@ -67,7 +67,7 @@ using MPIReco
 		      useDFFoV = false)
   @test axisnames(c6) == names
   @test axisvalues(c6) == values
-  exportImage("./img/Sparse6.png", arraydata(c6[1,:,:,1,1]))
+  exportImage("$imgdir/Sparse6.png", arraydata(c6[1,:,:,1,1]))
 
   c7 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="DST",
@@ -76,5 +76,5 @@ using MPIReco
 		      useDFFoV = true)
   @test axisnames(c7) == names
   @test axisvalues(c7) == valuesDF
-  exportImage("./img/Sparse7.png", arraydata(c7[1,:,:,1,1]))
+  exportImage("$imgdir/Sparse7.png", arraydata(c7[1,:,:,1,1]))
 end
