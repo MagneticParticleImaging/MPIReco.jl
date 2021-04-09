@@ -1,8 +1,8 @@
 using MPIReco
 
 @testset "sparse single- and multi-channel in-memory reconstruction" begin
-  bSF = MPIFile("$datadir/HeadScanner/systemMatrix.mdf")
-  b = MPIFile("$datadir/HeadScanner/measurement.mdf")
+  bSF = MPIFile(joinpath(datadir, "HeadScanner", "systemMatrix.mdf"))
+  b = MPIFile(joinpath(datadir, "HeadScanner", "measurement.mdf"))
 
 
   numPeriodAverages = 65
@@ -19,7 +19,7 @@ using MPIReco
            lambd=0.01, iterations=100, bgCorrectionInternal=bgCorrection,
            spectralLeakageCorrection=false)
 
-  exportImage("$imgdir/Cartesian1.png", arraydata(c1[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Cartesian1.png"), arraydata(c1[1,:,:,1,1]))
 
   # SP Reco
   numPeriodGrouping = numPatches
@@ -31,7 +31,7 @@ using MPIReco
            lambd=0.01, iterations=100, bgCorrectionInternal=bgCorrection,
            spectralLeakageCorrection=false)
 
-  exportImage("$imgdir/Cartesian2.png", arraydata(c2[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Cartesian2.png"), arraydata(c2[1,:,:,1,1]))
 
   ####  Low Level ####
 
@@ -53,7 +53,7 @@ using MPIReco
 
   c3 = reshape(reconstruction(transpose(S), u, lambd=0.01, iterations=100), N[1], N[2])
 
-  exportImage("$imgdir/Cartesian3.png", c3)
+  exportImage(joinpath(imgdir, "Cartesian3.png"), c3)
 
 
   ## SP
@@ -72,7 +72,7 @@ using MPIReco
 
   c4 = reshape(reconstruction(transpose(S), u, lambd=0.01, iterations=100), N[1], N[2])
 
-  exportImage("$imgdir/Cartesian4.png", c4)
+  exportImage(joinpath(imgdir, "Cartesian4.png"), c4)
 
   ####  Multi Color ####
 
@@ -82,6 +82,6 @@ using MPIReco
            lambd=0.01, iterations=100, bgCorrectionInternal=bgCorrection,
            spectralLeakageCorrection=false)
 
-  exportImage("$imgdir/Cartesian5.png", arraydata(c5[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Cartesian5.png"), arraydata(c5[1,:,:,1,1]))
   
 end

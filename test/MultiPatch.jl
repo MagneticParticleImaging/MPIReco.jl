@@ -1,8 +1,9 @@
 using MPIReco
 
 @testset "multi-patch in-memory reconstruction" begin
-  bSF = MultiMPIFile(["$datadir/SF_MP"])
-  b = MultiMPIFile(["$datadir/MP01", "$datadir/MP02", "$datadir/MP03", "$datadir/MP04"])
+  bSF = MultiMPIFile([joinpath(datadir, "SF_MP")])
+  dirs = ["MP01", "MP02", "MP03", "MP04"]
+  b = MultiMPIFile(joinpath.(datadir, dirs))
   names = (:color, :x, :y, :z, :time)
   values1 = (1:1,
 	    -27.5u"mm":1.25u"mm":27.5u"mm",
@@ -19,7 +20,7 @@ using MPIReco
 			    spectralLeakageCorrection=false)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values1
-  exportImage("$imgdir/MultiPatch1.png", arraydata(c1[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "MultiPatch1.png"), arraydata(c1[1,:,:,1,1]))
 
   # TODO test description
   c2 = reconstruction(bSF, b;
@@ -28,20 +29,22 @@ using MPIReco
 			    spectralLeakageCorrection=false)
   @test axisnames(c2) == names
   @test axisvalues(c2) == values1
-  exportImage("$imgdir/MultiPatch2.png", arraydata(c2[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "MultiPatch2.png", arraydata(c2[1,:,:,1,1]))
 
   # multi-patch reconstruction using multiple system matrices
-  bSFs = MultiMPIFile(["$datadir/SF_MP01", "$datadir/SF_MP02", "$datadir/SF_MP03", "$datadir/SF_MP04"])
+  dirs = ["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"]
+  bSFs = MultiMPIFile(joinpath(datadir, dirs))
   c3 = reconstruction(bSFs, b;
 			    SNRThresh=5, frames=1, minFreq=80e3,
 			    recChannels=1:2,iterations=1,
 			    spectralLeakageCorrection=false)
   @test axisnames(c3) == names
   @test axisvalues(c3) == values2
-  exportImage("$imgdir/MultiPatch3.png", arraydata(c3[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "MultiPatch3.png"), arraydata(c3[1,:,:,1,1]))
 
   # flexible multi-patch reconstruction
-  bSFs = MultiMPIFile(["$datadir/SF_MP01", "$datadir/SF_MP02", "$datadir/SF_MP03", "$datadir/SF_MP04"])
+  dirs = ["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"]
+  bSFs = MultiMPIFile(joinpath.(datadir, dirs))
   mapping = [1,2,3,4]
   freq = filterFrequencies(bSFs, SNRThresh=5, minFreq=80e3)
   S = [getSF(SF,freq,nothing,"kaczmarz", bgcorrection=false)[1] for SF in bSFs]
@@ -59,6 +62,6 @@ using MPIReco
 			    FFPos=FFPos, FFPosSF=FFPos)
   @test axisnames(c4) == names
   @test axisvalues(c4) == values2
-  exportImage("$imgdir/MultiPatch4.png", arraydata(c4[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "MultiPatch4.png"), arraydata(c4[1,:,:,1,1]))
   # TODO the last test shows odd results
 end

@@ -6,9 +6,10 @@ using Scratch
 using LazyArtifacts
 
 const datadir = joinpath(artifact"data", "data")
-const imgdir  = @get_scratch!("img")
+@info "The test data is located at $datadir."
 
-@info "If you want to check the output of the tests, please head to $imgdir"
+const imgdir  = @get_scratch!("img")
+@info "If you want to check the output of the tests, please head to $imgdir."
 
 function exportImage(filename, I::AbstractMatrix)
   Iabs = abs.(I)
