@@ -29,11 +29,11 @@ using MPIReco
 			    spectralLeakageCorrection=false)
   @test axisnames(c2) == names
   @test axisvalues(c2) == values1
-  exportImage(joinpath(imgdir, "MultiPatch2.png", arraydata(c2[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "MultiPatch2.png"), arraydata(c2[1,:,:,1,1]))
 
   # multi-patch reconstruction using multiple system matrices
   dirs = ["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"]
-  bSFs = MultiMPIFile(joinpath(datadir, dirs))
+  bSFs = MultiMPIFile(joinpath.(datadir, dirs))
   c3 = reconstruction(bSFs, b;
 			    SNRThresh=5, frames=1, minFreq=80e3,
 			    recChannels=1:2,iterations=1,
