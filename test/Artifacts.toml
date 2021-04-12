@@ -1,12 +1,7 @@
 [data]
-#git-tree-sha1 = "ec65d553879f5d1b20e61ff978c5d2bfb86305b6" # Tobias
-git-tree-sha1 = "6f83a9f692d6e7f903daef87a5c730e53465486c" # Meins
+git-tree-sha1 = "6f83a9f692d6e7f903daef87a5c730e53465486c"
 lazy = true
 
     [[data.download]]
-    #url = "http://media.tuhh.de/ibi/MPIReco/data.tar.gz" # Tobias
-    #url = "file:///C:/Users/schumacherj/Downloads/data.tar.gz" # Tobias (downloaded)
-    #url = "https://fraunhofer-my.sharepoint.com/personal/jonas_schumacher_imte_fraunhofer_de/_layouts/15/download.aspx?SourceUrl=%2Fpersonal%2Fjonas%5Fschumacher%5Fimte%5Ffraunhofer%5Fde%2FDocuments%2Fdata%2Etar%2Egz"
-    url = "http://jonasschumacher.de/data.tar.gz"
-    #sha256 = "b568beb4342f111f32444b73bf6417b3a29a4755d58f3e41863d94719703f571" # Tobias
-    sha256 = "2995e77be10f67308c199f89a0b5bfa87daf192df5050db095cf451a52a86e89" # Meins
+    url = "http://media.tuhh.de/ibi/MPIReco/data.tar.gz"
+    sha256 = "2995e77be10f67308c199f89a0b5bfa87daf192df5050db095cf451a52a86e89"
