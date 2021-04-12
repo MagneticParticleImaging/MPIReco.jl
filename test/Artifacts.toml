@@ -1,0 +1,7 @@
+[data]
+git-tree-sha1 = "6f83a9f692d6e7f903daef87a5c730e53465486c"
+lazy = true
+
+    [[data.download]]
+    url = "http://media.tuhh.de/ibi/MPIReco/data.tar.gz"
+    sha256 = "2995e77be10f67308c199f89a0b5bfa87daf192df5050db095cf451a52a86e89"

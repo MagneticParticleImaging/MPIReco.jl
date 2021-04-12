@@ -2,20 +2,14 @@ import ImageMagick
 using HTTP
 using Test
 using FileIO
+using Scratch
+using LazyArtifacts
 
-if !isdir("data")
-  @info "download data.zip"
-  HTTP.open("GET", "http://media.tuhh.de/ibi/MPIReco/data.zip") do http
-    open("data.zip", "w") do file
-        write(file, http)
-    end
-  end
-  @info "extracting data.zip"
-  run(`unzip -oq data.zip`)
-  rm("data.zip")
-end
+const datadir = joinpath(artifact"data", "data")
+@info "The test data is located at $datadir."
 
-mkpath("./img/")
+const imgdir  = @get_scratch!("img")
+@info "If you want to check the output of the tests, please head to $imgdir."
 
 function exportImage(filename, I::AbstractMatrix)
   Iabs = abs.(I)
@@ -23,12 +17,12 @@ function exportImage(filename, I::AbstractMatrix)
   save(filename, Icolored )
 end
 
+include("LoadSaveMDF.jl")
+include("Reconstruction.jl")
 include("Cartesian.jl")
 include("MotionCompensation.jl")
-include("Reconstruction.jl")
 include("MultiPatch.jl")
 include("MultiGradient.jl")
 include("Sparse.jl")
 include("SMCenter.jl")
-include("LoadSaveMDF.jl")
 include("SMRecovery.jl")

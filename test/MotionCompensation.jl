@@ -15,14 +15,14 @@ using MPIReco
   windowType = 1  # 1: Hann, 2: FT1A05, 3: Rectangle
 
   # Measurement data
-  datadirMeas = "./data/mdf/"
-  bMeas = MPIFile(datadirMeas*"measFast.mdf") # high frequency
-  bBG = MPIFile(datadirMeas*"measBG.mdf") # background measurement
+  datadirMeas = joinpath(datadir, "mdf")
+  bMeas = MPIFile(joinpath(datadirMeas, "measFast.mdf")) # high frequency
+  bBG = MPIFile(joinpath(datadirMeas, "measBG.mdf")) # background measurement
 
   # System matrices
-  datadirSF = "./data/mdf/"
+  datadirSF = joinpath(datadir, "mdf")
   SFall = ["SF1Small.mdf","SF2Small.mdf","SF3Small.mdf","SF4Small.mdf"]
-  bSF = MultiMPIFile(datadirSF.*SFall)
+  bSF = MultiMPIFile(joinpath.(datadirSF, SFall))
 
   # Background frames
   bgFrames = [1:200, 201:400, 401:600 ,601:800]
@@ -45,6 +45,6 @@ using MPIReco
                                 lambda=lambda, iterations=iterations, # reconstruction parameter
                                 SNRThresh=10, minFreq=80e3, recChannels=[1,2,3]) #frequency selection
 
-  exportImage("./img/MotionComp.png", maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
+  exportImage(joinpath(imgdir, "MotionComp.png"), maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
 
 end
