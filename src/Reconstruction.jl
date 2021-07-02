@@ -1,30 +1,48 @@
 export reconstruction
 export writePartToImage!, initImage
 
+function reconstruction(experiment::Experiment{MDFDatasetStore}, recoParams)
+    study = getStudy(experiment)
+    dataSetStore = getMDFStore(experiment)
+    return reconstruction(dataSetStore, study, experiment, recoParams)
+end
+
+function reconstruction(dataSetStore::MDFDatasetStore,experiment::Experiment, recoParams)
+    study = getStudy(experiment)
+    return reconstruction(dataSetStore, study, experiment, recoParams)
+end
+
 """
 This is the most high level reconstruction method using the `MDFDatasetStore`
 """
-function reconstruction(d::MDFDatasetStore, study::Study, exp::Experiment, recoParams)
+function reconstruction(d::MDFDatasetStore, study::Study, experiment::Experiment, recoParams)
+    recoParams = copy(recoParams)
+    if !haskey(recoParams,:measPath)
+        recoParams[:measPath] = path(experiment)
+    elseif recoParams[:measPath] != path(experiment)
+        recoParams[:measPath] = path(experiment)
+        @warn "conflicting measurement paths in `recoParams` and `experiment`. Set `recoParams[:measPath] = path(experiment)`"
+    end
 
   !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( MPIFile( recoParams[:measPath] ) ))
-  numReco = findReco(d,study,exp,recoParams)
+  numReco = findReco(d,study,experiment,recoParams)
 
   haskey(recoParams,:emptyMeasPath) && recoParams[:emptyMeasPath]!=nothing && (recoParams[:emptyMeas] = MPIFile( recoParams[:emptyMeasPath] ) )
 
-  #numReco = findReco(d,study,exp,recoParams)
+  #numReco = findReco(d,study,experiment,recoParams)
   if numReco > 0
     @info "Reconstruction found in MDF dataset store."
-    reco = getReco(d,study,exp, numReco)
+    reco = getReco(d,study,experiment, numReco)
     c = loadRecoData(reco.path)
   else
     c = reconstruction(recoParams)
-    addReco(d,study,exp, c)
+    addReco(d,study,experiment, c)
   end
   return c
 end
 
 # The previous function is somewhat redundant in its arguments. In particular
-# the measPath and the study/exp are redundant. Should be cleaned up before
+# the measPath and the study/experiment are redundant. Should be cleaned up before
 # it can be used as a user facing API
 #
 #function reconstruction(d::MDFDatasetStore, recoParams::Dict)
@@ -42,8 +60,8 @@ end
 #                         TreeModel(m.studyStoreSorted)[currentIt,3],
 #                         TreeModel(m.studyStoreSorted)[currentIt,1])
 #
-#  exp = getExperiment(study, recoParams[:measPath])
-#  return reconstruction(d, study, exp, recoParams)
+#  experiment = getExperiment(study, recoParams[:measPath])
+#  return reconstruction(d, study, experiment, recoParams)
 #end
 
 
