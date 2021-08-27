@@ -16,20 +16,24 @@ end
 This is the most high level reconstruction method using the `MDFDatasetStore`
 """
 function reconstruction(d::MDFDatasetStore, study::Study, experiment::Experiment, recoParams)
-    recoParams = copy(recoParams)
-    if !haskey(recoParams,:measPath)
-        recoParams[:measPath] = path(experiment)
-    elseif recoParams[:measPath] != path(experiment)
-        recoParams[:measPath] = path(experiment)
-        @warn "conflicting measurement paths in `recoParams` and `experiment`. Set `recoParams[:measPath] = path(experiment)`"
-    end
+  recoParams = copy(recoParams)
+  if haskey(recoParams,:measPath)
+      @error "conflicting measurement paths in `recoParams` and `experiment`. Set `recoParams[:measPath] = path(experiment)`"
+  end
+
+  recoParams[:measPath] = path(experiment)
 
   !(haskey(recoParams,:SFPath)) && (recoParams[:SFPath] = sfPath( MPIFile( recoParams[:measPath] ) ))
+  if isa(recoParams[:SFPath], AbstractString)
+    recoParams[:SFPath] =  MPIFiles.extendPath(d,recoParams[:SFPath])
+  else
+    recoParams[:SFPath] .=  MPIFiles.extendPath.(d,recoParams[:SFPath]) 
+  end
+  
   numReco = findReco(d,study,experiment,recoParams)
 
   haskey(recoParams,:emptyMeasPath) && recoParams[:emptyMeasPath]!=nothing && (recoParams[:emptyMeas] = MPIFile( recoParams[:emptyMeasPath] ) )
 
-  #numReco = findReco(d,study,experiment,recoParams)
   if numReco > 0
     @info "Reconstruction found in MDF dataset store."
     reco = getReco(d,study,experiment, numReco)
