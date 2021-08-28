@@ -27,7 +27,7 @@ function reconstruction(d::MDFDatasetStore, study::Study, experiment::Experiment
   if isa(recoParams[:SFPath], AbstractString)
     recoParams[:SFPath] =  MPIFiles.extendPath(d,recoParams[:SFPath])
   else
-    recoParams[:SFPath] .=  MPIFiles.extendPath.(d,recoParams[:SFPath]) 
+    recoParams[:SFPath] = map(s->MPIFiles.extendPath(d,s),recoParams[:SFPath]) 
   end
   
   numReco = findReco(d,study,experiment,recoParams)
