@@ -1,7 +1,7 @@
 export getBackgroundDictionaryComplete
 
 function getBackgroundDictionaryComplete(fSF::MPIFile, f::MPIFile, frequencies,
-                                       bgFrames=nothing)
+                                       bgFrames=nothing, numBGAverages=1)
   idxBGFrames = measBGFrameIdx(fSF)
 
   D = measData(fSF, idxBGFrames)
@@ -9,9 +9,9 @@ function getBackgroundDictionaryComplete(fSF::MPIFile, f::MPIFile, frequencies,
   bgdata = reshape(D_[:,frequencies,:],length(idxBGFrames),:)
 
   if bgFrames != nothing
-    uEmpty = getMeasurementsFD(f, frequencies=frequencies, frames=bgFrames, numAverages=1,
+    uEmpty = getMeasurementsFD(f, frequencies=frequencies, frames=bgFrames, numAverages=numBGAverages,
                                spectralLeakageCorrection=false, bgCorrection=false)
-    bgdata2 = transpose(reshape(uEmpty, :, length(bgFrames)))
+    bgdata2 = transpose(reshape(uEmpty, :, div(length(bgFrames),numBGAverages)))
 
     bgdata = cat(bgdata2,bgdata,dims=1)
   end
@@ -20,8 +20,8 @@ function getBackgroundDictionaryComplete(fSF::MPIFile, f::MPIFile, frequencies,
 end
 
 function getBackgroundDictionary(fSF::MPIFile, f::MPIFile, frequencies,
-                                 bgDictSize::Int=2, bgFrames=nothing)
-  U,S,V = getBackgroundDictionaryComplete(fSF, f, frequencies, bgFrames)
+                                 bgDictSize::Int=2, bgFrames=nothing, numBGAverages=1)
+  U,S,V = getBackgroundDictionaryComplete(fSF, f, frequencies, bgFrames, numBGAverages)
 
   for l=1:bgDictSize
     U[:,l] *= (S[l] / S[1])^(1/2)
