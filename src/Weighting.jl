@@ -34,7 +34,7 @@ function getWeights(weightType, freq, S; weightingLimit=0.0, bEmpty = nothing,
     return vec(weights)[freq]
   elseif weightType == WeightingType.BGVariance
     if bEmpty == nothing
-      stdDevU = sqrt(vec(getBV(bSF)))
+      stdDevU = sqrt.(vec(getBV(bSF)))
     else
       uEmpty = getMeasurementsFT(bEmpty,frames=bgFrames)
       stdDevU = sqrt(abs(var(uEmpty,3 )))
