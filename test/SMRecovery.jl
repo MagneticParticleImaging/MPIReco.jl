@@ -30,7 +30,7 @@ using MPIReco
   @info "recovery using DCT"
   S_dct = smRecovery(y,samplingIdx,params)
   for k=1:numFreqs
-    @test norm(S[:,k] - S_dct[:,k]) / norm(S[:,k]) ≈ 0 atol=0.11
+    @test norm(S[:,k] - S_dct[:,k]) / norm(S[:,k]) ≈ 0 atol=0.15
   end
 
   # DCT and low rank
@@ -39,6 +39,6 @@ using MPIReco
   params[:ρ_lr] = 2.e-1
   S_dctlr = smRecovery(y,samplingIdx,params)
   for k=1:numFreqs
-    @test norm(S[:,k] - S_dct[:,k]) / norm(S[:,k]) ≈ 0 atol=0.11
+    @test norm(S[:,k] - S_dct[:,k]) / norm(S[:,k]) ≈ 0 atol=0.15
   end
 end
