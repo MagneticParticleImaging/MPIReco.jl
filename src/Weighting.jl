@@ -9,7 +9,7 @@ baremodule WeightingType
   Channel = 5
 end
 
-function getWeights(weightType, freq, S; weightingLimit=0.0, bEmpty = nothing,
+function getWeights(weightType, freq, S; weightingLimit=0.0, emptyMeas = nothing,
                  bgFrames=1:10, bMeas = nothing, fgFrames = 1:10, bSF=nothing,
                  channelWeights=[1.0,1.0,1.0])
 
@@ -33,10 +33,10 @@ function getWeights(weightType, freq, S; weightingLimit=0.0, bEmpty = nothing,
     end
     return vec(weights)[freq]
   elseif weightType == WeightingType.BGVariance
-    if bEmpty == nothing
+    if emptyMeas == nothing
       stdDevU = sqrt.(vec(getBV(bSF)))
     else
-      uEmpty = getMeasurementsFT(bEmpty,frames=bgFrames)
+      uEmpty = getMeasurementsFT(emptyMeas,frames=bgFrames)
       stdDevU = sqrt(abs(var(uEmpty,3 )))
     end
     reciprocalWeights = stdDevU[freq]
@@ -47,7 +47,7 @@ function getWeights(weightType, freq, S; weightingLimit=0.0, bEmpty = nothing,
     freqMask = zeros(nFreq, nReceivers)
 
     u = getMeasurementsFT(bMeas,frames=fgFrames, spectralCleaning=true)
-    uEmpty = getMeasurementsFT(bEmpty,frames=bgFrames, spectralCleaning=true)
+    uEmpty = getMeasurementsFT(emptyMeas,frames=bgFrames, spectralCleaning=true)
 
     stdDevU = sqrt(abs(var(u,3 )))
     stdDevUEmpty = sqrt(abs(var(uEmpty,3 )))
@@ -85,7 +85,7 @@ function getWeights(weightType, freq, S; weightingLimit=0.0, bEmpty = nothing,
 end
 
 
-function setNoiseFreqToZero(uMeas, freq, noiseFreqThresh; bEmpty = nothing, bgFrames=1:10, bMeas = nothing, fgFrames = 1:10)
+function setNoiseFreqToZero(uMeas, freq, noiseFreqThresh; emptyMeas = nothing, bgFrames=1:10, bMeas = nothing, fgFrames = 1:10)
   @debug "Setting noise frequencies to zero"
 
   nFreq = numFreq(bMeas)
@@ -93,7 +93,7 @@ function setNoiseFreqToZero(uMeas, freq, noiseFreqThresh; bEmpty = nothing, bgFr
   freqMask = zeros(nFreq, nReceivers)
 
   u = getMeasurementsFT(bMeas,frames=fgFrames)
-  uEmpty = getMeasurementsFT(bEmpty,frames=bgFrames)
+  uEmpty = getMeasurementsFT(emptyMeas,frames=bgFrames)
 
   stdDevU = sqrt(abs(var(u,3 )))
   meanU = abs(mean(u,dims=3).-mean(uEmpty,dims=3))
