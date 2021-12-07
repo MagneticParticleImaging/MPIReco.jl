@@ -1,7 +1,7 @@
 name = "MPIReco"
 uuid = "e4246700-6248-511e-8146-a1d1f47669d2"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.3.7"
+version = "0.3.8"
 
 [deps]
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
@@ -19,7 +19,7 @@ DSP = "0.6"
 DistributedArrays = "0.6"
 ImageUtils = "0.2"
 IniFile = "0.5"
-MPIFiles = "0.11.14"
+MPIFiles = "0.12"
 RegularizedLeastSquares = "0.7"
 julia = "1.5"
 
