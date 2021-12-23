@@ -2,6 +2,9 @@ import Base.length, Base.size
 
 export getSF, SVD, tikhonovLU, setlambda
 
+include("SystemMatrixRecovery.jl")
+include("SystemMatrixCenter.jl")
+
 function converttoreal(S::AbstractArray{Complex{T}},f) where T
   N = prod(calibSize(f))
   M = div(length(S),N)

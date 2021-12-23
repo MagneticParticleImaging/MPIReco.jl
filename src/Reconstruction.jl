@@ -158,7 +158,7 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
   deadPixels=Int[], bgCorrectionInternal=false, bgDictSize=nothing, bgFramesDict=nothing,
-  numPeriodAverages=1, numPeriodGrouping=1, kargs...) where {T<:MPIFile}
+  numPeriodAverages=1, numPeriodGrouping=1, reco=:default, kargs...) where {T<:MPIFile}
 
   (typeof(bgFrames) <: AbstractRange && emptyMeas==nothing) && (emptyMeas = bMeas)
   bgCorrection = emptyMeas != nothing ? true : bgCorrectionInternal
@@ -179,11 +179,21 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
 
   bgDict = getBackgroundDictionary(bSF, bMeas, freq, bgDictSize, bgFramesDict)
 
-  return reconstruction(S, bSF, bMeas, freq, grid, emptyMeas=emptyMeas, bgFrames=bgFrames,
+  if reco == :default
+    return reconstruction(S, bSF, bMeas, freq, grid, emptyMeas=emptyMeas, bgFrames=bgFrames,
                         sparseTrafo=sparseTrafo, loadasreal=loadasreal,
                         bgDict = bgDict,
                         solver=solver, bgCorrectionInternal=bgCorrectionInternal,
                         numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping; kargs...)
+  elseif reco == :tempReg
+    return reconstructionTempReg(S, bSF, bMeas, freq, grid, emptyMeas=emptyMeas, bgFrames=bgFrames,
+                        sparseTrafo=sparseTrafo, loadasreal=loadasreal,
+                        bgDict = bgDict,
+                        solver=solver, bgCorrectionInternal=bgCorrectionInternal,
+                        numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping; kargs...)
+  else
+    error("Parameter :reco is chosen as $(reco), which is not available!")
+  end
 end
 
 function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
