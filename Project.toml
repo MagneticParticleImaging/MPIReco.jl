@@ -13,6 +13,10 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MPIFiles = "371237a9-e6c1-5201-9adb-3d8cfa78fa9f"
 RegularizedLeastSquares = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 
 [compat]
 DSP = "0.6"
@@ -21,6 +25,10 @@ ImageUtils = "0.2"
 IniFile = "0.5"
 MPIFiles = "0.12"
 RegularizedLeastSquares = "0.7"
+BSON = "0.3.4"
+CUDA = "3.5.0"
+Distributions = "0.25.35"
+Flux = "0.12.8"
 julia = "1.5"
 
 [extras]

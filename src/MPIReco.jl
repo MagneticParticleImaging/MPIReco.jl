@@ -14,6 +14,12 @@ module MPIReco
   using IniFile
   import LinearAlgebra: ldiv!, \
 
+  # ML Stuff
+  import Distributions
+  using Flux
+  using CUDA
+  using BSON
+
 
   include("Utils.jl")
   include("MultiContrast.jl")
@@ -26,4 +32,5 @@ module MPIReco
   include("MultiPatch.jl")
   include("SystemMatrixRecovery.jl")
   include("MotionCompensation/MotionCompensation.jl")
+  include("MachineLearning/MachineLearning.jl")
 end # module
