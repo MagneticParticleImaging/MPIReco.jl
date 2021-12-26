@@ -1,9 +1,11 @@
 using MPIReco
 
 @testset "system matrix center estimation" begin
-  dirs = ["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"]
-  SFs = joinpath.(datadir, dirs)
-  center = [[9.0,23.0,1.0],[9.0,10.0,1.0],[22.0,23.0,1.0],[22.0,10.0,1.0]]
+  #dirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]   8.mdf is wrong. BG is subtracted twice
+  dirs = ["9.mdf", "10.mdf", "11.mdf"]
+  SFs = joinpath.(datadir, "calibrations", dirs)
+  #center = [[9.0,23.0,1.0],[9.0,10.0,1.0],[22.0,23.0,1.0],[22.0,10.0,1.0]]
+  center = [[9.0,10.0,1.0],[22.0,23.0,1.0],[22.0,10.0,1.0]]
 
   for (l,SF) in enumerate(SFs)
     bSF = MPIFile(SF)

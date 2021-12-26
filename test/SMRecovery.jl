@@ -3,7 +3,7 @@ using MPIReco
 @testset "system matrix recovery" begin
   # patterns of system matrix
   Random.seed!(1234)
-  bSF = MPIFile(joinpath(datadir, "SF_MP"))
+  bSF = MPIFile(joinpath(datadir, "calibrations", "12.mdf"))
   shape = calibSize(bSF)
   numFreqs = 3
   f = filterFrequencies(bSF, sortBySNR=true)
