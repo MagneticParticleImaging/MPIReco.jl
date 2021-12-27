@@ -1,8 +1,8 @@
 using MPIReco
 
 @testset "sparse single- and multi-channel in-memory reconstruction" begin
-  bSF = MPIFile(joinpath(datadir, "mdf", "systemMatrix.mdf"))
-  b = MPIFile(joinpath(datadir, "mdf", "measurement.mdf"))
+  bSF = MPIFile(joinpath(datadir, "calibrations", "7.mdf"))
+  b = MPIFile(joinpath(datadir, "measurements","20211226_204612_Dice", "1.mdf"))
   redFactor = 0.01
   names = (:color, :x, :y, :z, :time)
   values = (1:1,

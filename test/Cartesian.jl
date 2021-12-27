@@ -1,8 +1,8 @@
 using MPIReco
 
 @testset "sparse single- and multi-channel in-memory reconstruction" begin
-  bSF = MPIFile(joinpath(datadir, "HeadScanner", "systemMatrix.mdf"))
-  b = MPIFile(joinpath(datadir, "HeadScanner", "measurement.mdf"))
+  bSF = MPIFile(joinpath(datadir, "calibrations", "1.mdf"))
+  b = MPIFile(joinpath(datadir, "measurements", "20211226_203850_HeadScanner", "1.mdf"))
 
 
   numPeriodAverages = 65

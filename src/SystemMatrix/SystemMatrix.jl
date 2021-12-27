@@ -2,6 +2,9 @@ import Base.length, Base.size
 
 export getSF, SVD, tikhonovLU, setlambda
 
+include("SystemMatrixRecovery.jl")
+include("SystemMatrixCenter.jl")
+
 function converttoreal(S::AbstractArray{Complex{T}},f) where T
   N = prod(calibSize(f))
   M = div(length(S),N)
@@ -129,13 +132,13 @@ end
 This function reads the component belonging to the given mixing-factors und channel from the given MPIfile.\n
 In the case of a 2D systemfunction, the third dimension is added.
 """
-function getSF(bSF::MPIFile, mx::Int, my::Int, mz::Int, recChan::Int)
+function getSF(bSF::MPIFile, mx::Int, my::Int, mz::Int, recChan::Int; bgcorrection=true)
   maxFreq  = rxNumFrequencies(bSF)
   freq = mixFactorToFreq(bSF, mx, my, mz)
   freq = clamp(freq,0,maxFreq-1)
   k = freq + (recChan-1)*maxFreq
   @debug "Frequency = $k"
-  SF, grid = getSF(bSF,[k+1],returnasmatrix = true, bgcorrection=true)
+  SF, grid = getSF(bSF,[k+1],returnasmatrix = true, bgcorrection=bgcorrection)
   N = calibSize(bSF)
   SF = reshape(SF,N[1],N[2],N[3])
 

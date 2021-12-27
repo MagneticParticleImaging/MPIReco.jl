@@ -14,16 +14,22 @@ module MPIReco
   using IniFile
   import LinearAlgebra: ldiv!, \
 
+  # ML Stuff
+  import Distributions
+  using Flux
+  using CUDA
+  using BSON
+
 
   include("Utils.jl")
   include("MultiContrast.jl")
   include("RecoParameters.jl")
-  include("SystemMatrixCenter.jl")
-  include("SystemMatrix.jl")
+  include("SystemMatrix/SystemMatrix.jl")
   include("Weighting.jl")
   include("Background.jl")
+  include("TemporalRegularization/TemporalRegularization.jl")
   include("Reconstruction.jl")
   include("MultiPatch.jl")
-  include("SystemMatrixRecovery.jl")
   include("MotionCompensation/MotionCompensation.jl")
+  include("MachineLearning/MachineLearning.jl")
 end # module

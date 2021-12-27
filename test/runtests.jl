@@ -5,7 +5,7 @@ using FileIO
 using Scratch
 using LazyArtifacts
 
-const datadir = joinpath(artifact"data", "data")
+const datadir = joinpath(artifact"data")
 @info "The test data is located at $datadir."
 
 const imgdir  = @get_scratch!("img")

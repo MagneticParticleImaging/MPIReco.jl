@@ -15,13 +15,13 @@ using MPIReco
   windowType = 1  # 1: Hann, 2: FT1A05, 3: Rectangle
 
   # Measurement data
-  datadirMeas = joinpath(datadir, "mdf")
-  bMeas = MPIFile(joinpath(datadirMeas, "measFast.mdf")) # high frequency
-  bBG = MPIFile(joinpath(datadirMeas, "measBG.mdf")) # background measurement
+  datadirMeas = joinpath(datadir, "measurements", "20211226_204336_Rotation")
+  bMeas = MPIFile(joinpath(datadirMeas, "1.mdf")) # high frequency
+  bBG = MPIFile(joinpath(datadirMeas, "2.mdf")) # background measurement
 
   # System matrices
-  datadirSF = joinpath(datadir, "mdf")
-  SFall = ["SF1Small.mdf","SF2Small.mdf","SF3Small.mdf","SF4Small.mdf"]
+  datadirSF = joinpath(datadir, "calibrations")
+  SFall = ["3.mdf","4.mdf","5.mdf","6.mdf"]
   bSF = MultiMPIFile(joinpath.(datadirSF, SFall))
 
   # Background frames
