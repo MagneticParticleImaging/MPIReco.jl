@@ -1,10 +1,12 @@
 module MPIReco
   using RegularizedLeastSquares
+  using Reexport
   @reexport using RegularizedLeastSquares
   @reexport using ImageUtils
   @reexport using MPIFiles
   const shape = MPIFiles.shape
   @reexport using DSP
+  using ProgressMeter
 
   using LinearAlgebra
   using SparseArrays
