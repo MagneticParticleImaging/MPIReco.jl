@@ -23,7 +23,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 [compat]
 BSON = "0.3.4"
 CUDA = "3.5.0"
-DSP = "0.6"
+DSP = "0.6, 0.7"
 DistributedArrays = "0.6"
 Distributions = "0.25.35"
 Flux = "0.12.8, 0.13"
