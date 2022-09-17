@@ -124,6 +124,8 @@ voxelSize(b::MPIFile) = fov(b) ./ gridSize(b)
 voxelVolume(b::MPIFile) = prod( voxelSize(b) ) * 1000 #in Liter
 dfFov(b) = squeeze(acqFov(b))
 numTimePoints(b::MPIFile) = rxNumSamplingPoints(b)
+MPIFiles.rxNumSamplingPoints(f::Vector{<:MPIFile}) = rxNumSamplingPoints(f[1])
+MPIFiles.acqNumPeriodsPerFrame(f::Vector{<:MPIFile}) = acqNumPeriodsPerFrame(f[1])
 
 
 # Multi-Patch setting

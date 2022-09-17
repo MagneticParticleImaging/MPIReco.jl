@@ -184,7 +184,7 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   # or numPeriodAverages being applied we need to set these so that the 
   # measurements are loaded correctly
   if rxNumSamplingPoints(bSF) > rxNumSamplingPoints(bMeas)
-    numPeriodGrouping = rxNumSamplingPoints(bSF) ÷ rxNumSamplingPoints(bMeas)
+    numPeriodGrouping = rxNumSamplingPoints(bSF)  ÷ rxNumSamplingPoints(bMeas)
   end
   if acqNumPeriodsPerFrame(bSF) < acqNumPeriodsPerFrame(bMeas)
     numPeriodAverages = acqNumPeriodsPerFrame(bMeas) ÷ (acqNumPeriodsPerFrame(bSF) * numPeriodGrouping)
