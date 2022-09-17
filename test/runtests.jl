@@ -20,7 +20,9 @@ end
 include("LoadSaveMDF.jl")
 include("Reconstruction.jl")
 include("Cartesian.jl")
-include("MotionCompensation.jl")
+if !Sys.iswindows()
+  include("MotionCompensation.jl")
+end
 include("MultiPatch.jl")
 include("MultiGradient.jl")
 include("Sparse.jl")
