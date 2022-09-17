@@ -1,4 +1,3 @@
-import ImageMagick
 using HTTP
 using Test
 using FileIO
