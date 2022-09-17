@@ -67,7 +67,7 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
         #calcSigmaStep(compAna,buffer,indices[k],k)
     end
 
-    @info "compression factor = " sum(numCoeff)/(N*l) 
+    @info "compression factor = $(sum(numCoeff)/(N*l)) numCoeff = $(sum(numCoeff)/(l))" 
 
     sparse = loadsparsedata(bSF,data,indices,l,N,numCoeff,loadasreal)
 
