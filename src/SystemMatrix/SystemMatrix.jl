@@ -64,14 +64,14 @@ function repairDeadPixels(S, shape, deadPixels)
     for dp in deadPixels
       ix,iy,iz = ind2sub(shapeT,dp)
       if 1<ix<shape[1] && 1<iy<shape[2] && 1<iz<shape[3]
-         lval = S[ sub2ind(shapeT,ix,iy+1,iz)  ,k]
-         rval = S[ sub2ind(shapeT,ix,iy-1,iz)  ,k]
+         lval = S[ LinearIndices(shapeT)[ix,iy+1,iz]  ,k]
+         rval = S[ LinearIndices(shapeT)[ix,iy-1,iz]  ,k]
          S[dp,k] = 0.5*(lval+rval)
-         fval = S[ sub2ind(shapeT,ix+1,iy,iz)  ,k]
-         bval = S[ sub2ind(shapeT,ix-1,iy,iz)  ,k]
+         fval = S[ LinearIndices(shapeT)[ix+1,iy,iz]  ,k]
+         bval = S[ LinearIndices(shapeT)[ix-1,iy,iz]  ,k]
          S[dp,k] = 0.5*(fval+bval)
-         uval = S[ sub2ind(shapeT,ix,iy,iz+1)  ,k]
-         dval = S[ sub2ind(shapeT,ix,iy,iz-1)  ,k]
+         uval = S[ LinearIndices(shapeT)[ix,iy,iz+1]  ,k]
+         dval = S[ LinearIndices(shapeT)[ix,iy,iz-1]  ,k]
          S[dp,k] = 0.5*(uval+dval)
       end
     end
