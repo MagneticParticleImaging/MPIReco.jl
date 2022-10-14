@@ -1,7 +1,7 @@
 name = "MPIReco"
 uuid = "e4246700-6248-511e-8146-a1d1f47669d2"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.3.11"
+version = "0.3.12"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
@@ -32,8 +32,8 @@ IniFile = "0.5"
 MPIFiles = "0.12"
 ProgressMeter = "1.2"
 Reexport = "1.0"
-RegularizedLeastSquares = "0.7, 0.8"
-julia = "1.5"
+RegularizedLeastSquares = "0.8, 0.9"
+julia = "1.6"
 
 [extras]
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
