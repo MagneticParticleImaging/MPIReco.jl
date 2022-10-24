@@ -61,8 +61,9 @@ getSF(f::MPIFile; recChannels=1:numReceivers(f), kargs...) = getSF(f, filterFreq
 function repairDeadPixels(S, shape, deadPixels)
   shapeT = tuple(shape...)
   for k=1:size(S,2)
+    i2s = CartesianIndices(shapeT)
     for dp in deadPixels
-      ix,iy,iz = ind2sub(shapeT,dp)
+      ix,iy,iz=i2s[dp].I
       if 1<ix<shape[1] && 1<iy<shape[2] && 1<iz<shape[3]
          lval = S[ LinearIndices(shapeT)[ix,iy+1,iz]  ,k]
          rval = S[ LinearIndices(shapeT)[ix,iy-1,iz]  ,k]
