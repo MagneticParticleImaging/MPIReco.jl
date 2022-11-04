@@ -353,7 +353,11 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
 
   if sum(abs.(λ)) > 0 && solver != "fusedlasso" && relativeLambda
     trace = calculateTraceOfNormalMatrix(S,weights)
-    λ[1:1] *= trace / N
+    if isa(λ,AbstractVector) 
+      λ[1:1] *= trace / N
+    else
+      λ *= trace / N
+    end
     setlambda(S,λ)
   end
 
