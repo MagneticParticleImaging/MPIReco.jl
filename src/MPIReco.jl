@@ -22,6 +22,8 @@ module MPIReco
   using CUDA
   using BSON
 
+  # SMextrapolation
+  import SparseArrays.spdiagm
 
   include("Utils.jl")
   include("MultiContrast.jl")
@@ -34,4 +36,5 @@ module MPIReco
   include("MultiPatch.jl")
   include("MotionCompensation/MotionCompensation.jl")
   include("MachineLearning/MachineLearning.jl")
+  include("SystemMatrix/SMExtrapolation.jl")
 end # module
