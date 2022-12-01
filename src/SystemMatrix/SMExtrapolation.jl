@@ -165,13 +165,31 @@ function fillmissing(A::Array; method::Integer=1)
 	return B
 end
 
-function extrapolateSM(bSF, freq::Vector{Int}; ex_size::Tuple{Int,Int,Int}=(3,3,3), method=1)
-    SM, grid = getSF(bSF, freq, returnasmatrix=true)
-    return extrapolateSM(SM, grid; ex_size=ex_size, method=method)
+function extrapolateSM(bSF::MPIFile, freq::Vector{Int}, ex_size; method=1, sparseTrafo=nothing, solver="kaczmarz", kargs...)
+    SM, grid = getSF(bSF, freq, sparseTrafo, solver; kargs...)
+    return extrapolateSM(SM, grid, ex_size; method=method)
 end
 
-function extrapolateSM(SM, grid; ex_size::Tuple{Int,Int,Int}=(3,3,3), method=1)
-    K = size(SM,2)
+function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::Tuple{Int,Int}; method=1)
+	return extrapolateSM(SM, grid, (ex_size[1],ex_size[2],0); method=method)
+end
+
+function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::Int; method=1)
+	if shape(grid)[3] == 1
+		return extrapolateSM(SM, grid, (ex_size,ex_size,0); method=method)
+	else
+		return extrapolateSM(SM, grid, (ex_size,ex_size,ex_size); method=method)
+	end
+end
+
+function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::Tuple{Int,Int,Int}; method=1)
+    
+	transposed = size(SM,1) != prod(shape(grid)) ? true : false
+	if transposed
+		SM = transpose(SM)
+	end
+
+	K = size(SM,2)
     N1,N2,N3 = shape(grid)
     S = reshape(SM,N1,N2,N3,K)
     progress = nothing
@@ -190,7 +208,7 @@ function extrapolateSM(SM, grid; ex_size::Tuple{Int,Int,Int}=(3,3,3), method=1)
             S_extr[:,:,:,k]=S_rl+S_im*im
             next!(p)
         end
-        return reshape(S_extr,(M1*M2*M3,K))      
+        return transposed ? transpose(reshape(S_extr,(M1*M2*M3,K))) : reshape(S_extr,(M1*M2*M3,K))      
     else
         M1,M2 = N1+2*ex_size[1],N2+2*ex_size[2]
         S_extr = zeros(Complex{Float32},N1+2*ex_size[1],N2+2*ex_size[2],1,K)
@@ -205,6 +223,6 @@ function extrapolateSM(SM, grid; ex_size::Tuple{Int,Int,Int}=(3,3,3), method=1)
             S_extr[:,:,1,k]=S_rl+S_im*im
             next!(p)
         end
-        return reshape(S_extr,(M1*M2,K))    
+        return transposed ? transpose(reshape(S_extr,(M1*M2,K))) : reshape(S_extr,(M1*M2,K))
     end
 end
