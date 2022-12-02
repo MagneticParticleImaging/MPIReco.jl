@@ -165,16 +165,16 @@ function fillmissing(A::Array; method::Integer=1)
 	return B
 end
 
-function extrapolateSM(bSF::MPIFile, freq::Vector{Int}, ex_size; method=1, sparseTrafo=nothing, solver="kaczmarz", kargs...)
+function extrapolateSM(bSF::MPIFile, freq::Vector{T}, ex_size; method=1, sparseTrafo=nothing, solver="kaczmarz", kargs...) where {T<:Int}
     SM, grid = getSF(bSF, freq, sparseTrafo, solver; kargs...)
     return extrapolateSM(SM, grid, ex_size; method=method)
 end
 
-function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::Tuple{Int,Int}; method=1)
+function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::Tuple{T,T}; method=1) where {T<:Int}
 	return extrapolateSM(SM, grid, (ex_size[1],ex_size[2],0); method=method)
 end
 
-function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::Int; method=1)
+function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::T; method=1) where {T<:Int}
 	if shape(grid)[3] == 1
 		return extrapolateSM(SM, grid, (ex_size,ex_size,0); method=method)
 	else
@@ -182,7 +182,7 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
 	end
 end
 
-function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::Tuple{Int,Int,Int}; method=1)
+function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::Tuple{T,T,T}; method=1) where {T<:Int}
     
 	transposed = size(SM,1) != prod(shape(grid)) ? true : false
 	if transposed
@@ -208,7 +208,10 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
             S_extr[:,:,:,k]=S_rl+S_im*im
             next!(p)
         end
-        return transposed ? transpose(reshape(S_extr,(M1*M2*M3,K))) : reshape(S_extr,(M1*M2*M3,K))      
+		extrfov = (2 .* [ex_size[1], ex_size[2], ex_size[3]] .* (grid.fov ./ grid.shape)) .+ grid.fov
+		extrgrid = RegularGridPositions{Float64}([M1,M2,M3], extrfov, grid.center, grid.sign)
+        extrSM = transposed ? transpose(reshape(S_extr,(M1*M2*M3,K))) : reshape(S_extr,(M1*M2*M3,K))
+		return extrSM,extrgrid
     else
         M1,M2 = N1+2*ex_size[1],N2+2*ex_size[2]
         S_extr = zeros(Complex{Float32},N1+2*ex_size[1],N2+2*ex_size[2],1,K)
@@ -223,6 +226,9 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
             S_extr[:,:,1,k]=S_rl+S_im*im
             next!(p)
         end
-        return transposed ? transpose(reshape(S_extr,(M1*M2,K))) : reshape(S_extr,(M1*M2,K))
+		extrfov = (2 .* [ex_size[1], ex_size[2], 0] .* (grid.fov ./ grid.shape)) .+ grid.fov
+		extrgrid = RegularGridPositions{Float64}([M1,M2,1], extrfov, grid.center, grid.sign)
+		extrSM = transposed ? transpose(reshape(S_extr,(M1*M2,K))) : reshape(S_extr,(M1*M2,K))
+        return extrSM,extrgrid
     end
 end

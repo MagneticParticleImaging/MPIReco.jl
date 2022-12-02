@@ -181,7 +181,7 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   end
 
   if SMextrapolation != nothing
-    S = extrapolateSM(S,grid,SMextrapolation)
+    S, grid = extrapolateSM(S,grid,SMextrapolation)
   end
 
   # If S is processed and fits not to the measurements because of numPeriodsGrouping
