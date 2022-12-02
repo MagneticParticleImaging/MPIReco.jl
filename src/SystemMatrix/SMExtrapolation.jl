@@ -1,4 +1,4 @@
-export extrapolateSM
+export extrapolateSM, repairSM
 
 # Maybe not needed here
 """
@@ -230,5 +230,61 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
 		extrgrid = RegularGridPositions{Float64}([M1,M2,1], extrfov, grid.center, grid.sign)
 		extrSM = transposed ? transpose(reshape(S_extr,(M1*M2,K))) : reshape(S_extr,(M1*M2,K))
         return extrSM,extrgrid
+    end
+end
+
+function repairSM(SM::AbstractMatrix, grid::RegularGridPositions, deadPixels::Vector{T}; method=1) where {T<:Int}
+	return repairSM(SM, grid, CartesianIndices(Tuple(shape(grid)))[deadPixels]; method=method)
+end
+
+function repairSM(SM::AbstractMatrix, grid::RegularGridPositions, deadPixels::Vector{Tuple{T,T}}; method=1) where {T<:Int}
+	return repairSM(SM, grid, CartesianIndex.(deadPixels); method=method)
+end
+
+function repairSM(SM::AbstractMatrix, grid::RegularGridPositions, deadPixels::Vector{Tuple{T,T,T}}; method=1) where {T<:Int}
+	return repairSM(SM, grid, CartesianIndex.(deadPixels); method=method)
+end
+
+function repairSM(SM::AbstractMatrix, grid::RegularGridPositions, deadPixels::Vector{CartesianIndex{2}}; method=1)
+	deadPixels = map((x->CartesianIndex(x[1],x[2],0)),deadPixels)
+	return repairSM(SM, grid, deadPixels; method=method)
+end
+
+function repairSM(SM::AbstractMatrix, grid::RegularGridPositions, deadPixels::Vector{CartesianIndex{3}}; method=1)
+	transposed = size(SM,1) != prod(shape(grid)) ? true : false
+	if transposed
+		SM = transpose(SM)
+	end
+
+	K = size(SM,2)
+    N1,N2,N3 = shape(grid)
+    S = reshape(SM,N1,N2,N3,K)
+    progress = nothing
+
+	if N3 != 1
+        progress==nothing ? p = ProgressMeter.Progress(K, 1, "Repairing 3D SystemMatrix...") : p = progress
+
+        for k=1:K
+            S_miss = convert(Array{Union{Missing, Complex{Float32}}}, S[:,:,:,k])
+            S_miss[deadPixels] .= missing
+            S_rl=fillmissing(real.(S_miss),method=method)
+            S_im=fillmissing(imag.(S_miss),method=method)
+            S[:,:,:,k]=S_rl+S_im*im
+            next!(p)
+        end
+		return transposed ? transpose(reshape(S,(N1*N2*N3,K))) : reshape(S,(N1*N2*N3,K))
+    else
+		deadPixels=map((x->CartesianIndex(getindex(Tuple(x),1:2))),deadPixels)
+        progress==nothing ? p = Progress(K, 1, "Repairing 2D SystemMatrix...") : p = progress
+
+        for k=1:K
+            S_miss = convert(Array{Union{Missing, Complex{Float32}}}, S[:,:,1,k])
+            S_miss[deadPixels] .= missing
+            S_rl=fillmissing(real.(S_miss),method=method)
+            S_im=fillmissing(imag.(S_miss),method=method)
+            S[:,:,1,k]=S_rl+S_im*im
+            next!(p)
+        end
+        return transposed ? transpose(reshape(S,(N1*N2,K))) : reshape(S,(N1*N2,K))
     end
 end

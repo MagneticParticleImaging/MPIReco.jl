@@ -40,4 +40,11 @@ using MPIReco
                   SMextrapolation=3)                  
     @test size(c2[1,:,:,:,1]) .+ (6,6,0) == size(c_extr2[1,:,:,:,1])               
     exportImage(joinpath(imgdir, "ExtrapolatedMultiPatch1.png"), arraydata(c_extr2[1,:,:,1,1]))
+
+    SM[1000:1009,:] .= 0.0 + 0.0im
+    rpSM1 = repairSM(SM,grid,collect(1000:1009))
+    @test rpSM1[1000:1009,:] != 0.0 + 0.0im
+    rpSM2 = repairSM(SM,grid,Tuple.(CartesianIndices(Tuple(shape(grid)))[collect(1000:1009)]))
+    @test rpSM1 == rpSM2
+    exportImage(joinpath(imgdir, "RepairedSM.png"), abs.(squeeze(reshape(rpSM1[:,52],shape(grid)...))))
 end
