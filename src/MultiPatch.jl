@@ -155,11 +155,18 @@ function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
 end
 
 function MultiPatchOperator(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
-        mapping=zeros(0), kargs...)
+        mapping=zeros(0),SMextrapolation=nothing, kargs...)
   if length(mapping) > 0
     return MultiPatchOperatorExpliciteMapping(SFs,bMeas,freq,bgCorrection; mapping=mapping, kargs...)
   else
-    return MultiPatchOperatorRegular(SFs,bMeas,freq,bgCorrection; kargs...)
+    if SMextrapolation == nothing
+      return MultiPatchOperatorRegular(SFs,bMeas,freq,bgCorrection; kargs...)
+    else
+        mapping=collect(1:length(SFs))
+        @warn "You try to performe a system matrix extrapolation on multi-patch data without giving an explicit mapping.
+Thus, the mapping is automatically set to $mapping."
+        return MultiPatchOperatorExpliciteMapping(SFs,bMeas,freq,bgCorrection; mapping=mapping, SMextrapolation=SMextrapolation, kargs...)
+    end
   end
 end
 
@@ -170,8 +177,10 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
                     SFGridCenter = zeros(0,0),
                     systemMatrices = nothing,
                     mapping=zeros(0),
-		    calibsize = nothing, calibfov = nothing,
-                    grid = nothing, 
+		                calibsize = nothing,
+                    calibfov = nothing,
+                    grid = nothing,
+                    SMextrapolation=nothing,
 		    tfCorrection = true,
 		    kargs...)
 
@@ -215,6 +224,12 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
     calibfovTmp = (calibfov == nothing) ? calibFov(SF) : calibfov[:,idx]
 
     push!(grids, RegularGridPositions(calibsizeTmp,calibfovTmp,SFGridCenter[:,idx].-diffFFPos))
+  end
+
+  if SMextrapolation != nothing
+    for k=1:numPatches
+      S[k],grids[k] = extrapolateSM(S[k],grids[k],SMextrapolation)
+    end
   end
 
   # We now know all the subgrids for each patch, if the corresponding system matrix would be taken as is

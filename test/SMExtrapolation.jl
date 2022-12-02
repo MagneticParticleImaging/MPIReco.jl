@@ -23,4 +23,21 @@ using MPIReco
     recChannels=1:2, iterations=1, spectralLeakageCorrection=true, SMextrapolation=(3,3))
     @test size(c1[1,:,:,:,1]) .+ (6,6,0) == size(c_extr[1,:,:,:,1]) 
     exportImage(joinpath(imgdir, "Extrapolated1.png"), arraydata(c_extr[1,:,:,1,1]))
+
+    SFdirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]
+    bSFs = MultiMPIFile(joinpath.(datadir, "calibrations", SFdirs))
+    bdirs = ["1.mdf", "2.mdf", "3.mdf", "4.mdf"]
+    b = MultiMPIFile(joinpath.(datadir, "measurements", "20211226_203916_MultiPatch", bdirs))
+    c2 = reconstruction(bSFs, b;
+                  SNRThresh=5, frames=1, minFreq=80e3,
+                  recChannels=1:2,iterations=1,
+                  spectralLeakageCorrection=false
+                  )
+    c_extr2 = reconstruction(bSFs, b;
+                  SNRThresh=5, frames=1, minFreq=80e3,
+                  recChannels=1:2,iterations=1,
+                  spectralLeakageCorrection=false,
+                  SMextrapolation=3)                  
+    @test size(c2[1,:,:,:,1]) .+ (6,6,0) == size(c_extr2[1,:,:,:,1])               
+    exportImage(joinpath(imgdir, "ExtrapolatedMultiPatch1.png"), arraydata(c_extr2[1,:,:,1,1]))
 end
