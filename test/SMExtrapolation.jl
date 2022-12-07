@@ -18,11 +18,17 @@ using MPIReco
     
     b = MPIFile(joinpath(datadir, "measurements", "20211226_203916_MultiPatch", "1.mdf"))
     c1 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-    recChannels=1:2, iterations=1, spectralLeakageCorrection=true, SMextrapolation=nothing)    
+    recChannels=1:2, iterations=1, spectralLeakageCorrection=true, SMextrapolation=nothing)
+
     c_extr = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-    recChannels=1:2, iterations=1, spectralLeakageCorrection=true, SMextrapolation=(3,3))
-    @test size(c1[1,:,:,:,1]) .+ (6,6,0) == size(c_extr[1,:,:,:,1]) 
+    recChannels=1:2, iterations=1, spectralLeakageCorrection=true, gridsize=[36,36,1], fov=calibFov(bSF).+[0.006,0.006,0]) 
+    @test size(c1[1,:,:,:,1]) .+ (4,4,0) == size(c_extr[1,:,:,:,1])
     exportImage(joinpath(imgdir, "Extrapolated1.png"), arraydata(c_extr[1,:,:,1,1]))
+
+    c_extr2 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
+    recChannels=1:2, iterations=1, spectralLeakageCorrection=true, fov=calibFov(bSF).+[0.006,0.006,0])
+    @test size(c1[1,:,:,:,1]) == size(c_extr2[1,:,:,:,1])
+    exportImage(joinpath(imgdir, "Extrapolated2.png"), arraydata(c_extr2[1,:,:,1,1]))
 
     SFdirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]
     bSFs = MultiMPIFile(joinpath.(datadir, "calibrations", SFdirs))
@@ -33,13 +39,15 @@ using MPIReco
                   recChannels=1:2,iterations=1,
                   spectralLeakageCorrection=false
                   )
-    c_extr2 = reconstruction(bSFs, b;
+    calibsize=hcat((calibSize.(bSFs)...)).+[6, 6, 0]*ones(Int,4)'
+    fov=hcat((calibFov.(bSFs)...)).+[0.006,0.006,0]*ones(Int,4)'         
+    c_extr3 = reconstruction(bSFs, b;
                   SNRThresh=5, frames=1, minFreq=80e3,
                   recChannels=1:2,iterations=1,
                   spectralLeakageCorrection=false,
-                  SMextrapolation=3)                  
-    @test size(c2[1,:,:,:,1]) .+ (6,6,0) == size(c_extr2[1,:,:,:,1])               
-    exportImage(joinpath(imgdir, "ExtrapolatedMultiPatch1.png"), arraydata(c_extr2[1,:,:,1,1]))
+                  gridsize=calibsize,fov=fov)                  
+    @test size(c2[1,:,:,:,1]) .+ (6,6,0) == size(c_extr3[1,:,:,:,1])               
+    exportImage(joinpath(imgdir, "ExtrapolatedMultiPatch1.png"), arraydata(c_extr3[1,:,:,1,1]))
 
     SM[1000:1009,:] .= 0.0 + 0.0im
     rpSM1 = repairSM(SM,grid,collect(1000:1009))

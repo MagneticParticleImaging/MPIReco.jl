@@ -99,14 +99,28 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
   if collect(gridsize) != collect(calibSize(bSF)) ||
     center != [0.0,0.0,0.0] ||
     fov != calibFov(bSF)
-    @debug "Perform SF Interpolation..."
 
     origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
     target = RegularGridPositions(gridsize,fov,center)
 
+    if any(fov .> calibFov(bSF))
+      #round.(Int,(fov .- origin.fov).*(origin.shape./(2 .* origin.fov)))
+      if gridsize == collect(calibSize(bSF))
+        gridsize_new = round.(Int, fov .* origin.shape ./ (2 * origin.fov)) * 2
+        @info "You selected a customized (bigger) FOV, without selecting a bigger grid. Thus, an Extrapolation to
+the new FOV is followed by a Interpolation to the old grid-size, leading to a change in gridpoint-size. If you want
+to roughly keep the original gridpoint-size, define the key-word gridsize = $gridsize_new,
+alongside to your FOV-selection."
+      end
+      S,origin = extrapolateSM(S,origin,fov)
+      # alternativ ginge direkt: extrapolateSM(SM, grid, fov)
+    end
+
+    @debug "Perform SF Interpolation..."
+
     SInterp = zeros(eltype(S),prod(gridsize),length(frequencies)*numPeriods)
     for k=1:length(frequencies)*numPeriods
-      A = MPIFiles.interpolate(reshape(S[:,k],calibSize(bSF)...), origin, target)
+      A = MPIFiles.interpolate(reshape(S[:,k],origin.shape...), origin, target)
       SInterp[:,k] = vec(A)
     end
     S = SInterp

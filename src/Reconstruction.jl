@@ -161,7 +161,7 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
   deadPixels=Int[], bgCorrectionInternal=false, bgDictSize=nothing, bgFramesDict=nothing,
-  numPeriodAverages=1, numPeriodGrouping=1, reco=:default, SMextrapolation=nothing, kargs...) where {T<:MPIFile}
+  numPeriodAverages=1, numPeriodGrouping=1, reco=:default, kargs...) where {T<:MPIFile}
 
   (typeof(bgFrames) <: AbstractRange && emptyMeas==nothing) && (emptyMeas = bMeas)
   bgCorrection = emptyMeas != nothing ? true : bgCorrectionInternal
@@ -178,10 +178,6 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
 
   if denoiseWeight > 0 && sparseTrafo == nothing
     denoiseSF!(S, shape, weight=denoiseWeight)
-  end
-
-  if SMextrapolation != nothing
-    S, grid = extrapolateSM(S,grid,SMextrapolation)
   end
 
   # If S is processed and fits not to the measurements because of numPeriodsGrouping

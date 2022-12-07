@@ -170,6 +170,12 @@ function extrapolateSM(bSF::MPIFile, freq::Vector{T}, ex_size; method=1, sparseT
     return extrapolateSM(SM, grid, ex_size; method=method)
 end
 
+function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, fov::Vector{T}; method=1) where {T<:AbstractFloat}
+	extrapolationSize = Tuple(round.(Int,(fov .- grid.fov).*(grid.shape./(2 .* grid.fov))))
+	@info "The given FOV leads (after rounding) to an extrapolation of the SystemMatrix by +- $extrapolationSize voxels."
+	return extrapolateSM(SM, grid, extrapolationSize; method=method)
+end
+
 function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::Tuple{T,T}; method=1) where {T<:Int}
 	return extrapolateSM(SM, grid, (ex_size[1],ex_size[2],0); method=method)
 end
