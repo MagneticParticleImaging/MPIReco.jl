@@ -49,10 +49,17 @@ using MPIReco
     @test size(c2[1,:,:,:,1]) .+ (6,6,0) == size(c_extr3[1,:,:,:,1])               
     exportImage(joinpath(imgdir, "ExtrapolatedMultiPatch1.png"), arraydata(c_extr3[1,:,:,1,1]))
 
-    SM[1000:1009,:] .= 0.0 + 0.0im
-    rpSM1 = repairSM(SM,grid,collect(1000:1009))
-    @test rpSM1[1000:1009,:] != 0.0 + 0.0im
-    rpSM2 = repairSM(SM,grid,Tuple.(CartesianIndices(Tuple(shape(grid)))[collect(1000:1009)]))
+    SM[vec([495:505;527:537]),:] .= 0.0 + 0.0im
+    exportImage(joinpath(imgdir, "deadPixelSM.png"), abs.(squeeze(reshape(SM[:,52],shape(grid)...))))
+    rpSM1 = getSF(bSF,freq;deadPixels=vec([495:505;527:537]))[1]
+    @test rpSM1[vec([495:505;527:537]),:] != 0.0 + 0.0im
+    rpSM2 = repairSM(SM,grid,Tuple.(CartesianIndices(Tuple(shape(grid)))[vec([495:505;527:537])]))
     @test rpSM1 == rpSM2
     exportImage(joinpath(imgdir, "RepairedSM.png"), abs.(squeeze(reshape(rpSM1[:,52],shape(grid)...))))
+
+    SMtest = getSF(bSF,joinpath(datadir, "calibrations", "12extrapolated.mdf"); gridsize=[40,40,1], fov=calibFov(bSF).+[0.01,0.01,0])[1]
+    bSF2 = MPIFile(joinpath(datadir, "calibrations", "12extrapolated.mdf"))
+    @test calibFov(bSF2)==[0.05,0.05,0.001]
+    getSF(bSF2)[1] == SMtest
+
 end
