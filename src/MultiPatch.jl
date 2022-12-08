@@ -154,11 +154,11 @@ function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
 end
 
 function MultiPatchOperator(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
-        mapping=zeros(0),fov=nothing, gridsize=nothing, kargs...)
+        mapping=zeros(0),fov=hcat(calibFov.(SFs)...), gridsize=hcat(calibSize.(SFs)...), kargs...)
   if length(mapping) > 0
     return MultiPatchOperatorExpliciteMapping(SFs,bMeas,freq,bgCorrection; mapping=mapping, gridsize=gridsize, fov=fov, kargs...)
   else
-    if fov != nothing        #any(fov .> calibFov(bSF))
+    if any(fov .> hcat(calibFov.(SFs)...))      
         mapping=collect(1:length(SFs))
         @warn "You try to performe a system matrix extrapolation on multi-patch data without giving an explicit mapping.
 Thus, the mapping is automatically set to $mapping."
@@ -176,8 +176,8 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
                     SFGridCenter = zeros(0,0),
                     systemMatrices = nothing,
                     mapping=zeros(0),
-		                gridsize = nothing,
-                    fov = nothing,
+		                gridsize = hcat(calibSize.(SFs)...),
+                    fov = hcat(calibFov.(SFs)...),
                     grid = nothing,
 		                tfCorrection = true,
 		                kargs...)
