@@ -1,7 +1,7 @@
 name = "MPIReco"
 uuid = "e4246700-6248-511e-8146-a1d1f47669d2"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.3.11"
+version = "0.3.12"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
@@ -32,17 +32,15 @@ IniFile = "0.5"
 MPIFiles = "0.12"
 ProgressMeter = "1.2"
 Reexport = "1.0"
-RegularizedLeastSquares = "0.7, 0.8"
-julia = "1.5"
+RegularizedLeastSquares = "0.8, 0.9"
+julia = "1.6"
 
 [extras]
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
 LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
-QuartzImageIO = "dca85d43-d64c-5e67-8c65-017450d5d020"
 Scratch = "6c6a2e73-6563-6170-7368-637461726353"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "HTTP", "FileIO", "ImageMagick", "QuartzImageIO", "LazyArtifacts", "Scratch"]
+test = ["Test", "HTTP", "FileIO", "LazyArtifacts", "Scratch"]

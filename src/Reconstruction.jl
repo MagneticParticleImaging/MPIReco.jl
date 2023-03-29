@@ -112,6 +112,7 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile; kargs...) where
   if haskey(kargs, :periodicMotionCorrection) && kargs[:periodicMotionCorrection]
     return reconstructionPeriodicMotion(bSF, bMeas; kargs...)
   elseif acqNumPeriodsPerFrame(bMeas) > 1 &&
+      rxNumSamplingPoints(bSF) == rxNumSamplingPoints(bMeas) &&
       (acqNumPeriodsPerFrame(bSF) == 1 || typeof(bSF) == MultiMPIFile)
     # This branch is only used of the measurements are multi-patch and if the
     # system matrix is not fully sampled. This is the case if either we have a
@@ -141,9 +142,11 @@ function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
     freq = intersect(freq, freqVarMean)
   end
 
-  # Ensure that no frequencies are used that are not present in the measurement
-  freq = intersect(freq, filterFrequencies(bMeas, numPeriodAverages=numPeriodAverages, 
+  if rxNumSamplingPoints(bSF) == rxNumSamplingPoints(bMeas)
+    # Ensure that no frequencies are used that are not present in the measurement
+    freq = intersect(freq, filterFrequencies(bMeas, numPeriodAverages=numPeriodAverages, 
                                            numPeriodGrouping=numPeriodGrouping))
+  end
 
   @debug "selecting $(length(freq)) frequencies"
 
@@ -175,6 +178,16 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
 
   if denoiseWeight > 0 && sparseTrafo == nothing
     denoiseSF!(S, shape, weight=denoiseWeight)
+  end
+
+  # If S is processed and fits not to the measurements because of numPeriodsGrouping
+  # or numPeriodAverages being applied we need to set these so that the 
+  # measurements are loaded correctly
+  if rxNumSamplingPoints(bSF) > rxNumSamplingPoints(bMeas)
+    numPeriodGrouping = rxNumSamplingPoints(bSF)  ÷ rxNumSamplingPoints(bMeas)
+  end
+  if acqNumPeriodsPerFrame(bSF) < acqNumPeriodsPerFrame(bMeas)
+    numPeriodAverages = acqNumPeriodsPerFrame(bMeas) ÷ (acqNumPeriodsPerFrame(bSF) * numPeriodGrouping)
   end
 
   bgDict = getBackgroundDictionary(bSF, bMeas, freq, bgDictSize, bgFramesDict)
@@ -340,7 +353,11 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
 
   if sum(abs.(λ)) > 0 && solver != "fusedlasso" && relativeLambda
     trace = calculateTraceOfNormalMatrix(S,weights)
-    λ *= trace / N
+    if isa(λ,AbstractVector) 
+      λ[1:1] *= trace / N
+    else
+      λ *= trace / N
+    end
     setlambda(S,λ)
   end
 
