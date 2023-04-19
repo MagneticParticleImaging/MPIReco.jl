@@ -25,7 +25,7 @@ function getSF(bSF, frequencies, sparseTrafo, solver::AbstractString; kargs...)
     return getSF(bSF, frequencies, sparseTrafo, Kaczmarz; kargs...)
   elseif solver == "pseudoinverse"
     return getSF(bSF, frequencies, sparseTrafo, PseudoInverse; kargs...)
-  elseif solver == "cgnr" || solver == "lsqr" || solver == "fusedlasso"
+  elseif solver == "cgnr" || solver == "fusedlasso"
     return getSF(bSF, frequencies, sparseTrafo, CGNR; kargs...)
   elseif solver == "direct"
     return getSF(bSF, frequencies, sparseTrafo, DirectSolver; kargs...)
