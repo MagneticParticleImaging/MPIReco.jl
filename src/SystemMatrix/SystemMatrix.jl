@@ -20,20 +20,32 @@ end
 
 setlambda(S::AbstractMatrix, λ) = nothing
 
-function getSF(bSF, frequencies, sparseTrafo, solver; kargs...)
-  SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
+function getSF(bSF, frequencies, sparseTrafo, solver::AbstractString; kargs...)
   if solver == "kaczmarz"
-    return transpose(SF), grid
+    return getSF(bSF, frequencies, sparseTrafo, Kaczmarz; kargs...)
   elseif solver == "pseudoinverse"
-    return SVD(svd(transpose(SF))...), grid
+    return getSF(bSF, frequencies, sparseTrafo, PseudoInverse; kargs...)
   elseif solver == "cgnr" || solver == "lsqr" || solver == "fusedlasso"
-    return copy(transpose(SF)), grid
+    return getSF(bSF, frequencies, sparseTrafo, CGNR; kargs...)
   elseif solver == "direct"
-    return RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
+    return getSF(bSF, frequencies, sparseTrafo, DirectSolver; kargs...)
   else
-    return SF, grid
+    return getSF(bSF, frequencies, sparseTrafo; kargs...)
   end
 end
+getSF(bSF, frequencies, sparseTrafo, solver::AbstractLinearSolver; kargs...) = getSF(bSF, frequencies, sparseTrafo, typeof(solver); kargs...)
+function getSF(bSF, frequencies, sparseTrafo, solver::Type{T<:AbstractLinearSolver}; kargs...)
+  SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
+  return prepareSF(solver, SF, grid)
+end
+
+prepareSF(solver::Type{Kaczmarz}, SF, grid) = transpose(SF), grid
+prepareSF(solver::Type{PseudoInverse}, SF, grid) = SVD(svd(transpose(SF))...), grid
+prepareSF(solver::Union{Type{CGNR}, Type{FusedLasso}}, SF, grid) = copy(transpose(SF)), grid
+prepareSF(solver::Type{DirectSolver}, SF, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
+prepareSF(solver::Type{T<:AbstractLinearSolver}, SF, grid) = SF, grid
+
+
 
 getSF(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Nothing; kargs...) where {T<:MPIFile} =
    getSF(bSF, frequencies; kargs...)
