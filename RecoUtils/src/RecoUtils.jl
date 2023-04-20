@@ -1,6 +1,6 @@
 module RecoUtils
 
 include("AlgorithmInterface.jl")
-include("StructToToml.jl")
+include("StructTransforms.jl")
 
 end # module
