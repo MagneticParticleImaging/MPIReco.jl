@@ -23,6 +23,7 @@ module MPIReco
   using BSON
 
 
+  include("AlgorithmInterface.jl")
   include("Utils.jl")
   include("MultiContrast.jl")
   include("RecoParameters.jl")
@@ -34,4 +35,6 @@ module MPIReco
   include("MultiPatch.jl")
   include("MotionCompensation/MotionCompensation.jl")
   include("MachineLearning/MachineLearning.jl")
+  include("PreProcessing/PreProcessing.jl")
+  include("Algorithms/Algorithms.jl")
 end # module

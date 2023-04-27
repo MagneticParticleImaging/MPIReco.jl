@@ -1,5 +1,25 @@
 export getBackgroundDictionaryComplete
 
+
+struct NoBackgroundCorrection <: AbstractBackgroundCorrectionParameters end
+Base.@kwdef struct InternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters
+  interpolateBG::Bool = false
+end
+
+abstract type ExternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters end
+Base.@kwdef struct SimpleExternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters
+  emptyMeas::MPIFile
+  bgFrames::UnitRange{Int64} = 1:1
+end
+Base.@kwdef struct LinearInterpolatedExternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters
+  emptyMeas::MPIFile
+  bgFrames::UnitRange{Int64} = 1:1
+  bgFramesPost::UnitRange{Int64} = 1:1
+end
+Base.@kwdef struct DictionaryBasedBackgroundCorrection <: AbstractBackgroundCorrectionParameters
+  # TODO
+end
+
 function getBackgroundDictionaryComplete(fSF::MPIFile, f::MPIFile, frequencies,
                                        bgFrames=nothing, numBGAverages=1)
   idxBGFrames = measBGFrameIdx(fSF)

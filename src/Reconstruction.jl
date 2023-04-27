@@ -379,7 +379,6 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
     #end
     c[:,l] = real( d ) # this one is allocating
     next!(p)
-    sleep(0.001)
   end
 
   return c

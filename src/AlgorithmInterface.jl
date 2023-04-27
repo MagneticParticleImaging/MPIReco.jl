@@ -9,6 +9,7 @@ abstract type AbstractPreProcessingParameters <: MPIRecoParameters end
 abstract type AbstractPostProcessingParameters <: MPIRecoParameters end
 abstract type AbstractReconstructionParameters <: MPIRecoParameters end
 abstract type AbstractRecoAlgorithmParameters <: MPIRecoParameters end
+abstract type AbstractBackgroundCorrectionParameters <: MPIRecoParameters end
 
 
 Base.@kwdef struct MPIFilesPreprocessingParameters <: AbstractPreProcessingParameters
