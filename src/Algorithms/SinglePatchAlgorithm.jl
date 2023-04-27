@@ -1,7 +1,7 @@
 Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <: AbstractReconstructionParameters
   # File
   sf::MPIFile
-  sparseTrafo::Union{Nothing, Any} = nothing
+  sparseTrafo::Union{Nothing, String} = nothing
   #saveTrafo::Bool = false
   recChannels::UnitRange{Int64} = 1:rxNumChannels(sf)
   # Freqs
@@ -13,6 +13,11 @@ Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <
   sortBySNR::Bool = false
   # Solver
   solver::Type{S}
+  iterations::Int64=10
+  enforceReal=true
+  enforcePositive=true
+  λ::Vector{Float64}=[0.1, 0.0]
+  relativeLambda::Bool=true
   # Grid
   gridsize::Vector{Int64} = gridSizeCommon(bSF)
   fov::Vector{Float64} = calibFov(bSF)
@@ -112,8 +117,41 @@ function process(algo::SinglePatchReconstruction, f::MPIFile, params::AbstractPr
 end
 
 
-function process(algo::SinglePatchReconstruction, f::Array, params::SinglePatchReconstructionParameter)
-  weights = getWeights(...)
-  L = -fld(-length(frames),numAverages) # number of tomograms to be reconstructed
-  B = linearOperator(sparseTrafo, shape(grid), eltype(S))
+function process(algo::SinglePatchReconstruction, u::Array, params::SinglePatchReconstructionParameter)
+  weights = nothing # getWeights(...)
+
+  B = linearOperator(params.sparseTrafo, shape(grid), eltype(S))
+
+  N = size(algo.S, 2)
+  M = div(length(S), N)
+  L = size(u)[end]
+  u = reshape(u, M, L)
+  c = zeros(N, L)
+
+  λ = params.λ
+
+  if sum(abs.(λ)) > 0 && solver != FusedLasso && relativeLambda
+    trace = calculateTraceOfNormalMatrix(algo.S,weights)
+    if isa(λ,AbstractVector) 
+      λ[1:1] *= trace / N
+    else
+      λ *= trace / N
+    end
+    #setlambda(S,λ) dead code?
+  end
+
+  args = toKwargs(params)
+  args[:λ] = λ
+  args[:sparseTrafo] = B
+  solv = createLinearSolver(params.solver, S; weights=weights, args...)
+
+  for l=1:L
+    d = solve(solv, u[:, l])
+    if !isnothing(B)
+      d[:] = B*d
+    end
+    c[:, l] = real(d)
+  end
+
+  return c
 end
