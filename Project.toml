@@ -16,9 +16,11 @@ IniFile = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MPIFiles = "371237a9-e6c1-5201-9adb-3d8cfa78fa9f"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+RecoUtils = "a4b4fdbf-6459-4ec9-990d-77e1fa24a91b"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 RegularizedLeastSquares = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+ThreadPools = "b189fb0b-2eb5-4ed4-bc0c-d34c51242431"
 
 [compat]
 BSON = "0.3.4"

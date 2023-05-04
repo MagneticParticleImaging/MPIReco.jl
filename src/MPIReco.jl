@@ -5,8 +5,10 @@ module MPIReco
   @reexport using ImageUtils
   @reexport using MPIFiles
   const shape = MPIFiles.shape
+  using RecoUtils
   @reexport using DSP
   using ProgressMeter
+  using ThreadPools
 
   using LinearAlgebra
   using SparseArrays

@@ -1,4 +1,4 @@
-export toTOML, toDict, toDict!, toDictValue
+export toTOML, toDict, toDict!, toDictValue, toKwargs, toKwargs!
 
 function toTOML(fileName::AbstractString, value)
   open(fileName, "w") do io

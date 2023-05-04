@@ -34,7 +34,7 @@ function getSF(bSF, frequencies, sparseTrafo, solver::AbstractString; kargs...)
   end
 end
 getSF(bSF, frequencies, sparseTrafo, solver::AbstractLinearSolver; kargs...) = getSF(bSF, frequencies, sparseTrafo, typeof(solver); kargs...)
-function getSF(bSF, frequencies, sparseTrafo, solver::Type{T<:AbstractLinearSolver}; kargs...)
+function getSF(bSF, frequencies, sparseTrafo, solver::Type{<:AbstractLinearSolver}; kargs...)
   SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
   return prepareSF(solver, SF, grid)
 end
@@ -43,7 +43,7 @@ prepareSF(solver::Type{Kaczmarz}, SF, grid) = transpose(SF), grid
 prepareSF(solver::Type{PseudoInverse}, SF, grid) = SVD(svd(transpose(SF))...), grid
 prepareSF(solver::Union{Type{CGNR}, Type{FusedLasso}}, SF, grid) = copy(transpose(SF)), grid
 prepareSF(solver::Type{DirectSolver}, SF, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
-prepareSF(solver::Type{T<:AbstractLinearSolver}, SF, grid) = SF, grid
+prepareSF(solver::Type{<:RegularizedLeastSquares.AbstractLinearSolver}, SF, grid) = SF, grid
 
 
 

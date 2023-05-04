@@ -46,10 +46,12 @@ function SinglePatchReconstruction(params::SinglePatchReconstructionParameter)
   # Prepare system matrix based on pre and reco params
   freqs = getFreqs(params.pre, params.reco)
   S, grid = getSF(params.pre, params.reco, freqs)
-  params.pre = FrequencyFilteredPreProcessingParamters(;freqs = freqs, toKwargs(params.pre))
+  # params.pre = FrequencyFilteredPreProcessingParameters(;freqs = freqs, toKwargs(params.pre))# TODO: define FrequencyFilteredPreProcessingParameters
   # At the end we want to be in a state where we can handle a series of put! requests
   return SinglePatchReconstruction(params, S, grid, freqs, Channel{Any}(32))
 end
+
+recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
 
 getFreqs(pre::CommonPreProcessingParameters, reco::SinglePatchReconstructionParameter) = filterFrequences(reco.sf, toKargs([pre, reco])...)
 

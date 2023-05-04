@@ -1,17 +1,35 @@
+export AbstractMPIReconstructionAlgorithm
 abstract type AbstractMPIReconstructionAlgorithm <: AbstractReconstructionAlgorithm end
+
+export AbstractSystemMatrixReconstructionAlgorithm
 abstract type AbstractSystemMatrixReconstructionAlgorithm <: AbstractMPIReconstructionAlgorithm end
+
+export AbstractXSpaceReconstructionAlgorithm
 abstract type AbstractXSpaceReconstructionAlgorithm <: AbstractMPIReconstructionAlgorithm end
+
+export AbstractMachineLearningReconstructionAlgorithm
 abstract type AbstractMachineLearningReconstructionAlgorithm <: AbstractMPIReconstructionAlgorithm end
 
 
+export MPIRecoParameters
 abstract type MPIRecoParameters <: AbstractReconstructionAlgorithmParameter end
+
+export AbstractPreProcessingParameters
 abstract type AbstractPreProcessingParameters <: MPIRecoParameters end
+
+export AbstractPostProcessingParameters
 abstract type AbstractPostProcessingParameters <: MPIRecoParameters end
+
+export AbstractReconstructionParameters
 abstract type AbstractReconstructionParameters <: MPIRecoParameters end
+
+export AbstractRecoAlgorithmParameters
 abstract type AbstractRecoAlgorithmParameters <: MPIRecoParameters end
+
+export AbstractBackgroundCorrectionParameters
 abstract type AbstractBackgroundCorrectionParameters <: MPIRecoParameters end
 
-
+export MPIFilesPreprocessingParameters
 Base.@kwdef struct MPIFilesPreprocessingParameters <: AbstractPreProcessingParameters
   "Flag whether a background correction shall be applied."
   bgCorrection::Bool = false
@@ -40,16 +58,16 @@ struct MixedAlgorithm <: ReconstructionAlgorithmType end
 
 # TODO recoAlgorithmType
 # TODO undefined for certain "Algorithm" components
-recoAlgorithmTypes(::Type{ConcreteRecoAlgorithm}) = SystemMatrixBasedAlgorithm()
+#recoAlgorithmTypes(::Type{ConcreteRecoAlgorithm}) = SystemMatrixBasedAlgorithm()
 
 # Check if contains
 isSystemMatrixBased(::T) where T <: AbstractReconstructionAlgorithm = recoAlgorithmTypes(T) isa SystemMatrixBasedAlgorithm
 isXSpaceBased(::T) where T <: AbstractReconstructionAlgorithm = recoAlgorithmTypes(T) isa XSpaceBasedAlgorithm
 isMachineLearningBased(::T) where T <: AbstractReconstructionAlgorithm = recoAlgorithmTypes(T) isa MachineLearningBasedAlgorithm
-isMixedAlgorithm(::T) where T <: AbstractReconstructionAlgorithm # TODO
+isMixedAlgorithm(::T) where T <: AbstractReconstructionAlgorithm = true # TODO
 
 abstract type OutputType end
 struct IntermediateOutput <: OutputType end
-struct ImageOutput <: OutputType
+struct ImageOutput <: OutputType end
 
 include("RuntimeAlgorithms.jl")
