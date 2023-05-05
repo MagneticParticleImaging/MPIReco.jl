@@ -1,21 +1,30 @@
 export getBackgroundDictionaryComplete
 
-
+export NoBackgroundCorrection
 struct NoBackgroundCorrection <: AbstractBackgroundCorrectionParameters end
+
+export InternalBackgroundCorrection
 Base.@kwdef struct InternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters
   interpolateBG::Bool = false
 end
 
+export ExternalBackgroundCorrection
 abstract type ExternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters end
+
+export SimpleExternalBackgroundCorrection
 Base.@kwdef struct SimpleExternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters
   emptyMeas::MPIFile
   bgFrames::UnitRange{Int64} = 1:1
 end
+
+export LinearInterpolatedExternalBackgroundCorrection
 Base.@kwdef struct LinearInterpolatedExternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters
   emptyMeas::MPIFile
   bgFrames::UnitRange{Int64} = 1:1
   bgFramesPost::UnitRange{Int64} = 1:1
 end
+
+export DictionaryBasedBackgroundCorrection
 Base.@kwdef struct DictionaryBasedBackgroundCorrection <: AbstractBackgroundCorrectionParameters
   # TODO
 end

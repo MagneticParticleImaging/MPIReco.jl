@@ -60,9 +60,9 @@ function getSF(pre::CommonPreProcessingParameters, reco::SinglePatchReconstructi
   return getSF(reco.sf, freqs, reco.sparseTrafo, reco.solver; toKwargs([pre, reco])...)
 end
 
-take!(algo::SinglePatchReconstruction) = take!(algo.output)
+RecoUtils.take!(algo::SinglePatchReconstruction) = take!(algo.output)
 
-function put!(algo::SinglePatchReconstruction, data)
+function RecoUtils.put!(algo::SinglePatchReconstruction, data)
   consistenceCheck(bSF, bMeas)
   pre = process(algo, data, algo.params.pre)
   result = process(algo, pre, algo.params.reco)
@@ -72,7 +72,7 @@ function put!(algo::SinglePatchReconstruction, data)
   put!(algo.output, result)
 end
 
-function similar(algo::SinglePatchReconstruction, data::MPIFile)
+function RecoUtils.similar(algo::SinglePatchReconstruction, data::MPIFile)
   pre = similar(algo, data, algo.param.pre)
   reco = similar(algo, data, algo.param.reco)
   post = similar(algo, data, algo.parms.post)
@@ -109,7 +109,7 @@ function similar(algo::SinglePatchReconstruction, data::MPIFile)
   return result
 end
 
-function process(algo::SinglePatchReconstruction, f::MPIFile, params::AbstractPreProcessingParameters)
+function RecoUtils.process(algo::SinglePatchReconstruction, f::MPIFile, params::AbstractPreProcessingParameters)
   result = process(AbstractMPIReconstructionAlgorithm, f, params)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
@@ -119,7 +119,7 @@ function process(algo::SinglePatchReconstruction, f::MPIFile, params::AbstractPr
 end
 
 
-function process(algo::SinglePatchReconstruction, u::Array, params::SinglePatchReconstructionParameter)
+function RecoUtils.process(algo::SinglePatchReconstruction, u::Array, params::SinglePatchReconstructionParameter)
   weights = nothing # getWeights(...)
 
   B = linearOperator(params.sparseTrafo, shape(grid), eltype(S))

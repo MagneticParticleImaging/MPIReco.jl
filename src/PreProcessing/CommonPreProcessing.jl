@@ -1,3 +1,4 @@
+export CommonPreProcessingParameters
 Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractBackgroundCorrectionParameters} <: AbstractPreProcessingParameters
   bgCorrection::T = NoBackgroundCorrection()
   numAverages::Int64 = 1
@@ -9,6 +10,7 @@ Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractBackgroundCorrection
 end
 
 # Not yet happy with field replication, but nested structs with parametric types is also quite ugly
+export FrequencyFilteredPreProcessingParamters
 Base.@kwdef struct FrequencyFilteredPreProcessingParamters{T<:AbstractBackgroundCorrectionParameters} <: AbstractPreProcessingParameters
   freqs::Vector{Int64}
   bgCorrection::T = NoBackgroundCorrection()

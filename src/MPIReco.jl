@@ -1,5 +1,4 @@
 module MPIReco
-  using RegularizedLeastSquares
   using Reexport
   @reexport using RegularizedLeastSquares
   @reexport using ImageUtils
