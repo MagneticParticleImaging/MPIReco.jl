@@ -1,6 +1,7 @@
 export CommonPreProcessingParameters
 Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractBackgroundCorrectionParameters} <: AbstractPreProcessingParameters
   bgCorrection::T = NoBackgroundCorrection()
+  neglectBGFrames::Bool = true
   numAverages::Int64 = 1
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
@@ -9,60 +10,52 @@ Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractBackgroundCorrection
   loadasreal::Bool = false
 end
 
-# Not yet happy with field replication, but nested structs with parametric types is also quite ugly
-export FrequencyFilteredPreProcessingParamters
-Base.@kwdef struct FrequencyFilteredPreProcessingParamters{T<:AbstractBackgroundCorrectionParameters} <: AbstractPreProcessingParameters
-  freqs::Vector{Int64}
-  bgCorrection::T = NoBackgroundCorrection()
-  numAverages::Int64 = 1
-  numPeriodAverages::Int64 = 1
-  numPeriodGrouping::Int64 = 1
-  frames::Union{Nothing, UnitRange{Int64}} = nothing
-  spectralLeakageCorrection::Bool = false
-  loadasreal::Bool = false
-end
-
-function process(::Type{AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParamters{NoBackgroundCorrection})
+function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::CommonPreProcessingParameters{NoBackgroundCorrection})
   kwargs = toKwargs(params)
   if isnothing(params.frames)
-    kwargs[:frames] = 1:acqNumFrames(f)
+    kwargs[:frames] = params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))
   end
-  result = getMeasurementFD(f, bgCorrection = false, frequencies = params.freqs, kwargs...)
+  delete!(kwargs, :neglectBGFrames)
+  result = getMeasurementsFD(f; bgCorrection = false, kwargs...)
   return result
 end
-function process(::Type{AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParamters{InternalBackgroundCorrection})
+function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::CommonPreProcessingParameters{InternalBackgroundCorrection})
   kwargs = toKwargs(params)
   if isnothing(params.frames)
-    kwargs[:frames] = 1:acqNumFrames(f)
+    kwargs[:frames] = params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))
   end
-  result = getMeasurementFD(f, bgCorrection = true, interpolateBG = params.bgCorrection.interpolateBG, frequencies = params.freqs, kwargs...)
+  delete!(kwargs, :neglectBGFrames)
+  result = getMeasurementsFD(f; bgCorrection = true, interpolateBG = params.bgCorrection.interpolateBG, kwargs...)
   return result
 end
-function process(::Type{AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParamters{SimpleExternalBackgroundCorrection})
+function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::CommonPreProcessingParameters{SimpleExternalBackgroundCorrection})
   kwargs = toKwargs(params)
   if isnothing(params.frames)
-    kwargs[:frames] = 1:acqNumFrames(f)
+    kwargs[:frames] = params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))
   end
-  result = getMeasurementFD(f, bgCorrection = false, frequencies = params.freqs, kwargs...)
+  delete!(kwargs, :neglectBGFrames)
+  result = getMeasurementsFD(f, bgCorrection = false, kwargs...)
   bgParams = params.bgCorrection
   kwargs[:frames] = bgParams.bgFrames
-  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgFrames), frequencies = params.freqs, kwargs...)
+  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgFrames), kwargs...)
   return result .-empty
 end
-function process(::Type{AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParamters{LinearInterpolatedExternalBackgroundCorrection})
+function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::CommonPreProcessingParameters{LinearInterpolatedExternalBackgroundCorrection})
   kwargs = toKwargs(params)
   if isnothing(params.frames)
-    kwargs[:frames] = 1:acqNumFrames(f)
+    kwargs[:frames] = params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))
   end
-  result = getMeasurementFD(f, bgCorrection = false, frequencies = params.freqs, kwargs...)
+  delete!(kwargs, :neglectBGFrames)
+  result = getMeasurementsFD(f, bgCorrection = false, kwargs...)
   bgParams = params.bgCorrection
   kwargs[:frames] = bgParams.bgFrames
-  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgParams.bgFrames), frequencies = params.freqs, kwargs...)
+  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgParams.bgFrames), kwargs...)
   kwargs[:frames] = bgParams.bgFramesPost
-  emptyPost = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgParams.bgFramesPost), frequencies = params.freqs, kwargs...)
+  emptyPost = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgParams.bgFramesPost), kwargs...)
   for l=1:size(result, 4)
     alpha = (l - mean(bgParams.bgFrames)) / (mean(bgParams.bgFramesPost) - mean(bgParams.bgFrames))
     result[:,:,l] .-=  (1-alpha).*empty[:,:,1] .+ alpha.*emptyPost[:,:,1]
   end
   return result
 end
+RecoUtils.process(algo::AbstractMPIReconstructionAlgorithm, f::MPIFile, params::CommonPreProcessingParameters{<:AbstractBackgroundCorrectionParameters}) = process(typeof(algo), f, params)
