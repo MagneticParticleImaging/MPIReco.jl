@@ -11,10 +11,29 @@ end
 export ExternalBackgroundCorrection
 abstract type ExternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters end
 
+Base.@kwdef struct FrequencyFilteredBackgroundCorrection{T} <: AbstractBackgroundCorrectionParameters where {T<:ExternalBackgroundCorrection}
+  freqs::Vector{Int64}
+  bgParams::T
+end
+
 export SimpleExternalBackgroundCorrection
 Base.@kwdef struct SimpleExternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters
   emptyMeas::MPIFile
   bgFrames::UnitRange{Int64} = 1:1
+end
+function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::SimpleExternalBackgroundCorrection)
+  kwargs = toKwargs(params)
+  kwargs[:frames] = params.bgFrames
+  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgFrames), kwargs...)
+  return data .-empty
+end
+function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, fparams::FrequencyFilteredBackgroundCorrection{SimpleExternalBackgroundCorrection})
+  params = fparams.bgParams
+  kwargs = toKwargs(params)
+  kwargs[:frequencies] = fparams.freqs
+  kwargs[:frames] = params.bgFrames
+  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgFrames), kwargs...)
+  return data .-empty
 end
 
 export LinearInterpolatedExternalBackgroundCorrection
@@ -23,6 +42,33 @@ Base.@kwdef struct LinearInterpolatedExternalBackgroundCorrection <: AbstractBac
   bgFrames::UnitRange{Int64} = 1:1
   bgFramesPost::UnitRange{Int64} = 1:1
 end
+function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::LinearInterpolatedExternalBackgroundCorrection)
+  kwargs = toKwargs(params)
+  kwargs[:frames] = params.bgFrames
+  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(params.bgFrames), kwargs...)
+  kwargs[:frames] = params.bgFramesPost
+  emptyPost = getMeasurementsFD(params.emptyMeas, false, bgCorrection = false, numAverages=length(params.bgFramesPost), kwargs...)
+  for l=1:size(result, 4)
+    alpha = (l - mean(params.bgFrames)) / (mean(params.bgFramesPost) - mean(params.bgFrames))
+    result[:,:,l] .-=  (1-alpha).*empty[:,:,1] .+ alpha.*emptyPost[:,:,1]
+  end
+  return result
+end
+function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, fparams::FrequencyFilteredBackgroundCorrection{LinearInterpolatedExternalBackgroundCorrection})
+  params = fparams.bgParams
+  kwargs = toKwargs(params)
+  kwargs[:frequencies] = fparams.freqs
+  kwargs[:frames] = params.bgFrames
+  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(params.bgFrames), kwargs...)
+  kwargs[:frames] = params.bgFramesPost
+  emptyPost = getMeasurementsFD(params.emptyMeas, false, bgCorrection = false, numAverages=length(params.bgFramesPost), kwargs...)
+  for l=1:size(result, 4)
+    alpha = (l - mean(params.bgFrames)) / (mean(params.bgFramesPost) - mean(params.bgFrames))
+    result[:,:,l] .-=  (1-alpha).*empty[:,:,1] .+ alpha.*emptyPost[:,:,1]
+  end
+  return result
+end
+
 
 export DictionaryBasedBackgroundCorrection
 Base.@kwdef struct DictionaryBasedBackgroundCorrection <: AbstractBackgroundCorrectionParameters
