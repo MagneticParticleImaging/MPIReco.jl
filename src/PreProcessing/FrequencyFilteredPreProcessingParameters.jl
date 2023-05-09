@@ -30,24 +30,14 @@ function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPI
   result = getMeasurementsFD(f, bgCorrection = true, interpolateBG = params.bgCorrection.interpolateBG, frequencies = params.freqs, kwargs...)
   return result
 end
-function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrection})
+function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{<:ExternalBackgroundCorrection})
   kwargs = toKwargs(params)
   if isnothing(params.frames)
     kwargs[:frames] = params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))
   end
   delete!(kwargs, :neglectBGFrames)
   result = getMeasurementFD(f, bgCorrection = false, frequencies = params.freqs, kwargs...)
-  bgParams = FrequencyFilteredBackgroundCorrection(params.freqs, params.bgCorrection)
-  return process(t, result, bgParams)
-end
-function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{LinearInterpolatedExternalBackgroundCorrection})
-  kwargs = toKwargs(params)
-  if isnothing(params.frames)
-    kwargs[:frames] = params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))
-  end
-  delete!(kwargs, :neglectBGFrames)
-  result = getMeasurementsFD(f, bgCorrection = false, frequencies = params.freqs, kwargs...)
-  bgParams = FrequencyFilteredBackgroundCorrection(params.freqs, params.bgCorrection)
+  bgParams = fromKwargs(FrequencyFilteredBackgroundCorrection, kwargs..., bgParams = params.bgCorrection)
   return process(t, result, bgParams)
 end
 RecoUtils.process(algo::AbstractMPIReconstructionAlgorithm, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{<:AbstractBackgroundCorrectionParameters}) = process(typeof(algo), f, params)

@@ -11,8 +11,20 @@ end
 export ExternalBackgroundCorrection
 abstract type ExternalBackgroundCorrection <: AbstractBackgroundCorrectionParameters end
 
+Base.@kwdef struct ExternalPreProcessedBackgroundCorrectionParameters{T} <: AbstractBackgroundCorrectionParameters where {T<:ExternalBackgroundCorrection}
+  numPeriodAverages::Int64 = 1
+  numPeriodGrouping::Int64 = 1
+  spectralLeakageCorrection::Bool = false
+  loadasreal::Bool = false
+  bgParams::T
+end
+
 Base.@kwdef struct FrequencyFilteredBackgroundCorrection{T} <: AbstractBackgroundCorrectionParameters where {T<:ExternalBackgroundCorrection}
-  freqs::Vector{Int64}
+  frequencies::Vector{Int64}
+  numPeriodAverages::Int64 = 1
+  numPeriodGrouping::Int64 = 1
+  spectralLeakageCorrection::Bool = false
+  loadasreal::Bool = false
   bgParams::T
 end
 
@@ -30,7 +42,6 @@ end
 function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, fparams::FrequencyFilteredBackgroundCorrection{SimpleExternalBackgroundCorrection})
   params = fparams.bgParams
   kwargs = toKwargs(params)
-  kwargs[:frequencies] = fparams.freqs
   kwargs[:frames] = params.bgFrames
   empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgFrames), kwargs...)
   return data .-empty
