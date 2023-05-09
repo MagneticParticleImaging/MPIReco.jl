@@ -1,4 +1,4 @@
-export toTOML, toDict, toDict!, toDictValue, toKwargs, toKwargs!
+export toTOML, toDict, toDict!, toDictValue, toKwargs, toKwargs!, fromKwargs
 
 function toTOML(fileName::AbstractString, value)
   open(fileName, "w") do io
@@ -33,40 +33,47 @@ end
 toDictValue(x::T) where {T<:Enum} = string(x)
 toDictValue(x::Array) = toDictValue.(x)
 
-function toKwargs(value; flatten::Vector{DataType} = DataType[])
+function toKwargs(value; kwargs...)
   dict = Dict{Symbol, Any}()
-  return toKwargs!(dict, value, flatten = flatten)
+  return toKwargs!(dict, value; kwargs...)
 end
 
-function toKwargs(values::Vector; flatten::Vector{DataType} = DataType[])
+function toKwargs(values::Vector; kwargs...)
   dict = Dict{Symbol, Any}()
-  foreach(i-> toKwargs!(dict, i, flatten = flatten), values)
+  foreach(i-> toKwargs!(dict, i, kwargs...), values)
   return dict
 end
 
-function toKwargs!(dict, value; flatten::Vector{DataType} = DataType[])
+function toKwargs!(dict, value; flatten::Vector{DataType} = DataType[], ignore::Vector{Symbol} = Symbol[], default::Dict{Symbol, Any} = Dict{Symbol, Any}(), overwrite::Dict{Symbol, Any} = Dict{Symbol, Any}())
   for field in fieldnames(typeof(value))
     prop = getproperty(value, field)
-    if any(i -> prop isa i, flatten)
-      toKwargs!(dict, prop, flatten = flatten)
+    if in(field, ignore)
+      # NOP
+    elseif any(i -> prop isa i, flatten)
+      toKwargs!(dict, prop, flatten = flatten, ignore = ignore, default = default)
+    elseif (isnothing(prop) || ismissing(prop)) && haskey(default, field)
+      dict[field] = default[field]
     else
       dict[field] = prop
     end
   end
+  for key in keys(overwrite)
+    dict[key] = overwrite[key] 
+  end
   return dict
 end
 
-function toKwargs(v::Union{AbstractReconstructionAlgorithmParameter, Vector{AbstractReconstructionAlgorithmParameter}})
-  return toKwargs(v, flatten = [AbstractReconstructionAlgorithmParameter])
+function toKwargs(v::Union{AbstractReconstructionAlgorithmParameter, Vector{AbstractReconstructionAlgorithmParameter}}; flatten = nothing, kwargs...)
+  return toKwargs(v, flatten = isnothing(flatten) ? [AbstractReconstructionAlgorithmParameter] : flatten; kwargs...)
 end
 
-function fromKwargs(type::Type{T}, kargs...) where {T}
+function fromKwargs(type::Type{T}; kargs...) where {T}
   args = Dict{Symbol, Any}()
   dict = values(kargs)
   for field in fieldnames(type)
     if haskey(dict, field)
-      args[field] = dict.field
+      args[field] = getproperty(dict, field)
     end
   end
-  return type(args)
+  return type(;args...)
 end
