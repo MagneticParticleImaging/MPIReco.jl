@@ -63,13 +63,21 @@ function toKwargs!(dict, value; flatten::Vector{DataType} = DataType[], ignore::
   return dict
 end
 
-function toKwargs(v::Union{AbstractReconstructionAlgorithmParameter, Vector{AbstractReconstructionAlgorithmParameter}}; flatten = nothing, kwargs...)
-  return toKwargs(v, flatten = isnothing(flatten) ? [AbstractReconstructionAlgorithmParameter] : flatten; kwargs...)
+function toKwargs(v::AbstractReconstructionAlgorithmParameter; flatten::Union{Vector{DataType}, Nothing} = nothing, kwargs...)
+  dict = Dict{Symbol, Any}()
+  return toKwargs!(dict, v; flatten = isnothing(flatten) ? [AbstractReconstructionAlgorithmParameter] : flatten, kwargs...)
+end
+function toKwargs(v::Vector{AbstractReconstructionAlgorithmParameter}; flatten::Union{Vector{DataType}, Nothing} = nothing, kwargs...)
+  dict = Dict{Symbol, Any}()
+  flatten = isnothing(flatten) ? [AbstractReconstructionAlgorithmParameter] : flatten
+  foreach(i-> toKwargs!(dict, i, flatten = flatten, kwargs...), v)
+  return dict
 end
 
-function fromKwargs(type::Type{T}; kargs...) where {T}
+
+function fromKwargs(type::Type{T}; kwargs...) where {T}
   args = Dict{Symbol, Any}()
-  dict = values(kargs)
+  dict = values(kwargs)
   for field in fieldnames(type)
     if haskey(dict, field)
       args[field] = getproperty(dict, field)
