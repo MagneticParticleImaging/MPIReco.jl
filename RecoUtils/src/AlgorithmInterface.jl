@@ -7,8 +7,8 @@ abstract type AbstractReconstructionAlgorithmParameter end
 Base.put!(algo::AbstractReconstructionAlgorithm, data) = error("$(typeof(algo)) must implement put!")
 Base.take!(algo::AbstractReconstructionAlgorithm) = error("$(typeof(algo)) must implement take!")
 
-export reconstruction
-function reconstruction(algo::T, u) where {T<:AbstractReconstructionAlgorithm}
+export reconstruct
+function reconstruct(algo::T, u) where {T<:AbstractReconstructionAlgorithm}
   put!(algo, u)
   return take!(algo)
 end
