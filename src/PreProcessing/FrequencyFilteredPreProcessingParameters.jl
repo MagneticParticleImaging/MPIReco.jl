@@ -14,17 +14,16 @@ end
 
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters})
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgCorrection])
-  result = getMeasurementsFD(f, bgCorrection = false, kwargs...)
+  result = getMeasurementsFD(f, bgCorrection = false; kwargs...)
   return result
 end
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{InternalBackgroundCorrectionParameters})
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgCorrection])
-  result = getMeasurementsFD(f, bgCorrection = true, interpolateBG = params.bgCorrection.interpolateBG, frequencies = params.freqs, kwargs...)
+  result = getMeasurementsFD(f; bgCorrection = true, interpolateBG = params.bgCorrection.interpolateBG, frequencies = params.freqs, kwargs...)
   return result
 end
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{<:ExternalBackgroundCorrection})
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgCorrection])
-  bgParams = fromKwargs(FrequencyFilteredBackgroundCorrectionParameters, kwargs..., bgParams = params.bgCorrection)
+  bgParams = fromKwargs(FrequencyFilteredBackgroundCorrectionParameters; kwargs..., bgParams = params.bgCorrection)
   return process(t, result, bgParams)
 end
-RecoUtils.process(algo::AbstractMPIReconstructionAlgorithm, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{<:AbstractBackgroundCorrectionParameters}) = process(typeof(algo), f, params)

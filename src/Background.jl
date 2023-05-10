@@ -62,7 +62,7 @@ function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::A
   end
   return result
 end
-function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::Union{ExternalPreProcessedBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}, FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}})
+function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::Union{ExternalPreProcessedBackgroundCorrectionParameters{LinearInterpolatedExternalBackgroundCorrectionParameters}, FrequencyFilteredBackgroundCorrectionParameters{LinearInterpolatedExternalBackgroundCorrectionParameters}})
   kwargs = toKwargs(params, ignore = [:bgParams])
   bgParams = params.bgParams
   kwargs[:frames] = bgParams.bgFrames

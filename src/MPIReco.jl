@@ -25,6 +25,7 @@ module MPIReco
 
 
   include("AlgorithmInterface.jl")
+  include("ImageMetadata/ImageMetadata.jl")
   include("Utils.jl")
   include("MultiContrast.jl")
   include("RecoParameters.jl")

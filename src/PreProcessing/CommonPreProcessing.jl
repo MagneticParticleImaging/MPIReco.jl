@@ -26,4 +26,3 @@ function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPI
   bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; kwargs..., bgParams = params.bgCorrection)
   return process(t, result, bgParams)
 end
-RecoUtils.process(algo::AbstractMPIReconstructionAlgorithm, f::MPIFile, params::CommonPreProcessingParameters{<:AbstractBackgroundCorrectionParameters}) = process(typeof(algo), f, params)
