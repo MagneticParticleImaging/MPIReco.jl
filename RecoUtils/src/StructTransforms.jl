@@ -40,7 +40,7 @@ end
 
 function toKwargs(values::Vector; kwargs...)
   dict = Dict{Symbol, Any}()
-  foreach(i-> toKwargs!(dict, i, kwargs...), values)
+  foreach(i-> toKwargs!(dict, i; kwargs...), values)
   return dict
 end
 
@@ -67,10 +67,10 @@ function toKwargs(v::AbstractReconstructionAlgorithmParameter; flatten::Union{Ve
   dict = Dict{Symbol, Any}()
   return toKwargs!(dict, v; flatten = isnothing(flatten) ? [AbstractReconstructionAlgorithmParameter] : flatten, kwargs...)
 end
-function toKwargs(v::Vector{AbstractReconstructionAlgorithmParameter}; flatten::Union{Vector{DataType}, Nothing} = nothing, kwargs...)
+function toKwargs(v::Vector{<:AbstractReconstructionAlgorithmParameter}; flatten::Union{Vector{DataType}, Nothing} = nothing, kwargs...)
   dict = Dict{Symbol, Any}()
   flatten = isnothing(flatten) ? [AbstractReconstructionAlgorithmParameter] : flatten
-  foreach(i-> toKwargs!(dict, i, flatten = flatten, kwargs...), v)
+  foreach(i-> toKwargs!(dict, i; flatten = flatten, kwargs...), v)
   return dict
 end
 
