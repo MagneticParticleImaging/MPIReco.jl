@@ -19,6 +19,7 @@ abstract type AbstractPreProcessingParameters <: MPIRecoParameters end
 
 export AbstractPostProcessingParameters
 abstract type AbstractPostProcessingParameters <: MPIRecoParameters end
+struct NoPostProcessing <: AbstractPostProcessingParameters end # TODO remove later
 
 export AbstractReconstructionParameters
 abstract type AbstractReconstructionParameters <: MPIRecoParameters end

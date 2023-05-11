@@ -16,6 +16,7 @@ module MPIReco
   # using TensorDecompositions
   using IniFile
   import LinearAlgebra: ldiv!, \
+  import Base: put!, take!
 
   # ML Stuff
   import Distributions

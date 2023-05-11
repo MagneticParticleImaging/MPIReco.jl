@@ -22,12 +22,12 @@ function RecoUtils.process(t::Type{AbstractMPIReconstructionAlgorithm}, data::Ar
   end
   
   shp = shape(params.grid)
-  imArray = Array{Float32}(undef, numcolors, shp..., size(data, 4))
+  imArray = Array{Float32}(undef, numcolors, shp..., size(data)[end])
   im = process(t, imArray, params.axis)
 
   temp = reshape(data,reduce(*, shp),numcolors,:)
   temp = permutedims(temp, [2,1,3])
   im[:] = temp[:]
 
-  return ImageMetadata(im, generateHeaderDict(params.sm, params.meas))
+  return ImageMeta(im, generateHeaderDict(params.sm, params.meas))
 end

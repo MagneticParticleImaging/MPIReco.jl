@@ -69,7 +69,7 @@ function getSF(pre::AbstractPreProcessingParameters, reco::SinglePatchReconstruc
   return getSF(reco.sf, freqs, reco.sparseTrafo, reco.solver; toKwargs([pre, reco]; ignore = [:bgCorrection])...)
 end
 
-RecoUtils.take!(algo::SinglePatchReconstruction) = take!(algo.output)
+RecoUtils.take!(algo::SinglePatchReconstruction) = Base.take!(algo.output)
 
 function RecoUtils.put!(algo::SinglePatchReconstruction, data::MPIFile)
   consistenceCheck(algo.params.reco.sf, data)
@@ -78,9 +78,7 @@ function RecoUtils.put!(algo::SinglePatchReconstruction, data::MPIFile)
   
   result = process(algo, pre, algo.params.reco)
   
-  if !isnothing(algo.params.post)
-    result = process(algo, result, algo.params.post)
-  end
+  result = process(algo, result, algo.params.post)
   
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
@@ -91,7 +89,7 @@ function RecoUtils.put!(algo::SinglePatchReconstruction, data::MPIFile)
   imMeta = ImageMetadataSystemMatrixParameter(data, algo.params.reco.sf, algo.grid, axis)
   result = process(AbstractMPIReconstructionAlgorithm, result, imMeta)
 
-  put!(algo.output, result)
+  Base.put!(algo.output, result)
 end
 
 function RecoUtils.similar(algo::SinglePatchReconstruction, data::MPIFile)
@@ -125,7 +123,7 @@ function RecoUtils.similar(algo::SinglePatchReconstruction, data::MPIFile)
   reco = RecoUtils.similar(algo, data, algo.params.reco)
   post = RecoUtils.similar(algo, data, algo.params.post)
 
-  result = SinglePatchReconstruction(SinglePatchReconstructionParameter(pre, reco, post), S, grid, freqs, Channel{Any}(32))
+  result = SinglePatchReconstruction(SinglePatchParameters(pre, reco, post), S, grid, freqs, Channel{Any}(32))
 
   return result
 end
@@ -143,17 +141,17 @@ end
 function RecoUtils.process(algo::SinglePatchReconstruction, u::Array, params::SinglePatchReconstructionParameter)
   weights = nothing # getWeights(...)
 
-  B = linearOperator(params.sparseTrafo, shape(grid), eltype(S))
+  B = linearOperator(params.sparseTrafo, shape(algo.grid), eltype(algo.S))
 
   N = size(algo.S, 2)
-  M = div(length(S), N)
+  M = div(length(algo.S), N)
   L = size(u)[end]
   u = reshape(u, M, L)
   c = zeros(N, L)
 
   λ = params.λ
 
-  if sum(abs.(λ)) > 0 && solver != FusedLasso && relativeLambda
+  if sum(abs.(λ)) > 0 && params.solver != FusedLasso && params.relativeLambda
     trace = calculateTraceOfNormalMatrix(algo.S,weights)
     if isa(λ,AbstractVector) 
       λ[1:1] *= trace / N
@@ -166,7 +164,7 @@ function RecoUtils.process(algo::SinglePatchReconstruction, u::Array, params::Si
   args = toKwargs(params)
   args[:λ] = λ
   args[:sparseTrafo] = B
-  solv = createLinearSolver(params.solver, S; weights=weights, args...)
+  solv = createLinearSolver(params.solver, algo.S; weights=weights, args...)
 
   for l=1:L
     d = solve(solv, u[:, l])
