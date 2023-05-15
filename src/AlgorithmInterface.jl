@@ -20,6 +20,7 @@ abstract type AbstractPreProcessingParameters <: MPIRecoParameters end
 export AbstractPostProcessingParameters
 abstract type AbstractPostProcessingParameters <: MPIRecoParameters end
 struct NoPostProcessing <: AbstractPostProcessingParameters end # TODO remove later
+RecoUtils.process(algo::AbstractMPIReconstructionAlgorithm, data, ::NoPostProcessing) = data
 
 export AbstractReconstructionParameters
 abstract type AbstractReconstructionParameters <: MPIRecoParameters end
@@ -66,9 +67,3 @@ isSystemMatrixBased(::T) where T <: AbstractReconstructionAlgorithm = recoAlgori
 isXSpaceBased(::T) where T <: AbstractReconstructionAlgorithm = recoAlgorithmTypes(T) isa XSpaceBasedAlgorithm
 isMachineLearningBased(::T) where T <: AbstractReconstructionAlgorithm = recoAlgorithmTypes(T) isa MachineLearningBasedAlgorithm
 isMixedAlgorithm(::T) where T <: AbstractReconstructionAlgorithm = true # TODO
-
-abstract type OutputType end
-struct IntermediateOutput <: OutputType end
-struct ImageOutput <: OutputType end
-
-include("RuntimeAlgorithms.jl")

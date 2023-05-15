@@ -7,8 +7,6 @@ module MPIReco
   using RecoUtils
   @reexport using DSP
   using ProgressMeter
-  using ThreadPools
-
   using LinearAlgebra
   using SparseArrays
   using Distributed
@@ -16,6 +14,7 @@ module MPIReco
   # using TensorDecompositions
   using IniFile
   import LinearAlgebra: ldiv!, \
+  # TODO sort out import for Base and RecoUtils to avoid boiler plate
   import Base: put!, take!
 
   # ML Stuff

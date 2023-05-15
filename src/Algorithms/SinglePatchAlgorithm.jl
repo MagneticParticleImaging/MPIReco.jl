@@ -1,3 +1,4 @@
+export SinglePatchReconstruction, SinglePatchReconstructionParameter, SinglePatchParameters
 Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <: AbstractReconstructionParameters
   # File
   sf::MPIFile
