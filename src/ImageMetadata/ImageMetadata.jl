@@ -1,4 +1,4 @@
-Base.@kwdef struct ImageAxisParameter <: MPIRecoParameters
+Base.@kwdef struct ImageAxisParameter <: AbstractMPIRecoParameters
   pixspacing::Vector{typeof(1.0u"mm")}
   offset::Vector{typeof(1.0u"mm")}
   dt::typeof(1.0u"s")
@@ -8,7 +8,7 @@ function RecoUtils.process(t::Type{AbstractMPIReconstructionAlgorithm}, data::Ar
   return makeAxisArray(data, params.pixspacing, params.offset, params.dt)
 end
 
-Base.@kwdef struct ImageMetadataSystemMatrixParameter <: MPIRecoParameters
+Base.@kwdef struct ImageMetadataSystemMatrixParameter <: AbstractMPIRecoParameters
   meas::MPIFile
   sm::Union{MPIFile, Vector{MPIFile}}
   grid::RegularGridPositions

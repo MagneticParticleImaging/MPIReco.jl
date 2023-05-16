@@ -2,7 +2,7 @@ export SinglePatchReconstruction, SinglePatchReconstructionParameter, SinglePatc
 Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <: AbstractReconstructionParameters
   # File
   sf::MPIFile
-  sparseTrafo::Union{Nothing, String} = nothing
+  sparseTrafo::Union{Nothing, String} = nothing # TODO concrete options here?
   #saveTrafo::Bool = false
   recChannels::UnitRange{Int64} = 1:rxNumChannels(sf)
   # Freqs
@@ -14,11 +14,13 @@ Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <
   sortBySNR::Bool = false
   # Solver
   solver::Type{S}
+  # TODO Maybe nest these too
   iterations::Int64=10
   enforceReal=false
   enforcePositive=true
   λ::Vector{Float64}=[0.1, 0.0]
   relativeLambda::Bool=true
+  # weightingType::WeightingType = WeightingType.None
   # Grid
   gridsize::Vector{Int64} = gridSizeCommon(sf)
   fov::Vector{Float64} = calibFov(sf)
@@ -29,12 +31,12 @@ Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <
 end
 
 Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractPreProcessingParameters, R<:AbstractReconstructionParameters, PT<:AbstractPostProcessingParameters} <: AbstractRecoAlgorithmParameters
-  pre::Union{PR,Nothing} = nothing
-  reco::Union{R,Nothing} = nothing
-  post::Union{PT,Nothing} = nothing
+  pre::Union{PR}
+  reco::Union{R}
+  post::Union{PT} = NoPostProcessing() 
 end
 
-Base.@kwdef mutable struct SinglePatchReconstruction{PR, R, PT} <: AbstractMPIReconstructionAlgorithm where {PR, R, PT<:MPIRecoParameters}
+Base.@kwdef mutable struct SinglePatchReconstruction{PR, R, PT} <: AbstractMPIReconstructionAlgorithm where {PR, R, PT<:AbstractMPIRecoParameters}
   params::SinglePatchParameters{PR, R, PT}
   # Could also do reconstruction progress meter here
   S
@@ -49,7 +51,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters)
   S, grid = getSF(params.pre, params.reco, freqs)
   filter = FrequencyFilteredPreProcessingParameters(;frequencies = freqs, toKwargs(params.pre)...)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
-  return SinglePatchReconstruction(filteredParams, S, grid, freqs, Channel{Any}(32))
+  return SinglePatchReconstruction(filteredParams, S, grid, freqs, Channel{Any}(Inf))
 end
 
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
@@ -144,36 +146,8 @@ function RecoUtils.process(algo::SinglePatchReconstruction, u::Array, params::Si
 
   B = linearOperator(params.sparseTrafo, shape(algo.grid), eltype(algo.S))
 
-  N = size(algo.S, 2)
-  M = div(length(algo.S), N)
-  L = size(u)[end]
-  u = reshape(u, M, L)
-  c = zeros(N, L)
+  kwargs = toKwargs(params)
+  solver = LeastSquaresParameters(params.solver, B, algo.S, L2Regularization(params.λ[1]), fromKwargs(SimpleSolverIterationParameters; kwargs))
 
-  λ = params.λ
-
-  if sum(abs.(λ)) > 0 && params.solver != FusedLasso && params.relativeLambda
-    trace = calculateTraceOfNormalMatrix(algo.S,weights)
-    if isa(λ,AbstractVector) 
-      λ[1:1] *= trace / N
-    else
-      λ *= trace / N
-    end
-    #setlambda(S,λ) dead code?
-  end
-
-  args = toKwargs(params)
-  args[:λ] = λ
-  args[:sparseTrafo] = B
-  solv = createLinearSolver(params.solver, algo.S; weights=weights, args...)
-
-  for l=1:L
-    d = solve(solv, u[:, l])
-    if !isnothing(B)
-      d[:] = B*d
-    end
-    c[:, l] = real(d)
-  end
-
-  return c
+  return process(AbstractMPIReconstructionAlgorithm, u, solver)
 end

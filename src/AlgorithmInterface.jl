@@ -11,25 +11,25 @@ export AbstractMachineLearningReconstructionAlgorithm
 abstract type AbstractMachineLearningReconstructionAlgorithm <: AbstractMPIReconstructionAlgorithm end
 
 
-export MPIRecoParameters
-abstract type MPIRecoParameters <: AbstractReconstructionAlgorithmParameter end
+export AbstractMPIRecoParameters
+abstract type AbstractMPIRecoParameters <: AbstractReconstructionAlgorithmParameter end
 
 export AbstractPreProcessingParameters
-abstract type AbstractPreProcessingParameters <: MPIRecoParameters end
+abstract type AbstractPreProcessingParameters <: AbstractMPIRecoParameters end
 
 export AbstractPostProcessingParameters
-abstract type AbstractPostProcessingParameters <: MPIRecoParameters end
+abstract type AbstractPostProcessingParameters <: AbstractMPIRecoParameters end
 struct NoPostProcessing <: AbstractPostProcessingParameters end # TODO remove later
 RecoUtils.process(algo::AbstractMPIReconstructionAlgorithm, data, ::NoPostProcessing) = data
 
 export AbstractReconstructionParameters
-abstract type AbstractReconstructionParameters <: MPIRecoParameters end
+abstract type AbstractReconstructionParameters <: AbstractMPIRecoParameters end
 
 export AbstractRecoAlgorithmParameters
-abstract type AbstractRecoAlgorithmParameters <: MPIRecoParameters end
+abstract type AbstractRecoAlgorithmParameters <: AbstractMPIRecoParameters end
 
 export AbstractBackgroundCorrectionParameters
-abstract type AbstractBackgroundCorrectionParameters <: MPIRecoParameters end
+abstract type AbstractBackgroundCorrectionParameters <: AbstractMPIRecoParameters end
 
 export MPIFilesPreprocessingParameters
 Base.@kwdef struct MPIFilesPreprocessingParameters <: AbstractPreProcessingParameters
