@@ -80,3 +80,43 @@ function RecoUtils.similar(algo::SinglePatchTwoStepReconstructionAlgorithm, data
   post = RecoUtils.similar(algo, data, algo.params.post)
   return SinglePatchReconstruction(SinglePatchReconstructionParameters(pre, reco, post))
 end
+
+
+### Alternative
+#=
+
+# Extend structs to accommodate for two step, multi color, single and more by allowing multiple freqs and SMs 
+Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{PR, R, PT} <: AbstractMPIReconstructionAlgorithm where {PR, R, PT<:AbstractMPIRecoParameters}
+  params::SinglePatchParameters{PR, R, PT}
+  # Could also do reconstruction progress meter here
+  S::Vector{AbstractArray}
+  grid::RegularGridPositions
+  freqs::Vector{Vector{Int64}}
+  output::Channel{Any}
+end
+
+# In constructor and in put! dispatch on parametric type of reco args
+function Base.put!(algo::SinglePatchAlgorithm{PR, SinglePatchTwoStepReconstructionParameters{S}, PT}) where {PR, S, PT}
+  consistenceCheck(algo.params.reco.sf, data)
+  pre = process(algo, data, algo.params.pre)
+
+  # Step 1
+  result = process(algo, pre, ...) # Build other reco params here
+  result = process(algo, result, algo.params.post)
+  ...  
+  imMeta = ImageMetadataSystemMatrixParameter(data, algo.params.reco.sf, algo.grid, axis)
+  result = process(AbstractMPIReconstructionAlgorithm, result, imMeta)
+
+  # Step 4
+  result = process(algo, pre, ...) # Build other reco params for second reco here
+  result = process(algo, result, algo.params.post)
+  ...
+
+    # Addition
+  result = cPost + cThresh
+
+  Base.put!(algo.output, result)
+end
+
+
+=#
