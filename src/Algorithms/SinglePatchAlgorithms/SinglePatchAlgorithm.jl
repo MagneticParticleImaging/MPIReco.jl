@@ -1,5 +1,4 @@
-export SinglePatchReconstruction, SinglePatchReconstructionParameter, SinglePatchParameters
-Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <: AbstractReconstructionParameters
+Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sparseTrafo::Union{Nothing, String} = nothing # TODO concrete options here?
@@ -30,28 +29,28 @@ Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <
   deadPixels::Vector{Int64} = Int64[]
 end
 
-Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractPreProcessingParameters, R<:AbstractReconstructionParameters, PT<:AbstractPostProcessingParameters} <: AbstractRecoAlgorithmParameters
+Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractPreProcessingParameters, R<:AbstractSinglePatchReconstructionParameters, PT<:AbstractPostProcessingParameters} <: AbstractRecoAlgorithmParameters
   pre::Union{PR}
   reco::Union{R}
   post::Union{PT} = NoPostProcessing() 
 end
 
-Base.@kwdef mutable struct SinglePatchReconstruction{PR, R, PT} <: AbstractMPIReconstructionAlgorithm where {PR, R, PT<:AbstractMPIRecoParameters}
+Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{PR, R, PT} <: AbstractMPIReconstructionAlgorithm where {PR, R, PT<:AbstractMPIRecoParameters}
   params::SinglePatchParameters{PR, R, PT}
   # Could also do reconstruction progress meter here
-  S
-  grid
-  freqs
+  S::AbstractArray
+  grid::RegularGridPositions
+  freqs::Vector{Int64}
   output::Channel{Any}
 end
 
-function SinglePatchReconstruction(params::SinglePatchParameters)
+function SinglePatchReconstruction(params::SinglePatchParameters{CommonPreProcessingParameters{B}, R, PT}) where {B, R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
   # Prepare system matrix based on pre and reco params
   freqs = getFreqs(params.pre, params.reco)
   S, grid = getSF(params.pre, params.reco, freqs)
   filter = FrequencyFilteredPreProcessingParameters(;frequencies = freqs, toKwargs(params.pre)...)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
-  return SinglePatchReconstruction(filteredParams, S, grid, freqs, Channel{Any}(Inf))
+  return SinglePatchReconstructionAlgorithm(filteredParams, S, grid, freqs, Channel{Any}(Inf))
 end
 
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
@@ -72,9 +71,9 @@ function getSF(pre::AbstractPreProcessingParameters, reco::SinglePatchReconstruc
   return getSF(reco.sf, freqs, reco.sparseTrafo, reco.solver; toKwargs([pre, reco]; ignore = [:bgCorrection])...)
 end
 
-RecoUtils.take!(algo::SinglePatchReconstruction) = Base.take!(algo.output)
+RecoUtils.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.output)
 
-function RecoUtils.put!(algo::SinglePatchReconstruction, data::MPIFile)
+function RecoUtils.put!(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
   consistenceCheck(algo.params.reco.sf, data)
   
   pre = process(algo, data, algo.params.pre)
@@ -95,7 +94,7 @@ function RecoUtils.put!(algo::SinglePatchReconstruction, data::MPIFile)
   Base.put!(algo.output, result)
 end
 
-function RecoUtils.similar(algo::SinglePatchReconstruction, data::MPIFile)
+function RecoUtils.similar(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
   # TODO Check num receive channel
 
   # This isnt a nice structure atm, because the corrections of the params cant be done individually
@@ -126,12 +125,12 @@ function RecoUtils.similar(algo::SinglePatchReconstruction, data::MPIFile)
   reco = RecoUtils.similar(algo, data, algo.params.reco)
   post = RecoUtils.similar(algo, data, algo.params.post)
 
-  result = SinglePatchReconstruction(SinglePatchParameters(pre, reco, post), S, grid, freqs, Channel{Any}(32))
+  result = SinglePatchReconstructionAlgorithm(SinglePatchParameters(pre, reco, post), S, grid, freqs, Channel{Any}(32))
 
   return result
 end
 
-function RecoUtils.process(algo::SinglePatchReconstruction, f::MPIFile, params::AbstractPreProcessingParameters)
+function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
   result = process(AbstractMPIReconstructionAlgorithm, f, params)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
@@ -141,7 +140,7 @@ function RecoUtils.process(algo::SinglePatchReconstruction, f::MPIFile, params::
 end
 
 
-function RecoUtils.process(algo::SinglePatchReconstruction, u::Array, params::SinglePatchReconstructionParameter)
+function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::SinglePatchReconstructionParameter)
   weights = nothing # getWeights(...)
 
   B = linearOperator(params.sparseTrafo, shape(algo.grid), eltype(algo.S))

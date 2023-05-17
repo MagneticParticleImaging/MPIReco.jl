@@ -1,1 +1,1 @@
-include("SinglePatchAlgorithm.jl")
+include("SinglePatchAlgorithms/SinglePatchAlgorithms.jl")
