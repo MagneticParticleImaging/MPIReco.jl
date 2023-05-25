@@ -1,16 +1,7 @@
-Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <: AbstractSinglePatchReconstructionParameters
+Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
-  sparseTrafo::Union{Nothing, String} = nothing # TODO concrete options here?
-  #saveTrafo::Bool = false
-  recChannels::UnitRange{Int64} = 1:rxNumChannels(sf)
-  # Freqs
-  minFreq::Float64 = 0.0
-  maxFreq::Float64 = rxBandwidth(sf)
-  numUsedFreqs::Int64 = -1
-  # SNR
-  threshSNR::Float64=-1.0
-  sortBySNR::Bool = false
+  sfLoad::L
   # Solver
   solver::Type{S}
   # TODO Maybe nest these too
@@ -20,13 +11,6 @@ Base.@kwdef struct SinglePatchReconstructionParameter{S<:AbstractLinearSolver} <
   λ::Vector{Float64}=[0.1, 0.0]
   relativeLambda::Bool=true
   # weightingType::WeightingType = WeightingType.None
-  # Grid
-  gridsize::Vector{Int64} = gridSizeCommon(sf)
-  fov::Vector{Float64} = calibFov(sf)
-  center::Vector{Float64} = [0.0,0.0,0.0]
-  useDFFoV::Bool = false
-  # Misc.
-  deadPixels::Vector{Int64} = Int64[]
 end
 
 Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractPreProcessingParameters, R<:AbstractSinglePatchReconstructionParameters, PT<:AbstractPostProcessingParameters} <: AbstractRecoAlgorithmParameters
@@ -44,10 +28,9 @@ Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{PR, R, PT} <: Abst
   output::Channel{Any}
 end
 
-function SinglePatchReconstruction(params::SinglePatchParameters{CommonPreProcessingParameters{B}, R, PT}) where {B, R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
+function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
   # Prepare system matrix based on pre and reco params
-  freqs = getFreqs(params.pre, params.reco)
-  S, grid = getSF(params.pre, params.reco, freqs)
+  freqs, S, grid = prepareSystemMatrix(params.pre, params.reco)
   filter = FrequencyFilteredPreProcessingParameters(;frequencies = freqs, toKwargs(params.pre)...)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
   return SinglePatchReconstructionAlgorithm(filteredParams, S, grid, freqs, Channel{Any}(Inf))
@@ -55,21 +38,13 @@ end
 
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
 
-getFreqs(pre::AbstractPreProcessingParameters, reco::SinglePatchReconstructionParameter) = getFreqs(reco.sf, pre, reco)
-function getFreqs(data::MPIFile, pre::AbstractPreProcessingParameters, reco::SinglePatchReconstructionParameter) 
-  dict = toKwargs([pre, reco])
-  # Hacky version, make nicer later (maybe change in MPIFiles)
-  # TODO fix this
-  return filterFrequencies(data; SNRThresh = dict[:threshSNR], minFreq = dict[:minFreq], maxFreq = dict[:maxFreq],
-   recChannels = dict[:recChannels], sortBySNR = dict[:sortBySNR], numUsedFreqs = dict[:numUsedFreqs], 
-   numPeriodAverages = dict[:numPeriodAverages], numPeriodGrouping = dict[:numPeriodGrouping])
+function prepareSystemMatrix(pre::CommonPreProcessingParameters, reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
+  params = fromKwargs(PreProcessedSystemMatrixLoadingParameter; toKwargs([pre, reco])..., sm = reco.sfLoad)
+  freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, params)
+  sf, grid = prepareSF(S, sf, grid) 
+  return freqs, sf, grid
 end
 
-# TODO Maybe do this on Type{T}
-function getSF(pre::AbstractPreProcessingParameters, reco::SinglePatchReconstructionParameter, freqs)
-  # TODO make this work with correct bg correction
-  return getSF(reco.sf, freqs, reco.sparseTrafo, reco.solver; toKwargs([pre, reco]; ignore = [:bgCorrection])...)
-end
 
 RecoUtils.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.output)
 
@@ -143,10 +118,18 @@ end
 function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::SinglePatchReconstructionParameter)
   weights = nothing # getWeights(...)
 
-  B = linearOperator(params.sparseTrafo, shape(algo.grid), eltype(algo.S))
+  B = getLinearOperator(algo, params)
 
   kwargs = toKwargs(params)
-  solver = LeastSquaresParameters(params.solver, B, algo.S, L2Regularization(params.λ[1]), fromKwargs(SimpleSolverIterationParameters; kwargs))
+  solver = LeastSquaresParameters(params.solver, B, algo.S, [L2Regularization(params.λ[1])], fromKwargs(SimpleSolverIterationParameters; kwargs))
 
   return process(AbstractMPIReconstructionAlgorithm, u, solver)
+end
+
+function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
+  return linearOperator(nothing, shape(algo.grid), eltype(algo.S))
+end
+
+function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:SparseSystemMatrixLoadingParameter, S}) where {S}
+  return linearOperator(params.sfLoad.sparseTrafo, shape(algo.grid), eltype(algo.S))
 end

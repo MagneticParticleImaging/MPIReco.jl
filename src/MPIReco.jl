@@ -25,6 +25,8 @@ module MPIReco
 
 
   include("AlgorithmInterface.jl")
+  include("Background.jl")
+  include("PreProcessing/PreProcessing.jl")
   include("LeastSquares.jl")
   include("ImageMetadata/ImageMetadata.jl")
   include("Utils.jl")
@@ -32,12 +34,10 @@ module MPIReco
   include("RecoParameters.jl")
   include("SystemMatrix/SystemMatrix.jl")
   include("Weighting.jl")
-  include("Background.jl")
   include("TemporalRegularization/TemporalRegularization.jl")
   include("Reconstruction.jl")
   include("MultiPatch.jl")
   include("MotionCompensation/MotionCompensation.jl")
   include("MachineLearning/MachineLearning.jl")
-  include("PreProcessing/PreProcessing.jl")
   include("Algorithms/Algorithms.jl")
 end # module

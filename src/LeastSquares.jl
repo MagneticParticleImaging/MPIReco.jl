@@ -1,14 +1,13 @@
 export LeastSquaresParameters
 
-abstract type AbstractRegularizationParameters <: AbstractMPIRecoParameters end
 abstract type AbstractSolverIterationParameters <: AbstractMPIRecoParameters end
 
 export LeastSquaresParameters
-Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularizationParameters, P<:AbstractSolverIterationParameters} <: AbstractMPIRecoParameters
+Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverIterationParameters} <: AbstractMPIRecoParameters
   solver::Type{L}
   op::O
   S::M
-  reg::R = L2Regularization(0.1)
+  reg::Vector{R} 
   solvP::P
 end
 
@@ -20,14 +19,6 @@ Base.@kwdef struct SimpleSolverIterationParameters <: AbstractSolverIterationPar
   enforceReal::Bool=false
   enforcePositive::Bool=true
 end
-
-export SimpleRegularizationParameters
-Base.@kwdef struct SimpleRegularizationParameters <: AbstractRegularizationParameters
-  λ::Vector{Float64} = [0.1]
-  regName::Vector{String} = ["L2"]
-end
-export L2Regularization
-L2Regularization(λ::Float64) = SimpleRegularizationParameters([λ], ["L2"])
 
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, u::Array, params::LeastSquaresParameters)
 

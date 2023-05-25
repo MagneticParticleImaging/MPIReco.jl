@@ -5,6 +5,63 @@ export getSF, SVD, tikhonovLU, setlambda
 include("SystemMatrixRecovery.jl")
 include("SystemMatrixCenter.jl")
 
+export AbstractSystemMatrixParameter
+abstract type AbstractSystemMatrixParameter <: AbstractMPIRecoParameters end
+
+export AbstractSystemMatrixGriddingParameter
+abstract type AbstractSystemMatrixGriddingParameter <: AbstractSystemMatrixParameter end
+export SystemMatrixGriddingParameter
+Base.@kwdef struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGriddingParameter
+  gridsize::Vector{Int64} = [1, 1, 1]
+  fov::Vector{Float64} = [0.0, 0.0, 0.0]
+  center::Vector{Float64} = [0.0,0.0,0.0]
+  deadPixels::Vector{Int64} = Int64[]
+end
+#function SystemMatrixGriddingParameter(;sf::MPIFile, gridsize = nothing, fov = nothing)
+#  if isnothing(gridsize)
+#    gridsize = gridSizeCommon(sf)
+#  end
+#  if isnothing(fov)
+#    fov = calibFov(sf)
+#  end
+#  return SNRThresholdFrequencyFilterParameter(;gridsize = gridsize, fov = fov)
+#end
+export AbstractSystemMatrixLoadingParameter
+abstract type AbstractSystemMatrixLoadingParameter <: AbstractSystemMatrixParameter end
+
+export DenseSystemMatixLoadingParameter
+Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
+  freqFilter::F
+  gridding::G
+  bgCorrection::Bool = false
+end
+
+export SparseSystemMatrixLoadingParameter
+Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilterParameter} <: AbstractSystemMatrixLoadingParameter
+  freqFilter::F
+  sparseTrafo::Union{Nothing, String} = nothing # TODO concrete options here?
+  tresh::Float64 = 0.0
+  redFactor::Float64 = 0.1
+  bgCorrection::Bool = false
+  useDFFoV::Bool = false
+end
+
+export PreProcessedSystemMatrixLoadingParameter
+Base.@kwdef struct PreProcessedSystemMatrixLoadingParameter{S<:AbstractSystemMatrixLoadingParameter} <: AbstractMPIRecoParameters
+  sm::S
+  numPeriodAverages::Int64 = 1
+  numPeriodGrouping::Int64 = 1
+  spectralLeakageCorrection::Bool = false
+  loadasreal::Bool = false
+end
+function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::PreProcessedSystemMatrixLoadingParameter{<:DenseSystemMatixLoadingParameter})
+  # Construct freqFilter
+  freqParams = fromKwargs(PreProcessedFrequencyFilterParameter; toKwargs(params; flatten = DataType[AbstractSystemMatrixLoadingParameter])...)
+  freqs = process(t, sf, freqParams)
+  S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
+  return freqs, S, grid
+end
+
 function converttoreal(S::AbstractArray{Complex{T}},f) where T
   N = prod(calibSize(f))
   M = div(length(S),N)
