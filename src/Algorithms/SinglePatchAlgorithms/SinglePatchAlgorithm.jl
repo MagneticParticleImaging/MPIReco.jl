@@ -1,15 +1,11 @@
-Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver} <: AbstractSinglePatchReconstructionParameters
+Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver, SP<:AbstractSolverIterationParameters, R<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sfLoad::L
   # Solver
   solver::Type{S}
-  # TODO Maybe nest these too
-  iterations::Int64=10
-  enforceReal=false
-  enforcePositive=true
-  λ::Vector{Float64}=[0.1, 0.0]
-  relativeLambda::Bool=true
+  solverP::SP
+  reg::Vector{R} = AbstractRegularization[]
   # weightingType::WeightingType = WeightingType.None
 end
 
@@ -120,8 +116,7 @@ function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, u::Array, p
 
   B = getLinearOperator(algo, params)
 
-  kwargs = toKwargs(params)
-  solver = LeastSquaresParameters(params.solver, B, algo.S, [L2Regularization(params.λ[1])], fromKwargs(SimpleSolverIterationParameters; kwargs))
+  solver = LeastSquaresParameters(params.solver, B, algo.S, params.reg, params.solverP)
 
   return process(AbstractMPIReconstructionAlgorithm, u, solver)
 end

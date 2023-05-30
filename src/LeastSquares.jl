@@ -18,6 +18,7 @@ Base.@kwdef struct SimpleSolverIterationParameters <: AbstractSolverIterationPar
   iterations::Int64=10
   enforceReal::Bool=false
   enforcePositive::Bool=true
+  normalizeReg::AbstractRegularizationNormalization = NoNormalization()
 end
 
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, u::Array, params::LeastSquaresParameters)
@@ -28,18 +29,8 @@ function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, u::Arr
   u = reshape(u, M, L)
   c = zeros(N, L)
 
-  # TODO Where to solve this? Ideally here I just want to have the creation and interaction with the solver, everything else is already done
-  #if sum(abs.(λ)) > 0 && params.solver != FusedLasso && params.relativeLambda
-  #  trace = calculateTraceOfNormalMatrix(params.S,weights)
-  #  if isa(λ,AbstractVector) 
-  #    λ[1:1] *= trace / N
-  #  else
-  #    λ *= trace / N
-  #  end
-  #  #setlambda(S,λ) dead code?
-  #end
-
-  args = toKwargs([params.reg, params.solvP])
+  args = toKwargs(params.solvP)
+  args[:reg] = params.reg
   args[:sparseTrafo] = params.op
   solv = createLinearSolver(params.solver, params.S; args...)
 

@@ -17,14 +17,15 @@ Base.@kwdef struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGridding
   center::Vector{Float64} = [0.0,0.0,0.0]
   deadPixels::Vector{Int64} = Int64[]
 end
-#function SystemMatrixGriddingParameter(;sf::MPIFile, gridsize = nothing, fov = nothing)
+# Maybe implement custom defaults with optional given sf -> remove @kwdef
+#function SystemMatrixGriddingParameter(;sf::MPIFile, gridsize = nothing, fov = nothing, center = [0.0, 0.0, 0.0], deadPixels = Int64[])
 #  if isnothing(gridsize)
 #    gridsize = gridSizeCommon(sf)
 #  end
 #  if isnothing(fov)
 #    fov = calibFov(sf)
 #  end
-#  return SNRThresholdFrequencyFilterParameter(;gridsize = gridsize, fov = fov)
+#  return SNRThresholdFrequencyFilterParameter(gridsize, fov, center, deadPixels)
 #end
 export AbstractSystemMatrixLoadingParameter
 abstract type AbstractSystemMatrixLoadingParameter <: AbstractSystemMatrixParameter end
