@@ -127,9 +127,9 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
     if any(fov .> calibFov(bSF))
       #round.(Int,(fov .- origin.fov).*(origin.shape./(2 .* origin.fov)))
       if gridsize == collect(calibSize(bSF))
-        gridsize_new = round.(Int, fov .* origin.shape ./ (2 * origin.fov)) * 2
+        gridsize_new = round.(Int, fov .* origin.shape ./ (2 * origin.fov),RoundNearestTiesUp) * 2
         @info "You selected a customized (bigger) FOV, without selecting a bigger grid. Thus, an Extrapolation to
-the new FOV is followed by a Interpolation to the old grid-size, leading to a change in gridpoint-size. If you want
+the new FOV is followed by an Interpolation to the old grid-size, leading to a change in gridpoint-size. If you want
 to roughly keep the original gridpoint-size, define the key-word gridsize = $gridsize_new,
 alongside to your FOV-selection."
       end
