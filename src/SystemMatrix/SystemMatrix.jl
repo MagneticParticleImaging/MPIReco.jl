@@ -101,7 +101,7 @@ end
 function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer=1,
                bgcorrection=false, bgCorrection=bgcorrection, loadasreal=false,
 	             gridsize=collect(calibSize(bSF)), numPeriodAverages=1,numPeriodGrouping=1,
-	             fov=calibFov(bSF), center=[0.0,0.0,0.0],deadPixels=nothing, kargs...)
+	             fov=calibFov(bSF), center=calibFovCenter(bSF),deadPixels=nothing, kargs...)
 
   nFreq = rxNumFrequencies(bSF)
 
@@ -114,14 +114,14 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
   if deadPixels != nothing
     #repairDeadPixels(S,gridsize,deadPixels)
     @info "Repairing deadPixels..."
-    S = repairSM(S,RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0]),deadPixels)
+    S = repairSM(S,RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF)),deadPixels)
   end
 
   if collect(gridsize) != collect(calibSize(bSF)) ||
-    center != [0.0,0.0,0.0] ||
+    center != calibFovCenter(bSF) ||
     fov != calibFov(bSF)
 
-    origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
+    origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF))
     target = RegularGridPositions(gridsize,fov,center)
 
     if any(fov .> calibFov(bSF))
@@ -147,7 +147,7 @@ alongside to your FOV-selection."
     S = SInterp
     grid = target
   else
-    grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
+    grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF))
   end
 
   if loadasreal
