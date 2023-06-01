@@ -29,18 +29,18 @@ Base.@kwdef struct FrequencyFilteredBackgroundCorrectionParameters{T} <: Abstrac
 end
 
 export SimpleExternalBackgroundCorrectionParameters
-Base.@kwdef struct SimpleExternalBackgroundCorrectionParameters <: AbstractBackgroundCorrectionParameters
+Base.@kwdef struct SimpleExternalBackgroundCorrectionParameters <: ExternalBackgroundCorrection
   emptyMeas::MPIFile
   bgFrames::UnitRange{Int64} = 1:1
 end
 function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::SimpleExternalBackgroundCorrectionParameters)
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgFrames))
-  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgFrames), kwargs...)
+  empty = getMeasurementsFD(params.emptyMeas, false; bgCorrection = false, numAverages=length(bgFrames), kwargs...)
   return data .-empty
 end
 function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::Union{ExternalPreProcessedBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}, FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}})
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
-  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgFrames), kwargs...)
+  empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=length(params.bgParams.bgFrames), kwargs...)
   return data .-empty
 end
 
@@ -53,9 +53,9 @@ end
 function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::LinearInterpolatedExternalBackgroundCorrectionParameters)
   kwargs = toKwargs(params)
   kwargs[:frames] = params.bgFrames
-  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(params.bgFrames), kwargs...)
+  empty = getMeasurementsFD(bgParams.emptyMeas, false; bgCorrection = false, numAverages=length(params.bgFrames), kwargs...)
   kwargs[:frames] = params.bgFramesPost
-  emptyPost = getMeasurementsFD(params.emptyMeas, false, bgCorrection = false, numAverages=length(params.bgFramesPost), kwargs...)
+  emptyPost = getMeasurementsFD(params.emptyMeas, false; bgCorrection = false, numAverages=length(params.bgFramesPost), kwargs...)
   for l=1:size(result, 4)
     alpha = (l - mean(params.bgFrames)) / (mean(params.bgFramesPost) - mean(params.bgFrames))
     result[:,:,l] .-=  (1-alpha).*empty[:,:,1] .+ alpha.*emptyPost[:,:,1]
@@ -66,9 +66,9 @@ function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::A
   kwargs = toKwargs(params, ignore = [:bgParams])
   bgParams = params.bgParams
   kwargs[:frames] = bgParams.bgFrames
-  empty = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgParams.bgFrames), kwargs...)
+  empty = getMeasurementsFD(bgParams.emptyMeas, false; bgCorrection = false, numAverages=length(bgParams.bgFrames), kwargs...)
   kwargs[:frames] = bgParams.bgFramesPost
-  emptyPost = getMeasurementsFD(bgParams.emptyMeas, false, bgCorrection = false, numAverages=length(bgParams.bgFramesPost), kwargs...)
+  emptyPost = getMeasurementsFD(bgParams.emptyMeas, false; bgCorrection = false, numAverages=length(bgParams.bgFramesPost), kwargs...)
   for l=1:size(result, 4)
     alpha = (l - mean(bgParams.bgFrames)) / (mean(bgParams.bgFramesPost) - mean(bgParams.bgFrames))
     result[:,:,l] .-=  (1-alpha).*empty[:,:,1] .+ alpha.*emptyPost[:,:,1]
