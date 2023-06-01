@@ -15,11 +15,13 @@ take!(algo::SimilarAlgorithm) = take!(algo.outputChannel)
 function put!(algo::SimilarAlgorithm, u)
   result = nothing
   try 
-    result = put!(algo.algo, u)
+    put!(algo.algo, u)
+    result = take!(algo.algo)
   catch e
     try
       similarAlgo = similar(algo.algo, u)
-      result = put!(similarAlgo, u)
+      put!(similarAlgo, u)
+      result = take!(algo.algo)
       algo.algo = similarAlgo
     catch e2
       throw(e)
