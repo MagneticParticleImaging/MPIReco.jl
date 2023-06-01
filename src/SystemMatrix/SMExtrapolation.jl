@@ -202,14 +202,14 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
 
     if N3 != 1
         M1,M2,M3 = N1+2*ex_size[1],N2+2*ex_size[2],N3+2*ex_size[3]
-		P1,P2,P3 = [M1,M2,M3] .+ [ex_size[i] > 0 ? 2 : 0 for i in [1,2,3]]
-        S_extr = zeros(Complex{Float32},P1,P2,P3,K)
+		P1,P2,P3 = [ex_size[i] > 0 ? 2 : 0 for i in [1,2,3]]
+        S_extr = zeros(Complex{Float32},M1+P1,M2+P2,M3+P3,K)
         progress==nothing ? p = ProgressMeter.Progress(K, 1, "Extrapolating 3D SystemMatrix...") : p = progress
 
         for k=1:K
             S_miss = convert(Array{Union{Missing, Complex{Float32}}}, S_extr[:,:,:,k])
             S_miss[2:end-1,2:end-1,2:end-1] .= missing
-            S_miss[ex_size[1]+1:end-ex_size[1],ex_size[2]+1:end-ex_size[2],ex_size[3]+1:end-ex_size[3],:] = S[:,:,:,k]
+            S_miss[ex_size[1]+1+Int(P1/2):end-ex_size[1]-Int(P1/2),ex_size[2]+1+Int(P2/2):end-ex_size[2]-Int(P2/2),ex_size[3]+1+Int(P3/2):end-ex_size[3]-Int(P3/2),:] = S[:,:,:,k]
             S_rl=fillmissing(real.(S_miss),method=method)
             S_im=fillmissing(imag.(S_miss),method=method)
             S_extr[:,:,:,k]=S_rl+S_im*im
@@ -221,14 +221,14 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
 		return extrSM,extrgrid
     else
         M1,M2 = N1+2*ex_size[1],N2+2*ex_size[2]
-		P1,P2 = [M1,M2] .+ [ex_size[i] > 0 ? 2 : 0 for i in [1,2]]
-        S_extr = zeros(Complex{Float32},P1,P2,1,K)
+		P1,P2 = [ex_size[i] > 0 ? 2 : 0 for i in [1,2]]
+        S_extr = zeros(Complex{Float32},M1+P1,M2+P2,1,K)
         progress==nothing ? p = Progress(K, 1, "Extrapolating 2D SystemMatrix...") : p = progress
 
         for k=1:K
             S_miss = convert(Array{Union{Missing, Complex{Float32}}}, S_extr[:,:,1,k])
             S_miss[2:end-1,2:end-1] .= missing
-            S_miss[ex_size[1]+1:end-ex_size[1],ex_size[2]+1:end-ex_size[2],:] = S[:,:,1,k]
+            S_miss[ex_size[1]+1+Int(P1/2):end-ex_size[1]-Int(P1/2),ex_size[2]+1+Int(P2/2):end-ex_size[2]-Int(P2/2),:] = S[:,:,1,k]
             S_rl=fillmissing(real.(S_miss),method=method)
             S_im=fillmissing(imag.(S_miss),method=method)
             S_extr[:,:,1,k]=S_rl+S_im*im
