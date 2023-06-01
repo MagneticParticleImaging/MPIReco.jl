@@ -173,7 +173,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
                     denoiseWeight=0, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
                     gradient=zeros(0,0,0),
                     roundPatches = false,
-                    SFGridCenter = zeros(0,0),
+                    SFGridCenter = hcat(calibFovCenter.(SFs)...),
                     systemMatrices = nothing,
                     mapping=zeros(0),
 		                gridsize = hcat(calibSize.(SFs)...),
