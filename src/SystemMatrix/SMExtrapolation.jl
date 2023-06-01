@@ -202,7 +202,8 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
 
     if N3 != 1
         M1,M2,M3 = N1+2*ex_size[1],N2+2*ex_size[2],N3+2*ex_size[3]
-        S_extr = zeros(Complex{Float32},M1,M2,M3,K)
+		P1,P2,P3 = [M1,M2,M3] .+ [ex_size[i] > 0 ? 2 : 0 for i in [1,2,3]]
+        S_extr = zeros(Complex{Float32},P1,P2,P3,K)
         progress==nothing ? p = ProgressMeter.Progress(K, 1, "Extrapolating 3D SystemMatrix...") : p = progress
 
         for k=1:K
@@ -216,11 +217,12 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
         end
 		extrfov = (2 .* [ex_size[1], ex_size[2], ex_size[3]] .* (grid.fov ./ grid.shape)) .+ grid.fov
 		extrgrid = RegularGridPositions{Float64}([M1,M2,M3], extrfov, grid.center, grid.sign)
-        extrSM = transposed ? transpose(reshape(S_extr,(M1*M2*M3,K))) : reshape(S_extr,(M1*M2*M3,K))
+        extrSM = transposed ? transpose(reshape(S_extr[2:end-1,2:end-1,2:end-1,:],(M1*M2*M3,K))) : reshape(S_extr[2:end-1,2:end-1,2:end-1,:],(M1*M2*M3,K))
 		return extrSM,extrgrid
     else
         M1,M2 = N1+2*ex_size[1],N2+2*ex_size[2]
-        S_extr = zeros(Complex{Float32},N1+2*ex_size[1],N2+2*ex_size[2],1,K)
+		P1,P2 = [M1,M2] .+ [ex_size[i] > 0 ? 2 : 0 for i in [1,2]]
+        S_extr = zeros(Complex{Float32},P1,P2,1,K)
         progress==nothing ? p = Progress(K, 1, "Extrapolating 2D SystemMatrix...") : p = progress
 
         for k=1:K
@@ -234,7 +236,7 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
         end
 		extrfov = (2 .* [ex_size[1], ex_size[2], 0] .* (grid.fov ./ grid.shape)) .+ grid.fov
 		extrgrid = RegularGridPositions{Float64}([M1,M2,1], extrfov, grid.center, grid.sign)
-		extrSM = transposed ? transpose(reshape(S_extr,(M1*M2,K))) : reshape(S_extr,(M1*M2,K))
+		extrSM = transposed ? transpose(reshape(S_extr[2:end-1,2:end-1,1,:],(M1*M2,K))) : reshape(S_extr[2:end-1,2:end-1,1,:],(M1*M2,K))
         return extrSM,extrgrid
     end
 end
