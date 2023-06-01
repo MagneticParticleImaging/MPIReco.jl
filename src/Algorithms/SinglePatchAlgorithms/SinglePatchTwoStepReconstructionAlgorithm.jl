@@ -1,36 +1,17 @@
-Base.@kwdef struct SinglePatchTwoStepReconstructionParameters{S<:AbstractLinearSolver} <: AbstractSinglePatchReconstructionParameters
+export SinglePatchTwoStepReconstructionParameters
+Base.@kwdef struct SinglePatchTwoStepReconstructionParameters{L_H, L_L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver, SP_H, SP_L<:AbstractSolverIterationParameters, R_H, R_L<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
   # Threshhold
   Γ::Float64
   # File
   sf::MPIFile
-  sparseTrafo::Union{Nothing, String} = nothing # TODO concrete options here?
-  #saveTrafo::Bool = false
-  recChannels::UnitRange{Int64} = 1:rxNumChannels(sf)
-  # Freqs
-  minFreq::Float64 = 0.0
-  maxFreq::Float64 = rxBandwidth(sf)
-  # SNR
-  threshSNR_high::Float64=-1.0
-  threshSNR_low::Float64=-1.0
-  sortBySNR::Bool = false
+  sfLoadHigh::L_H
+  sfLoadLow::L_L
   # Solver
   solver::Type{S}
-  # TODO Maybe nest these too
-  iterations_high::Int64=10
-  iterations_low::Int64=3
-  enforceReal=false
-  enforcePositive=true
-  λ_high::Vector{Float64}=[0.1]
-  λ_low::Vector{Float64}=[0.1]
-  relativeLambda::Bool=true
-  # weightingType::WeightingType = WeightingType.None
-  # Grid
-  gridsize::Vector{Int64} = gridSizeCommon(sf)
-  fov::Vector{Float64} = calibFov(sf)
-  center::Vector{Float64} = [0.0,0.0,0.0]
-  useDFFoV::Bool = false
-  # Misc.
-  deadPixels::Vector{Int64} = Int64[]  
+  solverParams_high::SP_H
+  solverParams_low::SP_L
+  reg_high::Vector{R_H} = AbstractRegularization[]
+  reg_low::Vector{R_L} = AbstractRegularization[]
 end
 Base.@kwdef mutable struct SinglePatchTwoStepReconstructionAlgorithm{PR, R, PT} <: AbstractMPIReconstructionAlgorithm where {PR, R, PT<:AbstractMPIRecoParameters}
   params::SinglePatchParameters{PR, R, PT}
@@ -41,44 +22,54 @@ Base.@kwdef mutable struct SinglePatchTwoStepReconstructionAlgorithm{PR, R, PT} 
 end
 
 
-function SinglePatchReconstruction(params::SinglePatchParameters{PR, SinglePatchTwoStepReconstructionParameters{solv}, PT}) where {solv, PR<:AbstractPreProcessingParameters, PT <:AbstractPostProcessingParameters}
-  recoHigh = fromKwargs(SinglePatchReconstructionParameter, overwrite = Dict{Symbol, Any}(:iterations => params.reco.iterations_high, :threshSNR => params.reco.threshSNR_high))
-  recoLow = fromKwargs(SinglePatchReconstructionParameter, overwrite = Dict{Symbol, Any}(:iterations => params.reco.iterations_low, :threshSNR => params.reco.threshSNR_low))
-  algoHigh = SinglePatchReconstruction(SinglePatchReconstructionParameter(params.pre, recoHigh, params.post))
-  algoLow = SinglePatchReconstruction(SinglePatchReconstructionParameter(params.pre, recoLow, params.post))
+function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProcessingParameters, <:SinglePatchTwoStepReconstructionParameters, PT}) where {PT <:AbstractPostProcessingParameters}
+  recoHigh = SinglePatchReconstructionParameter(; sf = params.reco.sf, sfLoad = params.reco.sfLoadHigh, solver = params.reco.solver, solverParams = params.reco.solverParams_high, reg = params.reco.reg_high)
+  recoLow = SinglePatchReconstructionParameter(; sf = params.reco.sf, sfLoad = params.reco.sfLoadLow, solver = params.reco.solver, solverParams = params.reco.solverParams_low, reg = params.reco.reg_low)
+  algoHigh = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoHigh, params.post))
+  # Preprocessing for Algo Low will happen 
+  algoLowTemp = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoLow, params.post))
   return SinglePatchTwoStepReconstructionAlgorithm(params, algoHigh, algoLow, Channel{Any}(Inf))
 end
 
-function RecoUtils.put!(algo::SinglePatchTwoStepReconstructionParameters, data::MPIFile)
+RecoUtils.take!(algo::SinglePatchTwoStepReconstructionAlgorithm) = Base.take!(algo.output)
+
+function RecoUtils.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data::MPIFile)
   # First reco
   cPre = reconstruct(algo.algoHigh, data)
 
   # Thresholding
-  cThresh = copy(cPre)
-  cThresh[ abs.(cPre).< maximum(abs.(cPre))*algo.params.reco.Γ ] .= 0
+  thresh = maximum(abs.(cPre))*algo.params.reco.Γ
+  cThresh = map(x-> abs(x) < thresh ? 0.0 : x, cPre)
 
   # Projection into raw data space
-  uProj = map(ComplexF32,algoLow.S*vec(cThresh))
+  uProj = map(ComplexF32,algo.algoLow.S*vec(cThresh))
 
   # Subtraction
   uMeas_low = process(algo.algoLow, data, algo.algoLow.params.pre)
-  uCorr = uMeas_low - uProj
+  uCorr = uMeas_low - uProj.data
 
   # Second reconstruction
-  cPost = reconstruct(algo.algoLow, uCorr)
+  temp = process(algo.algoLow, uCorr, algo.algoLow.params.reco)
+  temp = process(algo.algoLow, temp, algo.algoLow.params.post)
+  pixspacing = (spacing(algo.algoLow.grid) ./ acqGradient(data)[1] .* acqGradient(algo.algoLow.params.reco.sf)[1])*1000u"mm"
+  offset = (ffPos(data) .- 0.5 .* calibFov(algo.algoLow.params.reco.sf))*1000u"mm" .+ 0.5 .* pixspacing
+  dt = acqNumAverages(data)*dfCycle(data)*algo.algoLow.params.pre.numAverages*1u"s"
+  axis = ImageAxisParameter(pixspacing=pixspacing, offset=offset, dt = dt)
+  imMeta = ImageMetadataSystemMatrixParameter(data, algo.algoLow.params.reco.sf, algo.algoLow.grid, axis)
+  cPost = process(AbstractMPIReconstructionAlgorithm, temp, imMeta)
 
   # Addition
-  result = cPost + cThresh
+  result = cPost + cThresh.data
 
   Base.put!(algo.output, result)
 end
 
 function RecoUtils.similar(algo::SinglePatchTwoStepReconstructionAlgorithm, data::MPIFile)
-  algoHigh = similar(algo.algoHigh, data)
-  pre = fromKwargs(CommonPreProcessingParameters, algoHigh.params.pre)
+  algoHigh = RecoUtils.similar(algo.algoHigh, data)
+  pre = fromKwargs(CommonPreProcessingParameters; toKwargs(algoHigh.params.pre)...)
   reco = RecoUtils.similar(algo, data, algo.params.reco)
   post = RecoUtils.similar(algo, data, algo.params.post)
-  return SinglePatchReconstruction(SinglePatchReconstructionParameters(pre, reco, post))
+  return SinglePatchReconstruction(SinglePatchParameters(pre, reco, post))
 end
 
 

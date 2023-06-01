@@ -77,9 +77,12 @@ function RecoUtils.similar(algo::SinglePatchReconstructionAlgorithm, data::MPIFi
   grid = algo.grid
   if rxNumSamplingPoints(algo.params.reco.sf) == rxNumSamplingPoints(data)
     # Ensure that no frequencies are used that are not present in the measurement
-    freqs = intersect(algo.freqs, getFreqs(data, algo.params.pre, algo.params.reco))
+    freqParams = fromKwargs(PreProcessedFrequencyFilterParameter; toKwargs([algo.params.pre, algo.params.reco]; flatten = DataType[AbstractSystemMatrixLoadingParameter])...)
+    measFreqs = process(AbstractMPIReconstructionAlgorithm, data, freqParams)
+    freqs = intersect(algo.freqs, measFreqs)
     if freqs != algo.freqs
-      S, grid = getSF(params.pre, params.reco, freqs)
+      S, grid = getSF(algo.params.reco.sf, freqs, nothing; toKwargs(algo.params.pre)...)
+      S, grid = prepareSF(algo.params.reco.solver, S, grid)
     end
   end
 
