@@ -4,7 +4,7 @@ Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoa
   sfLoad::L
   # Solver
   solver::Type{S}
-  solverP::SP
+  solverParams::SP
   reg::Vector{R} = AbstractRegularization[]
   # weightingType::WeightingType = WeightingType.None
 end
@@ -116,7 +116,7 @@ function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, u::Array, p
 
   B = getLinearOperator(algo, params)
 
-  solver = LeastSquaresParameters(params.solver, B, algo.S, params.reg, params.solverP)
+  solver = LeastSquaresParameters(params.solver, B, algo.S, params.reg, params.solverParams)
 
   return process(AbstractMPIReconstructionAlgorithm, u, solver)
 end
