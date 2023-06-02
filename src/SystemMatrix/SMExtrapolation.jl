@@ -217,7 +217,7 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
         end
 		extrfov = (2 .* [ex_size[1], ex_size[2], ex_size[3]] .* (grid.fov ./ grid.shape)) .+ grid.fov
 		extrgrid = RegularGridPositions{Float64}([M1,M2,M3], extrfov, grid.center, grid.sign)
-        extrSM = transposed ? transpose(reshape(S_extr[2:end-1,2:end-1,2:end-1,:],(M1*M2*M3,K))) : reshape(S_extr[2:end-1,2:end-1,2:end-1,:],(M1*M2*M3,K))
+        extrSM = transposed ? transpose(reshape(S_extr[1+Int(P1/2):end-Int(P1/2),1+Int(P2/2):end-Int(P2/2),1+Int(P3/2):end-Int(P3/2),:],(M1*M2*M3,K))) : reshape(S_extr[2:end-1,2:end-1,2:end-1,:],(M1*M2*M3,K))
 		return extrSM,extrgrid
     else
         M1,M2 = N1+2*ex_size[1],N2+2*ex_size[2]
@@ -236,7 +236,7 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
         end
 		extrfov = (2 .* [ex_size[1], ex_size[2], 0] .* (grid.fov ./ grid.shape)) .+ grid.fov
 		extrgrid = RegularGridPositions{Float64}([M1,M2,1], extrfov, grid.center, grid.sign)
-		extrSM = transposed ? transpose(reshape(S_extr[2:end-1,2:end-1,1,:],(M1*M2,K))) : reshape(S_extr[2:end-1,2:end-1,1,:],(M1*M2,K))
+		extrSM = transposed ? transpose(reshape(S_extr[1+Int(P1/2):end-Int(P1/2),1+Int(P2/2):end-Int(P2/2),1,:],(M1*M2,K))) : reshape(S_extr[2:end-1,2:end-1,1,:],(M1*M2,K))
         return extrSM,extrgrid
     end
 end
