@@ -21,12 +21,33 @@ Base.@kwdef mutable struct SinglePatchTwoStepReconstructionAlgorithm{PR, R, PT} 
   output::Channel{Any}
 end
 
+# Bit hacky: Create transparent parameter to give to inner algorithm
+Base.@kwdef mutable struct TwoStepSubstractionPreProcessingParameter{PR<:AbstractPreProcessingParameters} <: AbstractPreProcessingParameters
+  pre::PR
+  proj::Vector{ComplexF32} = zeros(ComplexF32, 1)
+end
+function Base.getproperty(param::TwoStepSubstractionPreProcessingParameter, field::Symbol)
+  if field == :proj || field == :pre
+    return getfield(param, field)
+  else
+    return getfield(getfield(param, :pre), field)
+  end
+end
+
+function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::TwoStepSubstractionPreProcessingParameter)
+  meas = process(t, f, params.pre)
+  return meas - params.proj
+end
 
 function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProcessingParameters, <:SinglePatchTwoStepReconstructionParameters, PT}) where {PT <:AbstractPostProcessingParameters}
   recoHigh = SinglePatchReconstructionParameter(; sf = params.reco.sf, sfLoad = params.reco.sfLoadHigh, solver = params.reco.solver, solverParams = params.reco.solverParams_high, reg = params.reco.reg_high)
   recoLow = SinglePatchReconstructionParameter(; sf = params.reco.sf, sfLoad = params.reco.sfLoadLow, solver = params.reco.solver, solverParams = params.reco.solverParams_low, reg = params.reco.reg_low)
   algoHigh = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoHigh, params.post))
+  # First load proper S, grid and freqs
   algoLow = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoLow, params.post))
+  # Then construct "custom" SinglePatchAlgorithm
+  paramsLow = SinglePatchParameters(TwoStepSubstractionPreProcessingParameter(;pre = algoLow.params.pre), algoLow.params.reco, algoLow.params.post)
+  algoLow = SinglePatchReconstructionAlgorithm(paramsLow, algoLow.S, algoLow.grid, algoLow.freqs, algoLow.output)
   return SinglePatchTwoStepReconstructionAlgorithm(params, algoHigh, algoLow, Channel{Any}(Inf))
 end
 
@@ -43,19 +64,11 @@ function RecoUtils.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data::M
   # Projection into raw data space
   uProj = map(ComplexF32,algo.algoLow.S*vec(cThresh))
 
-  # Subtraction
-  uMeas_low = process(algo.algoLow, data, algo.algoLow.params.pre)
-  uCorr = uMeas_low - uProj
+  # Prepare subtraction
+  algo.algoLow.params.pre.proj = uProj
 
   # Second reconstruction
-  temp = process(algo.algoLow, uCorr, algo.algoLow.params.reco)
-  temp = process(algo.algoLow, temp, algo.algoLow.params.post)
-  pixspacing = (spacing(algo.algoLow.grid) ./ acqGradient(data)[1] .* acqGradient(algo.algoLow.params.reco.sf)[1])*1000u"mm"
-  offset = (ffPos(data) .- 0.5 .* calibFov(algo.algoLow.params.reco.sf))*1000u"mm" .+ 0.5 .* pixspacing
-  dt = acqNumAverages(data)*dfCycle(data)*algo.algoLow.params.pre.numAverages*1u"s"
-  axis = ImageAxisParameter(pixspacing=pixspacing, offset=offset, dt = dt)
-  imMeta = ImageMetadataSystemMatrixParameter(data, algo.algoLow.params.reco.sf, algo.algoLow.grid, axis)
-  cPost = process(AbstractMPIReconstructionAlgorithm, temp, imMeta)
+  cPost = reconstruct(algo.algoLow, data)
 
   # Addition
   result = cPost + cThresh
