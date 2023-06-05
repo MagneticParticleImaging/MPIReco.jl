@@ -18,7 +18,7 @@ Base.@kwdef struct SimpleSolverIterationParameters <: AbstractSolverIterationPar
   iterations::Int64=10
   enforceReal::Bool=false
   enforcePositive::Bool=true
-  normalizeReg::AbstractRegularizationNormalization = NoNormalization()
+  normalizeReg::AbstractRegularizationNormalization = SystemMatrixBasedNormalization()
 end
 
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, u::Array, params::LeastSquaresParameters)
