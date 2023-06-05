@@ -26,8 +26,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProc
   recoHigh = SinglePatchReconstructionParameter(; sf = params.reco.sf, sfLoad = params.reco.sfLoadHigh, solver = params.reco.solver, solverParams = params.reco.solverParams_high, reg = params.reco.reg_high)
   recoLow = SinglePatchReconstructionParameter(; sf = params.reco.sf, sfLoad = params.reco.sfLoadLow, solver = params.reco.solver, solverParams = params.reco.solverParams_low, reg = params.reco.reg_low)
   algoHigh = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoHigh, params.post))
-  # Preprocessing for Algo Low will happen 
-  algoLowTemp = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoLow, params.post))
+  algoLow = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoLow, params.post))
   return SinglePatchTwoStepReconstructionAlgorithm(params, algoHigh, algoLow, Channel{Any}(Inf))
 end
 
@@ -39,14 +38,14 @@ function RecoUtils.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data::M
 
   # Thresholding
   thresh = maximum(abs.(cPre))*algo.params.reco.Γ
-  cThresh = map(x-> abs(x) < thresh ? 0.0 : x, cPre)
+  cThresh = map(x-> abs(x) < thresh ? 0.0 : x, cPre.data)
 
   # Projection into raw data space
   uProj = map(ComplexF32,algo.algoLow.S*vec(cThresh))
 
   # Subtraction
   uMeas_low = process(algo.algoLow, data, algo.algoLow.params.pre)
-  uCorr = uMeas_low - uProj.data
+  uCorr = uMeas_low - uProj
 
   # Second reconstruction
   temp = process(algo.algoLow, uCorr, algo.algoLow.params.reco)
@@ -59,7 +58,7 @@ function RecoUtils.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data::M
   cPost = process(AbstractMPIReconstructionAlgorithm, temp, imMeta)
 
   # Addition
-  result = cPost + cThresh.data
+  result = cPost + cThresh
 
   Base.put!(algo.output, result)
 end
