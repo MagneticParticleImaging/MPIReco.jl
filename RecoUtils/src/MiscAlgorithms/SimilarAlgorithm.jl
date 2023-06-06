@@ -21,7 +21,7 @@ function put!(algo::SimilarAlgorithm, u)
     try
       similarAlgo = similar(algo.algo, u)
       put!(similarAlgo, u)
-      result = take!(algo.algo)
+      result = take!(similarAlgo)
       algo.algo = similarAlgo
     catch e2
       throw(e)
