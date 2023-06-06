@@ -18,6 +18,7 @@ end
 Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{PR, R, PT} <: AbstractMPIReconstructionAlgorithm where {PR, R, PT<:AbstractMPIRecoParameters}
   params::SinglePatchParameters{PR, R, PT}
   # Could also do reconstruction progress meter here
+  sf::Union{MPIFile, Vector{MPIFile}}
   S::AbstractArray
   grid::RegularGridPositions
   freqs::Vector{Int64}
@@ -29,7 +30,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProc
   freqs, S, grid = prepareSystemMatrix(params.pre, params.reco)
   filter = fromKwargs(FrequencyFilteredPreProcessingParameters; frequencies = freqs, toKwargs(params.pre; flatten = DataType[])...)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
-  return SinglePatchReconstructionAlgorithm(filteredParams, S, grid, freqs, Channel{Any}(Inf))
+  return SinglePatchReconstructionAlgorithm(filteredParams, params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
 end
 
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
@@ -47,20 +48,19 @@ RecoUtils.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.outp
 function RecoUtils.put!(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
   consistenceCheck(algo.params.reco.sf, data)
   
-  pre = process(algo, data, algo.params.pre)
+  result = process(algo, data, algo.params.pre)
   
-  result = process(algo, pre, algo.params.reco)
+  result = process(algo, result, algo.params.reco)
   
   result = process(algo, result, algo.params.post)
   
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
-  pixspacing = (spacing(algo.grid) ./ acqGradient(data)[1] .* acqGradient(algo.params.reco.sf)[1])*1000u"mm"
-  offset = (ffPos(data) .- 0.5 .* calibFov(algo.params.reco.sf))*1000u"mm" .+ 0.5 .* pixspacing
+  pixspacing = (spacing(algo.grid) ./ acqGradient(data)[1] .* acqGradient(algo.sf)[1])*1000u"mm"
+  offset = (ffPos(data) .- 0.5 .* calibFov(algo.sf))*1000u"mm" .+ 0.5 .* pixspacing
   dt = acqNumAverages(data)*dfCycle(data)*algo.params.pre.numAverages*1u"s"
-  axis = ImageAxisParameter(pixspacing=pixspacing, offset=offset, dt = dt)
-  imMeta = ImageMetadataSystemMatrixParameter(data, algo.params.reco.sf, algo.grid, axis)
-  result = process(AbstractMPIReconstructionAlgorithm, result, imMeta)
+  im = makeAxisArray(data, pixspacing, offset, dt)
+  result = ImageMeta(im, generateHeaderDict(algo.sf, data))
 
   Base.put!(algo.output, result)
 end
@@ -121,7 +121,19 @@ function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, u::Array, p
 
   solver = LeastSquaresParameters(params.solver, B, algo.S, params.reg, params.solverParams)
 
-  return process(AbstractMPIReconstructionAlgorithm, u, solver)
+  result = process(AbstractMPIReconstructionAlgorithm, u, solver)
+
+  numcolors = 1
+  if isa(algo.sf,AbstractVector) || isa(algo.sf,MultiContrastFile)
+    numcolors = length(algo.sf)
+  end
+  shp = shape(algo.grid)
+  cArray = Array{Float32}(undef, numcolors, shp..., size(result)[end])
+  result = reshape(result, reduce(*, shp),numcolors,:)
+  result = permutedims(result, [2,1,3])
+  cArray[:] = result[:]
+
+  return cArray
 end
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
