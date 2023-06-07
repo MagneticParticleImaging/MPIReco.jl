@@ -47,7 +47,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProc
   algoLow = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoLow, params.post))
   # Then construct "custom" SinglePatchAlgorithm
   paramsLow = SinglePatchParameters(TwoStepSubstractionPreProcessingParameter(;pre = algoLow.params.pre), algoLow.params.reco, algoLow.params.post)
-  algoLow = SinglePatchReconstructionAlgorithm(paramsLow, algoLow.S, algoLow.grid, algoLow.freqs, algoLow.output)
+  algoLow = SinglePatchReconstructionAlgorithm(paramsLow, params.reco.sf, algoLow.S, algoLow.grid, algoLow.freqs, algoLow.output)
   return SinglePatchTwoStepReconstructionAlgorithm(params, algoHigh, algoLow, Channel{Any}(Inf))
 end
 

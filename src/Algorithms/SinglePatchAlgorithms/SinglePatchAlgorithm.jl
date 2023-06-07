@@ -59,7 +59,7 @@ function RecoUtils.put!(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
   pixspacing = (spacing(algo.grid) ./ acqGradient(data)[1] .* acqGradient(algo.sf)[1])*1000u"mm"
   offset = (ffPos(data) .- 0.5 .* calibFov(algo.sf))*1000u"mm" .+ 0.5 .* pixspacing
   dt = acqNumAverages(data)*dfCycle(data)*algo.params.pre.numAverages*1u"s"
-  im = makeAxisArray(data, pixspacing, offset, dt)
+  im = makeAxisArray(result, pixspacing, offset, dt)
   result = ImageMeta(im, generateHeaderDict(algo.sf, data))
 
   Base.put!(algo.output, result)

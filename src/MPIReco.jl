@@ -28,7 +28,6 @@ module MPIReco
   include("Background.jl")
   include("PreProcessing/PreProcessing.jl")
   include("LeastSquares.jl")
-  include("ImageMetadata/ImageMetadata.jl")
   include("Utils.jl")
   include("MultiContrast.jl")
   include("RecoParameters.jl")
