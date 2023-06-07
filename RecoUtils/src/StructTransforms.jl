@@ -32,6 +32,7 @@ function toDictValue(x)
 end
 toDictValue(x::T) where {T<:Enum} = string(x)
 toDictValue(x::Array) = toDictValue.(x)
+toDictValue(::Type{T}) where T = string(T)
 
 function toKwargs(value; kwargs...)
   dict = Dict{Symbol, Any}()
