@@ -31,7 +31,7 @@ function Base.setproperty!(plan::RecoPlan{T}, name::Symbol, x::X) where {T, X}
   t = type(plan, name)
   if !haskey(getfield(plan, :values), name)
     error("type $T has no field $name")
-  elseif X <: t || X <: RecoPlan{<:t}
+  elseif X <: t || X <: RecoPlan{<:t} || ismissing(x)
     getfield(plan, :values)[name] = x
   else
     getfield(plan, :values)[name] = convert(t, x)
