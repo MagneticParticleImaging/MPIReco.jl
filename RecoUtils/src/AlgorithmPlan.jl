@@ -1,5 +1,5 @@
 export RecoPlan
-mutable struct RecoPlan{T<:AbstractReconstructionAlgorithmParameter}
+mutable struct RecoPlan{T<:Union{AbstractReconstructionAlgorithmParameter, AbstractReconstructionAlgorithm}}
   values::Dict{Symbol, Any}
 end
 
@@ -9,10 +9,20 @@ function RecoPlan(::Type{T}; kwargs...) where {T<:AbstractReconstructionAlgorith
   for field in fieldnames(T)
     dict[field] = haskey(kwargs, field) ? kwargs[field] : missing
   end
-  return RecoPlan{T}(dict)
+  return RecoPlan{getfield(parentmodule(T), nameof(T))}(dict)
+end
+function RecoPlan(::Type{T}; kwargs...) where {T<:AbstractReconstructionAlgorithm}
+  dict = Dict{Symbol, Any}()
+  mod = parentmodule(T)
+  dict[:module] = mod
+  dict[:version] = string(pkgversion(mod))
+  dict[:parameter] = missing
+  return RecoPlan{getfield(parentmodule(T), nameof(T))}(dict)
 end
 
-Base.propertynames(plan::RecoPlan) = names(plan)
+
+
+Base.propertynames(plan::RecoPlan{T}) where {T} = keys(getfield(plan, :values))
 
 Base.getproperty(plan::RecoPlan{T}, name::Symbol) where {T} = getfield(plan, :values)[name]
 Base.getindex(plan::RecoPlan{T}, name::Symbol) where {T} = Base.getproperty(plan, name)
@@ -28,22 +38,40 @@ function Base.setproperty!(plan::RecoPlan{T}, name::Symbol, x::X) where {T, X}
   end
   return Base.getproperty(plan, name)
 end
-Base.setindex!(plan::RecoPlan, name::Symbol, x) = Base.setproperty!(plan, name, x)
+Base.setindex!(plan::RecoPlan, x, name::Symbol) = Base.setproperty!(plan, name, x)
 
 Base.ismissing(plan::RecoPlan, name::Symbol) = ismissing(getfield(plan, :values)[name])
 
-export types, type, names
-types(::RecoPlan{T}) where {T} = fieldtypes(T)
-type(::RecoPlan{T}, name::Symbol) where {T} = fieldtype(T, name)
-names(::RecoPlan{T}) where {T} = fieldnames(T)
+export types, type
+types(::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithmParameter} = fieldtypes(T)
+type(::RecoPlan{T}, name::Symbol) where {T<:AbstractReconstructionAlgorithmParameter} = fieldtype(T, name)
+
+function type(plan::RecoPlan{T}, name::Symbol) where {T<:AbstractReconstructionAlgorithm}
+  if name == :version
+    return String
+  elseif name == :parameter
+    return Union{Missing, RecoPlan}
+  elseif name == :module
+    return Module
+  else
+    error("type $(typeof(plan)) has no field $name")
+  end
+end
+types(::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithm} = [type(plan, name) for name in propertynames(plan)]
 
 export build
-function build(plan::RecoPlan{T}) where {T}
-  nestedPlans = filter(entry -> isa(last(entry), RecoPlan), getfield(plan, :values))
+function build(plan::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithmParameter}
+  fields = getfield(plan, :values)
+  nestedPlans = filter(entry -> isa(last(entry), RecoPlan), fields)
   for (name, nested) in nestedPlans
     plan[name] = build(nested)
   end
-  return T(;getfield(plan, :values)...)
+  fields = filter(entry -> !ismissing(last(entry)), fields)
+  return T(;fields...)
+end
+function build(plan::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithm}
+  parameter = build(plan[:parameter])
+  return T(parameter)
 end
 
 export toPlan
@@ -59,11 +87,11 @@ function toPlan(param::AbstractReconstructionAlgorithmParameter)
   end
   return RecoPlan(typeof(param); args...)
 end
-
-function toDict!(dict, plan::RecoPlan{T}) where {T}
-  dict["type"] = string(T)
-  for entry in getfield(plan, :values)
-    dict[String(first(entry))] = toDictValue(last(entry))
-  end
-  return dict
+toPlan(algo::AbstractReconstructionAlgorithm, params::AbstractReconstructionAlgorithmParameter) = toPlan(typeof(algo), params) 
+function toPlan(::Type{T}, params::AbstractReconstructionAlgorithmParameter) where {T<:AbstractReconstructionAlgorithm}
+  plan = RecoPlan(T)
+  plan[:parameter] = toPlan(params)
+  return plan
 end
+
+toDictType(plan::RecoPlan{T}) where {T} = RecoPlan{getfield(parentmodule(T), nameof(T))}

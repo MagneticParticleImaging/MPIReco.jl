@@ -40,6 +40,9 @@ function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPI
 end
 
 function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProcessingParameters, <:SinglePatchTwoStepReconstructionParameters, PT}) where {PT <:AbstractPostProcessingParameters}
+  return SinglePatchTwoStepReconstructionAlgorithm(params)
+end
+function SinglePatchTwoStepReconstructionAlgorithm(params::SinglePatchParameters{<:CommonPreProcessingParameters, <:SinglePatchTwoStepReconstructionParameters, PT}) where {PT <:AbstractPostProcessingParameters}
   recoHigh = SinglePatchReconstructionParameter(; sf = params.reco.sf, sfLoad = params.reco.sfLoadHigh, solver = params.reco.solver, solverParams = params.reco.solverParams_high, reg = params.reco.reg_high)
   recoLow = SinglePatchReconstructionParameter(; sf = params.reco.sf, sfLoad = params.reco.sfLoadLow, solver = params.reco.solver, solverParams = params.reco.solverParams_low, reg = params.reco.reg_low)
   algoHigh = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoHigh, params.post))

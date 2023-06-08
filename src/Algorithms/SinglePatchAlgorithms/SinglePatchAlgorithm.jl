@@ -26,13 +26,14 @@ Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{PR, R, PT} <: Abst
 end
 
 function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
-  # Prepare system matrix based on pre and reco params
+  return SinglePatchReconstructionAlgorithm(params)
+end
+function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:CommonPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
   freqs, S, grid = prepareSystemMatrix(params.pre, params.reco)
   filter = fromKwargs(FrequencyFilteredPreProcessingParameters; frequencies = freqs, toKwargs(params.pre; flatten = DataType[])...)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
   return SinglePatchReconstructionAlgorithm(filteredParams, params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
 end
-
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
 
 function prepareSystemMatrix(pre::CommonPreProcessingParameters, reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
