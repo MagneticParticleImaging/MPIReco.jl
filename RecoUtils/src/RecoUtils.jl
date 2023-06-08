@@ -1,5 +1,6 @@
 module RecoUtils
 
+using TOML
 using ThreadPools
 
 import Base: put!, take!, fieldtypes, fieldtype, ismissing, propertynames

@@ -39,4 +39,5 @@ module MPIReco
   include("MotionCompensation/MotionCompensation.jl")
   include("MachineLearning/MachineLearning.jl")
   include("Algorithms/Algorithms.jl")
+  include("Serialisation.jl")
 end # module

@@ -61,7 +61,6 @@ function toPlan(param::AbstractReconstructionAlgorithmParameter)
 end
 
 function toDict!(dict, plan::RecoPlan{T}) where {T}
-  @show T
   dict["type"] = string(T)
   for entry in getfield(plan, :values)
     dict[String(first(entry))] = toDictValue(last(entry))
