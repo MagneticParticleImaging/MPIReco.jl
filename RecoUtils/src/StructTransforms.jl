@@ -27,12 +27,17 @@ end
 function toDict!(dict, value)
   dict[".type"] = toDictType(value)
   for field in propertynames(value)
-    dict[string(field)] = toDictValue(getproperty(value, field))
+    toDictValue!(dict, value, field)
   end
   return dict
 end
 toDictType(value) = nameof(typeof(value))
 
+function toDictValue!(dict, value, field::Symbol)
+  x = getproperty(value, field)
+  dict[string(field)] = toDictValue(x)
+  return dict
+end
 function toDictValue(x)
   if fieldcount(typeof(x)) > 0
     return toDict(x)

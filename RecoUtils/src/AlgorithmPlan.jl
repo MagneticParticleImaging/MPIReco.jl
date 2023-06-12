@@ -95,3 +95,10 @@ function toPlan(::Type{T}, params::AbstractReconstructionAlgorithmParameter) whe
 end
 
 toDictType(plan::RecoPlan{T}) where {T} = RecoPlan{getfield(parentmodule(T), nameof(T))}
+function toDictValue!(dict, value::RecoPlan, field::Symbol)
+  x = getproperty(value, field)
+  if !ismissing(x)
+    dict[string(field)] = toDictValue(x)
+  end
+  return dict
+end
