@@ -59,6 +59,18 @@ function type(plan::RecoPlan{T}, name::Symbol) where {T<:AbstractReconstructionA
 end
 types(::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithm} = [type(plan, name) for name in propertynames(plan)]
 
+
+export clear!
+function clear!(plan::RecoPlan{T}, preserve::Bool = true) where {T<:AbstractReconstructionAlgorithmParameter}
+  dict = getfield(plan, :values)
+  for key in keys(dict)
+    value = dict[key]
+    dict[key] = typeof(value) <: RecoPlan && preserve ? clear!(value, preserve) : missing
+  end
+  return plan
+end
+clear!(plan::RecoPlan{T}, preserve::Bool = true) where {T<:AbstractReconstructionAlgorithm} = clear!(plan.parameter, preserve)
+
 export build
 function build(plan::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithmParameter}
   fields = getfield(plan, :values)
