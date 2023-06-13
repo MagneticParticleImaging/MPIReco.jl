@@ -25,12 +25,14 @@ function toDict(value)
 end
 
 function toDict!(dict, value)
+  dict[".module"] = toDictModule(value)
   dict[".type"] = toDictType(value)
   for field in propertynames(value)
     toDictValue!(dict, value, field)
   end
   return dict
 end
+toDictModule(value) = parentmodule(typeof(value))
 toDictType(value) = nameof(typeof(value))
 
 function toDictValue!(dict, value, field::Symbol)
@@ -46,7 +48,13 @@ function toDictValue(x)
   end
 end
 toDictValue(x::Array) = toDictValue.(x)
-toDictValue(::Type{T}) where T = T
+toDictValue(x::Type{T}) where T = toDict(x)
+function toDict!(dict, x::Type{T}) where T
+  dict[".module"] = parentmodule(T)
+  dict[".type"] = T
+  return dict
+end
+toDictValue(x::AbstractRange) = x
 
 function toKwargs(value; kwargs...)
   dict = Dict{Symbol, Any}()
