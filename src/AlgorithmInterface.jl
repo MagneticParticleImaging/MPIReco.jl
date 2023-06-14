@@ -17,7 +17,7 @@ abstract type AbstractMPIRecoParameters <: AbstractReconstructionAlgorithmParame
 export AbstractPreProcessingParameters
 abstract type AbstractPreProcessingParameters <: AbstractMPIRecoParameters end
 
-export AbstractPostProcessingParameters
+export AbstractPostProcessingParameters, NoPostProcessing
 abstract type AbstractPostProcessingParameters <: AbstractMPIRecoParameters end
 struct NoPostProcessing <: AbstractPostProcessingParameters end # TODO remove later
 RecoUtils.process(algo::AbstractMPIReconstructionAlgorithm, data, ::NoPostProcessing) = data

@@ -115,3 +115,90 @@ function toDictValue!(dict, value::RecoPlan, field::Symbol)
   end
   return dict
 end
+
+export loadPlan
+function loadPlan(filename::AbstractString, modules::Vector{Module})
+  dict = TOML.parsefile(filename)
+  modDict = createModuleDataTypeDict(modules)
+  return loadPlan!(dict, modDict)
+end
+function createModuleDataTypeDict(modules::Vector{Module})
+  modDict = Dict{String, Dict{String, Union{DataType, UnionAll}}}()
+  for mod in modules
+    typeDict = Dict{String, Union{DataType, UnionAll}}()
+    for field in names(mod)
+      try
+        t = getfield(mod, field)
+        if t isa DataType || t isa UnionAll
+          typeDict[string(t)] = t
+        end
+      catch
+      end
+    end
+    modDict[string(mod)] = typeDict
+  end
+  return modDict
+end
+function loadPlan!(dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}})
+  re = r"RecoPlan\{(.*)\}"
+  m = match(re, pop!(dict, ".type"))
+  if !isnothing(m)
+    type = m.captures[1]
+    mod = pop!(dict, ".module")
+    plan = RecoPlan(modDict[mod][type])
+    loadPlan!(plan, dict, modDict)
+    return plan
+  else
+    # Has to be parameter or algo or broken toml
+  end
+end
+function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}}) where {T<:AbstractReconstructionAlgorithmParameter}
+  for name in propertynames(plan)
+    t = type(plan, name)
+    param = missing
+    key = string(name)
+    if haskey(dict, key)
+      if t <: AbstractReconstructionAlgorithm || t <: AbstractReconstructionAlgorithmParameter
+        param = loadPlan!(dict[key], modDict)
+      # Handle Type{T}, structs with 0 fields and structs with more (assume kwargs for later?)
+      # I think for some of these we need to go back into the modDict to further specify a type
+      # As the Plan type can be abstract
+      else
+        param = loadPlanValue!(t, dict[key], modDict)
+      end
+    end
+    plan[name] = param
+  end
+end
+# Type{<:T} where {T} fields
+function loadPlanValue!(::UnionAll, value::Dict, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}})
+  re = r"Type\{(.*)\}"
+  m = match(re, pop!(value, ".type"))
+  mod = pop!(value, ".module")
+  type = m.captures[1]
+  return modDict[mod][type]
+end
+# Vectors
+function loadPlanValue!(::Type{Vector{<:T}}, value::Vector, modDict) where {T}
+  result = Any[]
+  for val in value
+    type = modDict[pop!(val, ".module")][pop!(val, ".type")]
+    push!(result, fromTOML(type, val))
+  end
+  # Narrow vector
+  return identity.(result)
+end
+# Structs with fields
+function loadPlanValue!(t::Type{T}, value::Dict, modDict) where {T}
+  if !in(value[".module"], keys(modDict))
+    return fromTOML(t, value)
+  else
+    type = modDict[pop!(value, ".module")][pop!(value, ".type")]
+    kwargs = Dict(Symbol(x) => dict[x] for x in keys(value))
+    return type(kwargs...)
+  end
+end
+loadPlanValue!(t, value, modDict) = fromTOML(t, value)
+
+export savePlan
+savePlan(filename::AbstractString, plan::RecoPlan) = toTOML(filename, plan)

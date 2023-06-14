@@ -17,7 +17,17 @@ toTOML(x::Module) = string(x)
 toTOML(x::Symbol) = string(x)
 toTOML(x::T) where {T<:Enum} = string(x)
 toTOML(x::Array) = toTOML.(x)
-toTOML(::Type{T}) where T = string(T)
+toTOML(x::Type{T}) where T = string(x)
+
+fromTOML(t, x) = x
+#function fromTOML(::Type{T}, x::Dict) where {T}
+#  if fieldcount(T) > 0
+#    
+#  else
+#    return x
+#  end
+#end
+fromTOML(::Type{V}, x::Vector) where {T, V<:Vector{<:T}} = fromTOML.(T, x)
 
 function toDict(value)
   dict = Dict{String, Any}()
@@ -51,10 +61,9 @@ toDictValue(x::Array) = toDictValue.(x)
 toDictValue(x::Type{T}) where T = toDict(x)
 function toDict!(dict, x::Type{T}) where T
   dict[".module"] = parentmodule(T)
-  dict[".type"] = T
+  dict[".type"] = Type{T}
   return dict
 end
-toDictValue(x::AbstractRange) = x
 
 function toKwargs(value; kwargs...)
   dict = Dict{Symbol, Any}()
