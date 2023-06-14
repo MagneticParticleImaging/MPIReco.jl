@@ -1,4 +1,5 @@
-Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver, SP<:AbstractSolverIterationParameters, R<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
+Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver,
+   SP<:AbstractSolverIterationParameters, R<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sfLoad::L
@@ -9,14 +10,8 @@ Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoa
   # weightingType::WeightingType = WeightingType.None
 end
 
-Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractPreProcessingParameters, R<:AbstractSinglePatchReconstructionParameters, PT<:AbstractPostProcessingParameters} <: AbstractRecoAlgorithmParameters
-  pre::Union{PR}
-  reco::Union{R}
-  post::Union{PT} = NoPostProcessing() 
-end
-
-Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{PR, R, PT} <: AbstractMPIReconstructionAlgorithm where {PR, R, PT<:AbstractMPIRecoParameters}
-  params::SinglePatchParameters{PR, R, PT}
+Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
+  params::P
   # Could also do reconstruction progress meter here
   sf::Union{MPIFile, Vector{MPIFile}}
   S::AbstractArray
@@ -47,13 +42,9 @@ end
 RecoUtils.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.output)
 
 function RecoUtils.put!(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
-  consistenceCheck(algo.params.reco.sf, data)
+  consistenceCheck(algo.sf, data)
   
-  result = process(algo, data, algo.params.pre)
-  
-  result = process(algo, result, algo.params.reco)
-  
-  result = process(algo, result, algo.params.post)
+  result = process(algo, data, algo.params)
   
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
@@ -100,13 +91,13 @@ function RecoUtils.similar(algo::SinglePatchReconstructionAlgorithm, data::MPIFi
   reco = RecoUtils.similar(algo, data, algo.params.reco)
   post = RecoUtils.similar(algo, data, algo.params.post)
 
-  result = SinglePatchReconstructionAlgorithm(SinglePatchParameters(pre, reco, post), S, grid, freqs, Channel{Any}(32))
+  result = SinglePatchReconstructionAlgorithm(SinglePatchParameters(pre, reco, post), algo.params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
 
   return result
 end
 
 function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
-  result = process(AbstractMPIReconstructionAlgorithm, f, params)
+  result = process(typeof(algo), f, params)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
     result = map(eltype(algo.S),result)
@@ -122,7 +113,7 @@ function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, u::Array, p
 
   solver = LeastSquaresParameters(params.solver, B, algo.S, params.reg, params.solverParams)
 
-  result = process(AbstractMPIReconstructionAlgorithm, u, solver)
+  result = process(typeof(algo), u, solver)
 
   numcolors = 1
   if isa(algo.sf,AbstractVector) || isa(algo.sf,MultiContrastFile)
