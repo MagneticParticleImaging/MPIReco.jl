@@ -34,7 +34,7 @@ recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorit
 RecoUtils.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(pre::AbstractPreProcessingParameters, reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
-  params = fromKwargs(PreProcessedSystemMatrixLoadingParameter; toKwargs([pre, reco])..., sm = reco.sfLoad)
+  params = fromKwargs(PreProcessedSystemMatrixLoadingParameter; pre = pre, sm = reco.sfLoad)
   freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, params)
   sf, grid = prepareSF(S, sf, grid) 
   return freqs, sf, grid
@@ -69,27 +69,28 @@ function RecoUtils.similar(algo::SinglePatchReconstructionAlgorithm, data::MPIFi
   freqs = algo.freqs
   S = algo.S
   grid = algo.grid
-  if rxNumSamplingPoints(algo.params.reco.sf) == rxNumSamplingPoints(data)
+  params = parameter(algo)
+  if rxNumSamplingPoints(algo.sf) == rxNumSamplingPoints(data)
     # Ensure that no frequencies are used that are not present in the measurement
-    freqParams = fromKwargs(PreProcessedFrequencyFilterParameter; toKwargs([algo.params.pre, algo.params.reco]; flatten = DataType[AbstractSystemMatrixLoadingParameter])...)
+    freqParams = fromKwargs(PreProcessedFrequencyFilterParameter; toKwargs([params.pre, params.reco]; flatten = DataType[AbstractSystemMatrixLoadingParameter])...)
     measFreqs = process(AbstractMPIReconstructionAlgorithm, data, freqParams)
     freqs = intersect(algo.freqs, measFreqs)
     if freqs != algo.freqs
-      S, grid = getSF(algo.params.reco.sf, freqs, nothing; toKwargs(algo.params.pre)...)
-      S, grid = prepareSF(algo.params.reco.solver, S, grid)
+      S, grid = getSF(params.reco.sf, freqs, nothing; toKwargs(params.pre)...)
+      S, grid = prepareSF(params.reco.solver, S, grid)
     end
   end
 
-  numPeriodGrouping = algo.params.pre.numPeriodGrouping
-  if rxNumSamplingPoints(algo.params.reco.sf) > rxNumSamplingPoints(data)
-    numPeriodGrouping = rxNumSamplingPoints(algo.params.reco.sf) ÷ rxNumSamplingPoints(data)
+  numPeriodGrouping = params.pre.numPeriodGrouping
+  if rxNumSamplingPoints(params.reco.sf) > rxNumSamplingPoints(data)
+    numPeriodGrouping = rxNumSamplingPoints(params.reco.sf) ÷ rxNumSamplingPoints(data)
   end
-  numPeriodAverages = algo.params.pre.numPeriodAverages
-  if acqNumPeriodsPerFrame(algo.params.reco.sf) < acqNumPeriodsPerFrame(data)
-    numPeriodAverages = acqNumPeriodsPerFrame(data) ÷ (acqNumPeriodsPerFrame(algo.params.reco.sf) * numPeriodGrouping)
+  numPeriodAverages = params.pre.numPeriodAverages
+  if acqNumPeriodsPerFrame(params.reco.sf) < acqNumPeriodsPerFrame(data)
+    numPeriodAverages = acqNumPeriodsPerFrame(data) ÷ (acqNumPeriodsPerFrame(params.reco.sf) * numPeriodGrouping)
   end
 
-  pre = fromKwargs(FrequencyFilteredPreProcessingParameters; toKwargs(algo.params.pre, overwrite = Dict{Symbol, Any}(:numPeriodGrouping => numPeriodGrouping, :numPeriodAverages => numPeriodAverages, :frequencies => freqs))...)
+  pre = fromKwargs(FrequencyFilteredPreProcessingParameters; toKwargs(params.pre, flatten = DataType[], overwrite = Dict{Symbol, Any}(:numPeriodGrouping => numPeriodGrouping, :numPeriodAverages => numPeriodAverages, :frequencies => freqs))...)
   reco = RecoUtils.similar(algo, data, algo.params.reco)
   post = RecoUtils.similar(algo, data, algo.params.post)
 
