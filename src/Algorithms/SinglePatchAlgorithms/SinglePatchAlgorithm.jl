@@ -13,6 +13,7 @@ end
 Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
   params::P
   # Could also do reconstruction progress meter here
+  origParam::Union{AbstractSinglePatchAlgorithmParameters, Nothing} = nothing
   sf::Union{MPIFile, Vector{MPIFile}}
   S::AbstractArray
   grid::RegularGridPositions
@@ -20,18 +21,19 @@ Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P} <: AbstractSing
   output::Channel{Any}
 end
 
-function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
+function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
   return SinglePatchReconstructionAlgorithm(params)
 end
-function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:CommonPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
+function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:AbstractPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
   freqs, S, grid = prepareSystemMatrix(params.pre, params.reco)
   filter = fromKwargs(FrequencyFilteredPreProcessingParameters; frequencies = freqs, toKwargs(params.pre; flatten = DataType[])...)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
-  return SinglePatchReconstructionAlgorithm(filteredParams, params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
+  return SinglePatchReconstructionAlgorithm(filteredParams, params, params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
+RecoUtils.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.origParam
 
-function prepareSystemMatrix(pre::CommonPreProcessingParameters, reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
+function prepareSystemMatrix(pre::AbstractPreProcessingParameters, reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
   params = fromKwargs(PreProcessedSystemMatrixLoadingParameter; toKwargs([pre, reco])..., sm = reco.sfLoad)
   freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, params)
   sf, grid = prepareSF(S, sf, grid) 
@@ -91,7 +93,9 @@ function RecoUtils.similar(algo::SinglePatchReconstructionAlgorithm, data::MPIFi
   reco = RecoUtils.similar(algo, data, algo.params.reco)
   post = RecoUtils.similar(algo, data, algo.params.post)
 
-  result = SinglePatchReconstructionAlgorithm(SinglePatchParameters(pre, reco, post), algo.params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
+  params = SinglePatchParameters(pre, reco, post)
+
+  result = SinglePatchReconstructionAlgorithm(params, params, algo.params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
 
   return result
 end

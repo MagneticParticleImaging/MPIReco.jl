@@ -91,7 +91,7 @@ function toPlan(param::AbstractReconstructionAlgorithmParameter)
   args = Dict{Symbol, Any}()
   for field in fieldnames(typeof(param))
     value = getproperty(param, field)
-    if typeof(value) <: AbstractReconstructionAlgorithmParameter
+    if typeof(value) <: AbstractReconstructionAlgorithmParameter || typeof(value) <: AbstractReconstructionAlgorithm
       args[field] = toPlan(value)
     else
       args[field] = value
@@ -99,6 +99,7 @@ function toPlan(param::AbstractReconstructionAlgorithmParameter)
   end
   return RecoPlan(typeof(param); args...)
 end
+toPlan(algo::AbstractReconstructionAlgorithm) = toPlan(algo, parameter(algo))
 toPlan(algo::AbstractReconstructionAlgorithm, params::AbstractReconstructionAlgorithmParameter) = toPlan(typeof(algo), params) 
 function toPlan(::Type{T}, params::AbstractReconstructionAlgorithmParameter) where {T<:AbstractReconstructionAlgorithm}
   plan = RecoPlan(T)
@@ -150,7 +151,12 @@ function loadPlan!(dict::Dict{String, Any}, modDict::Dict{String, Dict{String, U
     return plan
   else
     # Has to be parameter or algo or broken toml
+    # TODO implement
+    error("Not implemented yet")
   end
+end
+function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}}) where {T<:AbstractReconstructionAlgorithm}
+  plan.parameter = loadPlan!(dict["parameter"], modDict)
 end
 function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}}) where {T<:AbstractReconstructionAlgorithmParameter}
   for name in propertynames(plan)

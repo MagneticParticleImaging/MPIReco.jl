@@ -29,3 +29,6 @@ function put!(algo::SimilarAlgorithm, u)
   end
   put!(algo.outputChannel, result)
 end
+
+parameter(algo::SimilarAlgorithm) = algo.params
+similar(algo::SimilarAlgorithm, data) = algo.algo = similar(algo.algo, data)

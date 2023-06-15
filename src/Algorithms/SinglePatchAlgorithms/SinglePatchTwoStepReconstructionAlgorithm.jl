@@ -50,10 +50,10 @@ function SinglePatchTwoStepReconstructionAlgorithm(params::SinglePatchParameters
   algoLow = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoLow, params.post))
   # Then construct "custom" SinglePatchAlgorithm
   paramsLow = SinglePatchParameters(TwoStepSubstractionPreProcessingParameter(;pre = algoLow.params.pre), algoLow.params.reco, algoLow.params.post)
-  algoLow = SinglePatchReconstructionAlgorithm(paramsLow, params.reco.sf, algoLow.S, algoLow.grid, algoLow.freqs, algoLow.output)
+  algoLow = SinglePatchReconstructionAlgorithm(paramsLow, nothing, params.reco.sf, algoLow.S, algoLow.grid, algoLow.freqs, algoLow.output)
   return SinglePatchTwoStepReconstructionAlgorithm(params, algoHigh, algoLow, Channel{Any}(Inf))
 end
-
+RecoUtils.parameter(algo::SinglePatchTwoStepReconstructionAlgorithm) = algo.params
 RecoUtils.take!(algo::SinglePatchTwoStepReconstructionAlgorithm) = Base.take!(algo.output)
 
 function RecoUtils.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data::MPIFile)

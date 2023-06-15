@@ -32,6 +32,9 @@ function process(algo::AbstractReconstructionAlgorithm, data, params::Vector{<:A
 end
 
 export similar
-similar(algo::AbstractReconstructionAlgorithm, data) = error("$(typeof(algo)) must implement similar") # JS: Why should we have `data` here?
+similar(algo::AbstractReconstructionAlgorithm, data) = error("$(typeof(algo)) must implement similar")
 similar(algo::AbstractReconstructionAlgorithm, data, param::AbstractReconstructionAlgorithmParameter) = similar(typeof(algo), data, param)
-similar(algoT::Type{T}, data, param::AbstractReconstructionAlgorithmParameter) where {T<:AbstractReconstructionAlgorithm} = deepcopy(param) # JS: Shouldn't similar return some value <: AbstractReconstructionAlgorithm?
+similar(algoT::Type{T}, data, param::AbstractReconstructionAlgorithmParameter) where {T<:AbstractReconstructionAlgorithm} = deepcopy(param)
+
+export parameter
+parameter(algo::AbstractReconstructionAlgorithm) = error("$(typeof(algo)) must implement parameter")
