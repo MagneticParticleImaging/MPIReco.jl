@@ -42,6 +42,31 @@ Base.setindex!(plan::RecoPlan, x, name::Symbol) = Base.setproperty!(plan, name, 
 
 Base.ismissing(plan::RecoPlan, name::Symbol) = ismissing(getfield(plan, :values)[name])
 
+export setAll!
+function setAll!(plan::RecoPlan{T}, name::Symbol, x) where {T<:AbstractReconstructionAlgorithmParameter}
+  fields = getfield(plan, :values)
+  nestedPlans = filter(entry -> isa(last(entry), RecoPlan), fields)
+  for (key, nested) in nestedPlans
+    key != name && setAll!(nested, name, x)
+  end
+  if haskey(fields, name)
+    try
+      plan[name] = x
+    catch ex
+      @warn "Could not set $name of $T with value of type $(typeof(x))"
+    end
+  end
+end
+setAll!(plan::RecoPlan{<:AbstractReconstructionAlgorithm}, name::Symbol, x) = setAll!(plan.parameter, name, x)
+function setAll!(plan; kwargs...)
+  for key in keys(kwargs)
+    setAll!(plan, key, kwargs[key])
+  end
+end
+setAll!(plan::RecoPlan, dict::Dict{Symbol, Any}) = setAll!(plan; dict...)
+setAll!(plan::RecoPlan, dict::Dict{String, Any}) = setAll!(plan, Dict{Symbol, Any}(Symbol(k) => v for (k,v) in dict))
+
+
 export types, type
 types(::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithmParameter} = fieldtypes(T)
 type(::RecoPlan{T}, name::Symbol) where {T<:AbstractReconstructionAlgorithmParameter} = fieldtype(T, name)
