@@ -142,7 +142,18 @@ function toDictValue!(dict, value::RecoPlan, field::Symbol)
   return dict
 end
 
+export plandir, planpath
+function plandir(m::Module)
+  if m != RecoUtils && hasproperty(m, :plandir)
+    return getproperty(m, :plandir)()
+  else
+    return @get_scratch!(string(m))
+  end
+end
+planpath(m::Module, name::AbstractString) = joinpath(plandir(m), string(name, ".toml"))
+
 export loadPlan
+loadPlan(m::Module, name::AbstractString, modules::Vector{Module}) = loadPlan(planpath(m, name), modules)
 function loadPlan(filename::AbstractString, modules::Vector{Module})
   dict = TOML.parsefile(filename)
   modDict = createModuleDataTypeDict(modules)
@@ -233,3 +244,4 @@ loadPlanValue!(t, value, modDict) = fromTOML(t, value)
 
 export savePlan
 savePlan(filename::AbstractString, plan::RecoPlan) = toTOML(filename, plan)
+savePlan(m::Module, planname::AbstractString, plan::RecoPlan) = savePlan(planpath(m, planname), plan)

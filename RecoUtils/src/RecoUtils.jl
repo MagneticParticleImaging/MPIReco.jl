@@ -2,6 +2,7 @@ module RecoUtils
 
 using TOML
 using ThreadPools
+using Scratch
 
 import Base: put!, take!, fieldtypes, fieldtype, ismissing, propertynames
 
