@@ -1,12 +1,12 @@
-Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter,S<:AbstractLinearSolver,
-  SP<:AbstractSolverParameters,R<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
+Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter,
+  SP<:AbstractSolverParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sfLoad::L
   # Solver
-  solver::Type{S}
   solverParams::SP
-  reg::Vector{R} = AbstractRegularization[]
+  λ::Float32
+  β::Float32
   # weightingType::WeightingType = WeightingType.None
   bgDict::BGDictParameter
 end
@@ -32,13 +32,13 @@ function SinglePatchBGEstimationAlgorithm(params::SinglePatchParameters{<:Abstra
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
   return SinglePatchBGEstimationAlgorithm(filteredParams, params, params.reco.sf, S, process(SinglePatchBGEstimationAlgorithm, freqs, params.reco.bgDict), grid, freqs, Channel{Any}(Inf))
 end
-recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
+recoAlgorithmTypes(::Type{SinglePatchBGEstimationAlgorithm}) = SystemMatrixBasedAlgorithm()
 RecoUtils.parameter(algo::SinglePatchBGEstimationAlgorithm) = algo.origParam
 
-function prepareSystemMatrix(pre::AbstractPreProcessingParameters, reco::SinglePatchBGEstimationReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter,S<:AbstractLinearSolver}
+function prepareSystemMatrix(pre::AbstractPreProcessingParameters, reco::SinglePatchBGEstimationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
   params = fromKwargs(PreProcessedSystemMatrixLoadingParameter; pre=pre, sm=reco.sfLoad)
   freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, params)
-  sf, grid = prepareSF(S, sf, grid)
+  sf, grid = prepareSF(Kaczmarz, sf, grid)
   return freqs, sf, grid
 end
 
@@ -112,14 +112,17 @@ function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, f::MPIFile, p
 end
 
 
-function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, u::Array, params::SinglePatchReconstructionParameter)
+function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, u::Array, params::SinglePatchBGEstimationReconstructionParameter)
   weights = nothing # getWeights(...)
 
   B = getLinearOperator(algo, params)
 
-  G = transpose(cat(Float32(1 / (sqrt(λ))) * transpose(S), Float32(1 / (sqrt(β))) * transpose(bgDict), dims=1))
+  reg = L2Regularization(Float32(params.λ))
+  λ = RegularizedLeastSquares.normalize(params.solverParams.normalizeReg, reg, algo.S, nothing)
 
-  solver = LeastSquaresParameters(params.solver, nothing, G, params.reg, params.solverParams)
+  G = transpose(cat(Float32(1 / (sqrt(λ))) * transpose(algo.S), Float32(1 / (sqrt(params.β))) * transpose(algo.bgDict), dims=1))
+
+  solver = LeastSquaresParameters(Kaczmarz, B, G, [reg], params.solverParams)
 
   temp = process(algo, u, solver)
 
@@ -128,9 +131,6 @@ function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, u::Array, par
 
   for l = 1:size(temp, 2)
     d = temp[1:N, l] ./ sqrt(λ)
-    if !isnothing(B)
-      d[:] = B*d
-    end
     result[:,l] = d
   end
 
@@ -147,10 +147,10 @@ function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, u::Array, par
   return cArray
 end
 
-function getLinearOperator(algo::SinglePatchBGEstimationAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter,S}) where {S}
+function getLinearOperator(algo::SinglePatchBGEstimationAlgorithm, params::SinglePatchBGEstimationReconstructionParameter{<:DenseSystemMatixLoadingParameter})
   return linearOperator(nothing, shape(algo.grid), eltype(algo.S))
 end
 
-function getLinearOperator(algo::SinglePatchBGEstimationAlgorithm, params::SinglePatchReconstructionParameter{<:SparseSystemMatrixLoadingParameter,S}) where {S}
+function getLinearOperator(algo::SinglePatchBGEstimationAlgorithm, params::SinglePatchBGEstimationReconstructionParameter{<:SparseSystemMatrixLoadingParameter})
   return linearOperator(params.sfLoad.sparseTrafo, shape(algo.grid), eltype(algo.S))
 end
