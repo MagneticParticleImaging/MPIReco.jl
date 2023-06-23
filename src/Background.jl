@@ -76,10 +76,27 @@ function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::A
   return result
 end
 
-
-export DictionaryBasedBackgroundCorrectionParameters
-Base.@kwdef struct DictionaryBasedBackgroundCorrectionParameters <: AbstractBackgroundCorrectionParameters
-  # TODO
+export AbstractBGDictLoader
+abstract type AbstractBGDictLoader <: AbstractMPIRecoParameters end
+export MeasurementBGDictLoader
+Base.@kwdef struct MeasurementBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
+  file::T
+  bgFrames::UnitRange{Int64} = 1:acqNumFrames
+  bgAverages::Int64 = 1
+end
+function RecoUtils.process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs::Vector{Int64}, params::MeasurementBGDictLoader)
+  uEmpty = getMeasurementsFD(params.file, frequencies=freqs, frames=params.bgFrames, numAverages=params.bgAverages, spectralLeakageCorrection=false, bgCorrection=false)
+  return transpose(reshape(uEmpty, :, div(length(params.bgFrames),params.bgAverages)))
+end
+export SystemMatrixBGDictLoader
+Base.@kwdef struct SystemMatrixBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
+  file::T
+end
+function RecoUtils.process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs::Vector{Int64}, params::SystemMatrixBGDictLoader)
+  idxBGFrames = measBGFrameIdx(params.file)
+  D = measData(params.file, idxBGFrames)
+  D_ = reshape(D, size(D,1), size(D,2)*size(D,3), size(D,4))
+  return reshape(D_[:,freqs,:],length(idxBGFrames),:)
 end
 
 function getBackgroundDictionaryComplete(fSF::MPIFile, f::MPIFile, frequencies,
@@ -99,6 +116,28 @@ function getBackgroundDictionaryComplete(fSF::MPIFile, f::MPIFile, frequencies,
   end
 
   return svd(transpose(bgdata))
+end
+
+export BGDictParameter
+Base.@kwdef struct BGDictParameter <: AbstractMPIRecoParameters
+  loader::Vector{AbstractBGDictLoader}
+  dictSize::Int64 = 2
+end
+
+function RecoUtils.process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs, params::BGDictParameter)
+  U,S,V = process(algoT, freqs, params.loader)
+  for l=1:params.dictSize
+    U[:,l] *= (S[l] / S[1])^(1/2)
+  end
+  return U[:,1:params.dictSize]
+end
+
+function RecoUtils.process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs, loader::Vector{T}) where {T<:AbstractBGDictLoader}
+  tempBGs = []
+  for load in loader
+    push!(tempBGs, process(algoT, freqs, load))
+  end
+  return svd(transpose(cat(tempBGs..., dims=1)))
 end
 
 function getBackgroundDictionary(fSF::MPIFile, f::MPIFile, frequencies,

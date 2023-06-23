@@ -16,7 +16,6 @@ Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P} <: AbstractSing
   origParam::Union{AbstractSinglePatchAlgorithmParameters, Nothing} = nothing
   sf::Union{MPIFile, Vector{MPIFile}}
   S::AbstractArray
-  #bgDict::Union{Nothing, Dict}
   grid::RegularGridPositions
   freqs::Vector{Int64}
   output::Channel{Any}
