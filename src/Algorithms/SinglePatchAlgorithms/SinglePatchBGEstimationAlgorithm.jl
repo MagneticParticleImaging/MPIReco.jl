@@ -69,6 +69,7 @@ function RecoUtils.similar(algo::SinglePatchBGEstimationAlgorithm, data::MPIFile
   # Check if freq still valid
   freqs = algo.freqs
   S = algo.S
+  bgDict = algo.bgDict
   grid = algo.grid
   params = parameter(algo)
   if rxNumSamplingPoints(algo.sf) == rxNumSamplingPoints(data)
@@ -77,6 +78,7 @@ function RecoUtils.similar(algo::SinglePatchBGEstimationAlgorithm, data::MPIFile
     measFreqs = process(AbstractMPIReconstructionAlgorithm, data, freqParams)
     freqs = intersect(algo.freqs, measFreqs)
     if freqs != algo.freqs
+      bgDict = process(algo, freqs, params.reco.bgDict)
       S, grid = getSF(params.reco.sf, freqs, nothing; toKwargs(params.pre)...)
       S, grid = prepareSF(params.reco.solver, S, grid)
     end
@@ -97,7 +99,7 @@ function RecoUtils.similar(algo::SinglePatchBGEstimationAlgorithm, data::MPIFile
 
   params = SinglePatchParameters(pre, reco, post)
 
-  result = SinglePatchBGEstimationAlgorithm(params, params, algo.params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
+  result = SinglePatchBGEstimationAlgorithm(params, params, algo.params.reco.sf, S, bgDict, grid, freqs, Channel{Any}(Inf))
 
   return result
 end
