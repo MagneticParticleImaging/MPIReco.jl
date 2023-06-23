@@ -62,7 +62,7 @@ struct MixedAlgorithm <: ReconstructionAlgorithmType end
 # TODO undefined for certain "Algorithm" components
 #recoAlgorithmTypes(::Type{ConcreteRecoAlgorithm}) = SystemMatrixBasedAlgorithm()
 export plandir
-plandir() = abspath(homedir(), ".mpi", "Plans")
+plandir() = abspath(homedir(), ".mpi", "RecoPlans")
 
 # Check if contains
 isSystemMatrixBased(::T) where T <: AbstractReconstructionAlgorithm = recoAlgorithmTypes(T) isa SystemMatrixBasedAlgorithm

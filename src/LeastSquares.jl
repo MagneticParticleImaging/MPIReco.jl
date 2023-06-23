@@ -1,9 +1,9 @@
 export LeastSquaresParameters
 # TODO this could be moved to RecoUtils, depends on how MRIReco.jl structures its data arrays
-abstract type AbstractSolverIterationParameters <: AbstractMPIRecoParameters end
+abstract type AbstractSolverParameters <: AbstractMPIRecoParameters end
 
 export LeastSquaresParameters
-Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverIterationParameters} <: AbstractMPIRecoParameters
+Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters} <: AbstractMPIRecoParameters
   solver::Type{L}
   op::O
   S::M
@@ -13,8 +13,8 @@ end
 
 # TODO place weights and more
 
-export SimpleSolverIterationParameters
-Base.@kwdef struct SimpleSolverIterationParameters <: AbstractSolverIterationParameters
+export SimpleSolverParameters
+Base.@kwdef struct SimpleSolverParameters <: AbstractSolverParameters
   iterations::Int64=10
   enforceReal::Bool=false
   enforcePositive::Bool=true

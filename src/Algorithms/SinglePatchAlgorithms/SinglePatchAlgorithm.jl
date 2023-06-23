@@ -1,5 +1,5 @@
 Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver,
-   SP<:AbstractSolverIterationParameters, R<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
+   SP<:AbstractSolverParameters, R<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sfLoad::L
@@ -16,6 +16,7 @@ Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P} <: AbstractSing
   origParam::Union{AbstractSinglePatchAlgorithmParameters, Nothing} = nothing
   sf::Union{MPIFile, Vector{MPIFile}}
   S::AbstractArray
+  #bgDict::Union{Nothing, Dict}
   grid::RegularGridPositions
   freqs::Vector{Int64}
   output::Channel{Any}
@@ -118,7 +119,7 @@ function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, u::Array, p
 
   solver = LeastSquaresParameters(params.solver, B, algo.S, params.reg, params.solverParams)
 
-  result = process(typeof(algo), u, solver)
+  result = process(algo, u, solver)
 
   numcolors = 1
   if isa(algo.sf,AbstractVector) || isa(algo.sf,MultiContrastFile)

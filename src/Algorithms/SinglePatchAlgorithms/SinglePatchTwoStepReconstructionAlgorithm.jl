@@ -1,5 +1,5 @@
 export SinglePatchTwoStepReconstructionParameters
-Base.@kwdef struct SinglePatchTwoStepReconstructionParameters{L_H, L_L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver, SP_H, SP_L<:AbstractSolverIterationParameters, R_H, R_L<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
+Base.@kwdef struct SinglePatchTwoStepReconstructionParameters{L_H, L_L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver, SP_H, SP_L<:AbstractSolverParameters, R_H, R_L<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
   # Threshhold
   Γ::Float64
   # File
