@@ -19,6 +19,8 @@ start_(f::MultiContrastFile) = 1
 next_(f::MultiContrastFile, state) = (f[state],state+1)
 done_(f::MultiContrastFile, state) = state > length(f.files)
 iterate(f::MultiContrastFile, s=start_(f)) = done_(f, s) ? nothing : next_(f, s)
+gridresult(result::Array, grid, sf::MultiContrastFile) = gridresult(result, grid, length(sf))
+
 
 
 function Base.show(io::IO, f::MultiContrastFile)
