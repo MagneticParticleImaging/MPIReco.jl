@@ -1,4 +1,4 @@
-Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter,
+Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystemMatixLoadingParameter,
   SP<:AbstractSolverParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
@@ -117,19 +117,21 @@ end
 function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, u::Array, params::SinglePatchBGEstimationReconstructionParameter)
   weights = nothing # getWeights(...)
 
-  B = getLinearOperator(algo, params)
-
+  # Prepare Regularization
   reg = L2Regularization(Float32(params.λ))
-  λ = RegularizedLeastSquares.normalize(params.solverParams.normalizeReg, reg, algo.S, nothing)
+  λ = RegularizedLeastSquares.normalize(params.solverParams.normalizeReg, reg, algo.S, nothing) # Scaling happens outside
+  reg = L2Regularization(Float32(1))
 
   N = size(algo.S, 2)
   G = transpose(cat(Float32(1 / (sqrt(λ))) * transpose(algo.S), Float32(1 / (sqrt(params.β))) * transpose(algo.bgDict), dims=1))
 
   constraintMask = zeros(Bool, size(G, 2))
   constraintMask[1:N] .= 1
+  # Enforce no normalization
+  solverParams = fromKwargs(typeof(params.solverParams); toKwargs(params.solverParams, overwrite = Dict{Symbol, Any}(:normalizeReg => NoNormalization()))...)
   solverParams = ConstraintMaskedSolverParameters(;constraintMask = constraintMask, params = params.solverParams)
 
-  solver = LeastSquaresParameters(Kaczmarz, B, G, [reg], solverParams)
+  solver = LeastSquaresParameters(Kaczmarz, nothing, G, [reg], solverParams)
 
   temp = process(algo, u, solver)
 
@@ -151,12 +153,4 @@ function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, u::Array, par
   cArray[:] = result[:]
 
   return cArray
-end
-
-function getLinearOperator(algo::SinglePatchBGEstimationAlgorithm, params::SinglePatchBGEstimationReconstructionParameter{<:DenseSystemMatixLoadingParameter})
-  return linearOperator(nothing, shape(algo.grid), eltype(algo.S))
-end
-
-function getLinearOperator(algo::SinglePatchBGEstimationAlgorithm, params::SinglePatchBGEstimationReconstructionParameter{<:SparseSystemMatrixLoadingParameter})
-  return linearOperator(params.sfLoad.sparseTrafo, shape(algo.grid), eltype(algo.S))
 end
