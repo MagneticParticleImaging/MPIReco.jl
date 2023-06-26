@@ -98,10 +98,10 @@ clear!(plan::RecoPlan{T}, preserve::Bool = true) where {T<:AbstractReconstructio
 
 export build
 function build(plan::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithmParameter}
-  fields = getfield(plan, :values)
+  fields = copy(getfield(plan, :values))
   nestedPlans = filter(entry -> isa(last(entry), RecoPlan), fields)
   for (name, nested) in nestedPlans
-    plan[name] = build(nested)
+    fields[name] = build(nested)
   end
   fields = filter(entry -> !ismissing(last(entry)), fields)
   return T(;fields...)
