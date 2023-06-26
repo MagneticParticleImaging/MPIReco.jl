@@ -122,13 +122,17 @@ function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, u::Array, par
   reg = L2Regularization(Float32(params.λ))
   λ = RegularizedLeastSquares.normalize(params.solverParams.normalizeReg, reg, algo.S, nothing)
 
+  N = size(algo.S, 2)
   G = transpose(cat(Float32(1 / (sqrt(λ))) * transpose(algo.S), Float32(1 / (sqrt(params.β))) * transpose(algo.bgDict), dims=1))
 
-  solver = LeastSquaresParameters(Kaczmarz, B, G, [reg], params.solverParams)
+  constraintMask = zeros(Bool, size(G, 2))
+  constraintMask[1:N] .= 1
+  solverParams = ConstraintMaskedSolverParameters(;constraintMask = constraintMask, params = params.solverParams)
+
+  solver = LeastSquaresParameters(Kaczmarz, B, G, [reg], solverParams)
 
   temp = process(algo, u, solver)
 
-  N = size(algo.S, 2)
   result = zeros(eltype(temp), N, size(temp, 2))
 
   for l = 1:size(temp, 2)

@@ -20,6 +20,11 @@ Base.@kwdef struct SimpleSolverParameters <: AbstractSolverParameters
   enforcePositive::Bool=true
   normalizeReg::AbstractRegularizationNormalization = SystemMatrixBasedNormalization()
 end
+export ConstraintMaskedSolverParameters
+Base.@kwdef struct ConstraintMaskedSolverParameters{P<:AbstractSolverParameters} <: AbstractSolverParameters
+  constraintMask::Vector{Bool}
+  params::P
+end
 
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, u::Array, params::LeastSquaresParameters)
 
