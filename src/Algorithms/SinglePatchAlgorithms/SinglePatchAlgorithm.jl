@@ -120,17 +120,7 @@ function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, u::Array, p
 
   result = process(algo, u, solver)
 
-  numcolors = 1
-  if isa(algo.sf,AbstractVector) || isa(algo.sf,MultiContrastFile)
-    numcolors = length(algo.sf)
-  end
-  shp = shape(algo.grid)
-  cArray = Array{Float32}(undef, numcolors, shp..., size(result)[end])
-  result = reshape(result, reduce(*, shp),numcolors,:)
-  result = permutedims(result, [2,1,3])
-  cArray[:] = result[:]
-
-  return cArray
+  return gridresult(result, algo.grid, algo.sf)
 end
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}

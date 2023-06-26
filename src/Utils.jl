@@ -8,6 +8,17 @@ else
 end
 squeeze(A) = dropdims(A, dims=tuple(findall(([size(A)...].==1))...))
 
+gridresult(result::Array, grid, ::MPIFile) = gridresult(result, grid, 1)
+gridresult(result::Array, grid, sf::Union{AbstractVector, MultiContrastFile}) = gridresult(result, grid, length(sf))
+gridresult(result::Array, grid::RegularGridPositions, numcolors::Int64) = gridresult(result, shape(grid), numcolors)
+function gridresult(result::Array, shp::Vector{Int64}, numcolors::Int64)
+  cArray = Array{Float32}(undef, numcolors, shp..., size(result)[end])
+  result = reshape(result, reduce(*, shp), numcolors, :)
+  result = permutedims(result, [2, 1, 3])
+  cArray[:] = result[:]
+  return cArray
+end
+
 function generateHeaderDict(bSF::MPIFile, b::MPIFile)
   #header["spatialorder"] TODO
   header = loadMetadata(b)
