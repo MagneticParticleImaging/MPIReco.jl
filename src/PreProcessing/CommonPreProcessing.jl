@@ -1,4 +1,7 @@
 export CommonPreProcessingParameters
+# TODO Averaging:
+# numAveraging always
+# numPeriodAverages | averagePeriodsPerPatch, potentially as small structs?
 Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractBackgroundCorrectionParameters} <: AbstractPreProcessingParameters
   bgCorrection::T = NoBackgroundCorrectionParameters()
   neglectBGFrames::Bool = true

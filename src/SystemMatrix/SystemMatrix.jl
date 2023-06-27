@@ -4,6 +4,7 @@ export getSF, SVD, tikhonovLU, setlambda
 
 include("SystemMatrixRecovery.jl")
 include("SystemMatrixCenter.jl")
+include("SystemMatrixWrapper.jl")
 
 export AbstractSystemMatrixParameter
 abstract type AbstractSystemMatrixParameter <: AbstractMPIRecoParameters end
