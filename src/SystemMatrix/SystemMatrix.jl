@@ -55,9 +55,11 @@ Base.@kwdef struct PreProcessedSystemMatrixLoadingParameter{S<:AbstractSystemMat
 end
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::PreProcessedSystemMatrixLoadingParameter{<:DenseSystemMatixLoadingParameter, P}) where {P}
   # Construct freqFilter
-  freqParams = fromKwargs(PreProcessedFrequencyFilterParameter; toKwargs(params; flatten = DataType[AbstractSystemMatrixLoadingParameter])...)
+  numPeriodGrouping = measIsFastFrameAxis(sf) && measIsFourierTransformed(sf) ? 1 : params.pre.numPeriodGrouping
+  freqParams = fromKwargs(PreProcessedFrequencyFilterParameter; toKwargs(params; overwrite = Dict{Symbol,Any}(:numPeriodGrouping => numPeriodGrouping), 
+      flatten = DataType[AbstractSystemMatrixLoadingParameter, P])...)
   freqs = process(t, sf, freqParams)
-  S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
+  S, grid = getSF(sf, freqs, nothing; toKwargs(params; overwrite = Dict{Symbol,Any}(:numPeriodGrouping => numPeriodGrouping))...)
   return freqs, S, grid
 end
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::PreProcessedSystemMatrixLoadingParameter{<:DenseSystemMatixLoadingParameter, <:FrequencyFilteredPreProcessingParameters})
