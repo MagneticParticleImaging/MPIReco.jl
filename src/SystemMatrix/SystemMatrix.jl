@@ -47,23 +47,14 @@ Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilter
   bgCorrection::Bool = false
   useDFFoV::Bool = false
 end
-
-export PreProcessedSystemMatrixLoadingParameter
-Base.@kwdef struct PreProcessedSystemMatrixLoadingParameter{S<:AbstractSystemMatrixLoadingParameter, P<:AbstractPreProcessingParameters} <: AbstractMPIRecoParameters
-  sm::S
-  pre::P
-end
-function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::PreProcessedSystemMatrixLoadingParameter{<:DenseSystemMatixLoadingParameter, P}) where {P}
+function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter)
   # Construct freqFilter
-  numPeriodGrouping = measIsFastFrameAxis(sf) && measIsFourierTransformed(sf) ? 1 : params.pre.numPeriodGrouping
-  freqParams = fromKwargs(PreProcessedFrequencyFilterParameter; toKwargs(params; overwrite = Dict{Symbol,Any}(:numPeriodGrouping => numPeriodGrouping), 
-      flatten = DataType[AbstractSystemMatrixLoadingParameter, P])...)
-  freqs = process(t, sf, freqParams)
-  S, grid = getSF(sf, freqs, nothing; toKwargs(params; overwrite = Dict{Symbol,Any}(:numPeriodGrouping => numPeriodGrouping))...)
+  freqs = process(t, sf, params.freqFilter)
+  S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
   return freqs, S, grid
 end
-function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::PreProcessedSystemMatrixLoadingParameter{<:DenseSystemMatixLoadingParameter, <:FrequencyFilteredPreProcessingParameters})
-  freqs = params.pre.frequencies
+function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter{<:FrequencyFilteredPreProcessingParameters})
+  freqs = params.freqFilter.frequencies
   S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
   return freqs, S, grid
 end

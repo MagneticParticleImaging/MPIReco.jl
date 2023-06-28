@@ -36,7 +36,7 @@ recoAlgorithmTypes(::Type{SinglePatchBGEstimationAlgorithm}) = SystemMatrixBased
 RecoUtils.parameter(algo::SinglePatchBGEstimationAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(pre::AbstractPreProcessingParameters, reco::SinglePatchBGEstimationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
-  params = fromKwargs(PreProcessedSystemMatrixLoadingParameter; pre=pre, sm=reco.sfLoad)
+  params = reco.sfLoad
   freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, params)
   sf, grid = prepareSF(Kaczmarz, sf, grid)
   return freqs, sf, grid

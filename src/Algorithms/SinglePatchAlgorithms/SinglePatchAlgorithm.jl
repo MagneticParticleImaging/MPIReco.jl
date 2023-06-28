@@ -34,7 +34,7 @@ recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorit
 RecoUtils.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(pre::AbstractPreProcessingParameters, reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
-  params = fromKwargs(PreProcessedSystemMatrixLoadingParameter; pre = pre, sm = reco.sfLoad)
+  params = reco.sfLoad
   freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, params)
   sf, grid = prepareSF(S, sf, grid) 
   return freqs, sf, grid

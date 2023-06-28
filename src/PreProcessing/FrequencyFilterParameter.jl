@@ -8,6 +8,8 @@ Base.@kwdef struct SNRThresholdFrequencyFilterParameter <: AbstractFrequencyFilt
   recChannels::UnitRange{Int64} = 1:1
   SNRThresh::Float64=-1.0
   sortBySNR::Bool = false
+  numPeriodAverages::Int64 = 1
+  numPeriodGrouping::Int64 = 1
 end
 #function SNRThresholdFrequencyFilterParameter(;sf::MPIFile, maxFreq = nothing, recChannels = nothing)
 #  if isnothing(maxFreq)
@@ -25,11 +27,6 @@ Base.@kwdef struct FreqNumThresholdFrequencyFilterParameter <: AbstractFrequency
   recChannels::UnitRange{Int64} = 1:1
   numUsedFreqs::Int64=1
   sortBySNR::Bool = false
-end
-
-export PreProcessedFrequencyFilterParameter
-Base.@kwdef struct PreProcessedFrequencyFilterParameter{F<:AbstractFrequencyFilterParameter} <: AbstractFrequencyFilterParameter
-  freqFilter::F
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
 end
