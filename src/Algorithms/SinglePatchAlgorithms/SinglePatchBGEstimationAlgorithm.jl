@@ -1,3 +1,4 @@
+export SinglePatchBGEstimationAlgorithm, SinglePatchBGEstimationReconstructionParameter
 Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystemMatixLoadingParameter,
   SP<:AbstractSolverParameters} <: AbstractSinglePatchReconstructionParameters
   # File
@@ -27,7 +28,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractPrePr
   return SinglePatchBGEstimationAlgorithm(params)
 end
 function SinglePatchBGEstimationAlgorithm(params::SinglePatchParameters{<:AbstractPreProcessingParameters,R,PT}) where {R<:SinglePatchBGEstimationReconstructionParameter,PT<:AbstractPostProcessingParameters}
-  freqs, S, grid = prepareSystemMatrix(params.pre, params.reco)
+  freqs, S, grid = prepareSystemMatrix(params.reco)
   filter = fromKwargs(FrequencyFilteredPreProcessingParameters; frequencies=freqs, toKwargs(params.pre; flatten=DataType[])...)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
   return SinglePatchBGEstimationAlgorithm(filteredParams, params, params.reco.sf, S, process(SinglePatchBGEstimationAlgorithm, freqs, params.reco.bgDict), grid, freqs, Channel{Any}(Inf))
@@ -35,9 +36,8 @@ end
 recoAlgorithmTypes(::Type{SinglePatchBGEstimationAlgorithm}) = SystemMatrixBasedAlgorithm()
 RecoUtils.parameter(algo::SinglePatchBGEstimationAlgorithm) = algo.origParam
 
-function prepareSystemMatrix(pre::AbstractPreProcessingParameters, reco::SinglePatchBGEstimationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
-  params = reco.sfLoad
-  freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, params)
+function prepareSystemMatrix(reco::SinglePatchBGEstimationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
+  freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, reco.sfLoad)
   sf, grid = prepareSF(Kaczmarz, sf, grid)
   return freqs, sf, grid
 end

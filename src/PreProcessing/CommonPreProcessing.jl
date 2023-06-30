@@ -8,7 +8,7 @@ Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractBackgroundCorrection
   numAverages::Int64 = 1
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
-  frames::Union{Nothing, UnitRange{Int64}} = nothing
+  frames::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
   spectralLeakageCorrection::Bool = false
   loadasreal::Bool = false
 end

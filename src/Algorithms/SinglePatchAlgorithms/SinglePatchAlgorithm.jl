@@ -25,7 +25,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractPrePr
   return SinglePatchReconstructionAlgorithm(params)
 end
 function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:AbstractPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
-  freqs, S, grid = prepareSystemMatrix(params.pre, params.reco)
+  freqs, S, grid = prepareSystemMatrix(params.reco)
   filter = fromKwargs(FrequencyFilteredPreProcessingParameters; frequencies = freqs, toKwargs(params.pre; flatten = DataType[])...)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
   return SinglePatchReconstructionAlgorithm(filteredParams, params, params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
@@ -33,9 +33,8 @@ end
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
 RecoUtils.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.origParam
 
-function prepareSystemMatrix(pre::AbstractPreProcessingParameters, reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
-  params = reco.sfLoad
-  freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, params)
+function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
+  freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, reco.sfLoad)
   sf, grid = prepareSF(S, sf, grid) 
   return freqs, sf, grid
 end

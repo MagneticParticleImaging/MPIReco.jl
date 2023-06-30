@@ -81,11 +81,13 @@ abstract type AbstractBGDictLoader <: AbstractMPIRecoParameters end
 export MeasurementBGDictLoader
 Base.@kwdef struct MeasurementBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
   file::T
-  bgFrames::UnitRange{Int64} = 1:acqNumFrames
+  bgFrames::Union{UnitRange{Int64}, Vector{Int64}} = measBGFrameIdx(file)
+  numPeriodGrouping::Int64 = acqNumPeriodsPerFrame(file)
+  numPeriodAverages::Int64 = 1
   bgAverages::Int64 = 1
 end
 function RecoUtils.process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs::Vector{Int64}, params::MeasurementBGDictLoader)
-  uEmpty = getMeasurementsFD(params.file, frequencies=freqs, frames=params.bgFrames, numAverages=params.bgAverages, spectralLeakageCorrection=false, bgCorrection=false)
+  uEmpty = getMeasurementsFD(params.file, false, frequencies=freqs, frames=params.bgFrames, numAverages=params.bgAverages, spectralLeakageCorrection=false, bgCorrection=false, numPeriodGrouping = params.numPeriodGrouping, numPeriodAverages = params.numPeriodAverages)
   return transpose(reshape(uEmpty, :, div(length(params.bgFrames),params.bgAverages)))
 end
 export SystemMatrixBGDictLoader
