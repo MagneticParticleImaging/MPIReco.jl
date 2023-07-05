@@ -22,4 +22,4 @@ end
 include("SinglePatchAlgorithm.jl")
 include("SinglePatchTwoStepReconstructionAlgorithm.jl")
 include("SinglePatchBGEstimationAlgorithm.jl")
-include("SinglePatchTemporalRegularizationAlgorithm.jl")
+#include("SinglePatchTemporalRegularizationAlgorithm.jl")

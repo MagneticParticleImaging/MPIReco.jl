@@ -4,6 +4,15 @@ abstract type AbstractMultiPatchReconstructionAlgorithm <: AbstractMPIReconstruc
 abstract type AbstractMultiPatchReconstructionParameters <: AbstractReconstructionParameters end
 abstract type AbstractMultiPatchAlgorithmParameters <: AbstractMPIRecoParameters end
 
+export AbstractFocusFieldPositions, DefaultFocusFieldPositions, CustomFocusFieldPositions
+abstract type AbstractFocusFieldPositions <: AbstractMPIRecoParameters end
+struct DefaultFocusFieldPositions <: AbstractFocusFieldPositions end
+positions(ffPos::DefaultFocusFieldPositions) = nothing
+Base.@kwdef struct CustomFocusFieldPositions{T<:AbstractArray} <: AbstractFocusFieldPositions
+  positions::T
+end
+positions(ffPos::CustomFocusFieldPositions) = ffPos.positions
+
 Base.@kwdef mutable struct MultiPatchParameters{PR<:AbstractPreProcessingParameters,
      R<:AbstractMultiPatchReconstructionParameters, PT<:AbstractPostProcessingParameters} <: AbstractMultiPatchAlgorithmParameters
   pre::PR

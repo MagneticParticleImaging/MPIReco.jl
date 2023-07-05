@@ -73,6 +73,8 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   return imMeta
 end
 
+export AbstractMultiPatchOperatorParameter
+abstract type AbstractMultiPatchOperatorParameter <: AbstractMPIRecoParameters end
 # MultiPatchOperator is a type that acts as the MPI system matrix but exploits
 # its sparse structure.
 # Its very important to keep this type typestable
@@ -132,8 +134,8 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
 end
 
 
-function MultiPatchOperator(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
-  return MultiPatchOperator(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
+function MultiPatchOperator(SF::MPIFile, freq, bgCorrection::Bool; kargs...)
+  return MultiPatchOperator(MultiMPIFile([SF]), freq, bgCorrection; kargs...)
 end
 
 function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
@@ -154,16 +156,20 @@ function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
   return idx
 end
 
-function MultiPatchOperator(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
-        mapping=zeros(0), kargs...)
+MultiPatchOperator(SFs, meas, freq, bgCorr; kwargs...) = MultiPatchOperator(SFs, freq; kwargs..., bgCorrection = bgCorr)
+function MultiPatchOperator(SFs::MultiMPIFile, freq; mapping=zeros(0), kargs...)
   if length(mapping) > 0
-    return MultiPatchOperatorExpliciteMapping(SFs,bMeas,freq,bgCorrection; mapping=mapping, kargs...)
+    return MultiPatchOperatorExpliciteMapping(SFs,freq; mapping=mapping, kargs...)
   else
-    return MultiPatchOperatorRegular(SFs,bMeas,freq,bgCorrection; kargs...)
+    return MultiPatchOperatorRegular(SFs,freq; kargs...)
   end
 end
 
-function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
+export ExplicitMultiPatchParameter
+Base.@kwdef struct ExplicitMultiPatchParameter <: AbstractMultiPatchOperatorParameter
+
+end
+function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrection::Bool,
                     denoiseWeight=0, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
                     gradient=zeros(0,0,0),
                     roundPatches = false,
@@ -257,7 +263,14 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
-function MultiPatchOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
+export RegularMultiPatchOperatorParameter
+Base.@kwdef struct RegularMultiPatchOperatorParameter <: AbstractMultiPatchOperatorParameter
+  bgCorrection::Bool
+  denoiseWeight::Float64=0.0
+  roundPatches::Bool = false
+  tfCorrection::Bool = true
+end
+function MultiPatchOperatorRegular(SFs::MultiMPIFile, freq; bgCorrection::Bool,
                     denoiseWeight=0, gradient=zeros(0,0,0),
                     roundPatches = false, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
 		    tfCorrection = true,
@@ -398,6 +411,16 @@ size(FFOp::MultiPatchOperator) = (FFOp.M,FFOp.N)
 length(FFOp::MultiPatchOperator) = size(FFOp,1)*size(FFOp,2)
 
 ### The following is intended to use the standard kaczmarz method ###
+function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization, regs, op::MultiPatchOperator, b)
+  if length(op.S) == 1
+    trace = RegularizedLeastSquares.normalize(norm, regs, op.S[1], b)
+    trace *= op.nPatches #*prod(Op.PixelSizeSF)/prod(Op.PixelSizeC)
+  else
+    trace = sum([RegularizedLeastSquares.normalize(norm, regs, S, b) for S in op.S])
+    #trace *= prod(Op.PixelSizeSF)/prod(Op.PixelSizeC)
+  end
+  return trace
+end
 
 function calculateTraceOfNormalMatrix(Op::MultiPatchOperator, weights)
   if length(Op.S) == 1

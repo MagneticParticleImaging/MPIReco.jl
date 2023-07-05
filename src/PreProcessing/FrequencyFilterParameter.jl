@@ -3,8 +3,8 @@ abstract type AbstractFrequencyFilterParameter <: AbstractMPIRecoParameters end
 # Could possible also be nested
 export SNRThresholdFrequencyFilterParameter
 Base.@kwdef struct SNRThresholdFrequencyFilterParameter <: AbstractFrequencyFilterParameter
-  minFreq::Float64 = 0.0
-  maxFreq::Float64 = 0.0
+  minFreq::Float64 = -1.0
+  maxFreq::Float64 = -1.0
   recChannels::UnitRange{Int64} = 1:1
   SNRThresh::Float64=-1.0
   sortBySNR::Bool = false
