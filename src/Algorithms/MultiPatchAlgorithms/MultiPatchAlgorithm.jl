@@ -32,7 +32,7 @@ end
 function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:AbstractPreProcessingParameters,<:MultiPatchReconstructionParameter,<:AbstractPostProcessingParameters})
   reco = params.reco
   freqs = process(MultiPatchReconstructionAlgorithm, reco.sf, reco.freqFilter)
-  filter = fromKwargs(FrequencyFilteredPreProcessingParameters; frequencies=freqs, toKwargs(params.pre; flatten=DataType[])...)
+  filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
   filteredParams = MultiPatchParameters(filter, reco, params.post)
 
   # Prepare operator construction
@@ -61,7 +61,7 @@ function RecoUtils.put!(algo::MultiPatchReconstructionAlgorithm, data::MPIFile)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
   pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
   offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
-  dt = acqNumAverages(data) * dfCycle(data) * algo.params.pre.numAverages * 1u"s"
+  dt = acqNumAverages(data) * dfCycle(data) * algo.params.pre.pre.numAverages * 1u"s"
   im = makeAxisArray(result, pixspacing, offset, dt)
   result = ImageMeta(im, generateHeaderDict(algo.sf, data))
 
@@ -85,7 +85,7 @@ function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, 
              gradient = gradient, FFPos = ffPos_, FFPosSF = ffPosSF)
 end
 
-function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters})
+function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{CommonPreProcessingParameters{NoBackgroundCorrectionParameters}})
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgCorrection])
   result = getMeasurementsFD(f, bgCorrection = false; kwargs...)
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos(f))
@@ -96,18 +96,18 @@ function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIF
   return uTotal
 end
 
-function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters})
+function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{CommonPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters}})
   # Foreground, ignore BGCorrection to reuse preprocessing
-  kwargs = toKwargs(params, ignore = [:neglectBGFrames, :bgCorrection],
-      default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))))
-  fgParams = fromKwargs(FrequencyFilteredPreProcessingParameters; kwargs..., bgParams = NoBackgroundCorrectionParameters())
-  result = process(t, f, fgParams)
+  fgParams = CommonPreProcessingParameters(;toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
+  result = process(t, f, FrequencyFilteredPreProcessingParameters(params.frequencies, fgParams))
   # Background
+  kwargs = toKwargs(params, ignore = [:neglectBGFrames, :bgCorrection],
+    default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))))
   bgParams = fromKwargs(FrequencyFilteredBackgroundCorrectionParameters; kwargs..., bgParams = params.bgCorrection)
   return process(t, result, bgParams)
 end
 
-function RecoUtils.process(::Type{<:MultiPatchReconstructionAlgorithm}, data::Array, params::FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters})
+function RecoUtils.process(::Type{<:MultiPatchReconstructionAlgorithm}, data::Array, params::FrequencyFilteredBackgroundCorrectionParameters{CommonPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters}})
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
   # TODO migrate with hardcoded params as in old code or reuse given preprocessing options?
   empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=1, kwargs...)

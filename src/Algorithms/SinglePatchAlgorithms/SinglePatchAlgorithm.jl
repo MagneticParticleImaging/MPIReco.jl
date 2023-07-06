@@ -26,7 +26,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractPrePr
 end
 function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:AbstractPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
   freqs, S, grid = prepareSystemMatrix(params.reco)
-  filter = fromKwargs(FrequencyFilteredPreProcessingParameters; frequencies = freqs, toKwargs(params.pre; flatten = DataType[])...)
+  filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
   return SinglePatchReconstructionAlgorithm(filteredParams, params, params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
 end

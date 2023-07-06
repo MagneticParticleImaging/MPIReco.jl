@@ -32,7 +32,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractPrePr
 end
 function SinglePatchTemporalRegularizationAlgorithm(params::SinglePatchParameters{<:AbstractPreProcessingParameters,R,PT}) where {R<:SinglePatchTemporalRegularizationReconstructionParameter,PT<:AbstractPostProcessingParameters}
   freqs, S, grid = prepareSystemMatrix(params.reco)
-  filter = fromKwargs(FrequencyFilteredPreProcessingParameters; frequencies=freqs, toKwargs(params.pre; flatten=DataType[])...)
+  filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
   return SinglePatchTemporalRegularizationAlgorithm(filteredParams, params, params.reco.sf, S, process(SinglePatchTemporalRegularizationAlgorithm, freqs, params.reco.bgDict)
     ,params.reco.idxFG, params.reco.idxBG, grid, freqs, Channel{Any}(Inf))
