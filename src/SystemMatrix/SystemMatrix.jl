@@ -5,6 +5,7 @@ export getSF, SVD, tikhonovLU, setlambda
 include("SystemMatrixRecovery.jl")
 include("SystemMatrixCenter.jl")
 include("SystemMatrixWrapper.jl")
+include("SMExtrapolation.jl")
 
 export AbstractSystemMatrixParameter
 abstract type AbstractSystemMatrixParameter <: AbstractMPIRecoParameters end
@@ -124,6 +125,7 @@ end
 
 getSF(f::MPIFile; recChannels=1:numReceivers(f), kargs...) = getSF(f, filterFrequencies(f, recChannels=recChannels); kargs...)
 
+#=
 function repairDeadPixels(S, shape, deadPixels)
   shapeT = tuple(shape...)
   for k=1:size(S,2)
@@ -144,11 +146,29 @@ function repairDeadPixels(S, shape, deadPixels)
     end
   end
 end
+=#
+function getSF(bSF::MPIFile,saveto::String;recChannels=1:numReceivers(bSF),kargs...)
+  S,grid = getSF(bSF,filterFrequencies(bSF, recChannels=recChannels);bgCorrection=false,returnasmatrix=true,kargs...)
+  if !isempty(saveto)
+    @info "Saving transformed SystemMatrix..."
+    params=MPIFiles.loadDataset(bSF)
+    bG = params[:measData][acqNumFGFrames(bSF)+1:end,:,:,:]
+    params[:measData]=vcat(reshape(S,size(S,1),Int(size(S,2)/3),3,1),bG)
+    params[:acqNumFrames]=size(vcat(reshape(S,size(S,1),Int(size(S,2)/3),3,1),bG),1)
+    params[:calibFov]=grid.fov
+    params[:calibSize]=grid.shape
+    params[:calibFovCenter]=grid.center
+    # Wann ist diese Zuordnung nicht einfach fortlaufend..dieser Fall ist so nicht abgedeckt
+    params[:measIsBGFrame]=(i-> i in collect(size(S,1)+1:size(S,1)+size(bG,1))).(collect(1:size(S,1)+size(bG,1)))
+    saveasMDF(saveto, params)
+  end
+  return S,grid
+end
 
 function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer=1,
                bgcorrection=false, bgCorrection=bgcorrection, loadasreal=false,
 	             gridsize=collect(calibSize(bSF)), numPeriodAverages=1,numPeriodGrouping=1,
-	             fov=calibFov(bSF), center=[0.0,0.0,0.0], deadPixels=Int[], kargs...)
+	             fov=calibFov(bSF), center=[0.0,0.0,0.0],deadPixels=nothing, kargs...)
 
   nFreq = rxNumFrequencies(bSF)
 
@@ -158,21 +178,37 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
                       numPeriodAverages=numPeriodAverages,
                       numPeriodGrouping=numPeriodGrouping; kargs...)
 
-  if !isempty(deadPixels)
-    repairDeadPixels(S,gridsize,deadPixels)
+  if deadPixels != nothing
+    #repairDeadPixels(S,gridsize,deadPixels)
+    @info "Repairing deadPixels..."
+    S = repairSM(S,RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0]),deadPixels)
   end
 
   if collect(gridsize) != collect(calibSize(bSF)) ||
     center != [0.0,0.0,0.0] ||
     fov != calibFov(bSF)
-    @debug "Perform SF Interpolation..."
 
     origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
     target = RegularGridPositions(gridsize,fov,center)
 
+    if any(fov .> calibFov(bSF))
+      #round.(Int,(fov .- origin.fov).*(origin.shape./(2 .* origin.fov)))
+      if gridsize == collect(calibSize(bSF))
+        gridsize_new = round.(Int, fov .* origin.shape ./ (2 * origin.fov)) * 2
+        @info "You selected a customized (bigger) FOV, without selecting a bigger grid. Thus, an Extrapolation to
+the new FOV is followed by a Interpolation to the old grid-size, leading to a change in gridpoint-size. If you want
+to roughly keep the original gridpoint-size, define the key-word gridsize = $gridsize_new,
+alongside to your FOV-selection."
+      end
+      S,origin = extrapolateSM(S,origin,fov)
+      # alternativ ginge direkt: extrapolateSM(SM, grid, fov)
+    end
+
+    @info "Perform SF Interpolation..."
+
     SInterp = zeros(eltype(S),prod(gridsize),length(frequencies)*numPeriods)
     for k=1:length(frequencies)*numPeriods
-      A = MPIFiles.interpolate(reshape(S[:,k],calibSize(bSF)...), origin, target)
+      A = MPIFiles.interpolate(reshape(S[:,k],origin.shape...), origin, target)
       SInterp[:,k] = vec(A)
     end
     S = SInterp

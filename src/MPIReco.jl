@@ -23,6 +23,8 @@ module MPIReco
   using CUDA
   using BSON
 
+  # SMextrapolation
+  import SparseArrays.spdiagm
 
   include("AlgorithmInterface.jl")
   include("Background.jl")

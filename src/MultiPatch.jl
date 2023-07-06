@@ -124,12 +124,11 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
     @warn "One or multiple system matrices or the measurement don't have a transfer function. No transfer function correction will be applied."
     tfCorrection = false
   end
-
-  FFOp = MultiPatchOperator(bSF, bMeas, freq, bgCorrection,
+  FFOp = MultiPatchOperator(bSF, bMeas, freq, bgCorrection;
                   FFPos = FFPos_,
                   gradient = gradient,
                   FFPosSF = FFPosSF_,
-		  tfCorrection = tfCorrection; kargs...)
+		              tfCorrection = tfCorrection, kargs...)
   return FFOp
 end
 
@@ -157,11 +156,19 @@ function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
 end
 
 MultiPatchOperator(SFs, meas, freq, bgCorr; kwargs...) = MultiPatchOperator(SFs, freq; kwargs..., bgCorrection = bgCorr)
-function MultiPatchOperator(SFs::MultiMPIFile, freq; mapping=zeros(0), kargs...)
+function MultiPatchOperator(SFs::MultiMPIFile, freq;
+        mapping=zeros(0),fov=hcat(calibFov.(SFs)...), gridsize=hcat(calibSize.(SFs)...), kargs...)
   if length(mapping) > 0
-    return MultiPatchOperatorExpliciteMapping(SFs,freq; mapping=mapping, kargs...)
+    return MultiPatchOperatorExpliciteMapping(SFs,freq; mapping=mapping, gridsize=gridsize, fov=fov, kargs...)
   else
-    return MultiPatchOperatorRegular(SFs,freq; kargs...)
+    if any(fov .> hcat(calibFov.(SFs)...))      
+        mapping=collect(1:length(SFs))
+        @warn "You try to performe a system matrix extrapolation on multi-patch data without giving an explicit mapping.
+Thus, the mapping is automatically set to $mapping."
+        return MultiPatchOperatorExpliciteMapping(SFs,freq; mapping=mapping, gridsize=gridsize, fov=fov, kargs...)
+    else
+      return MultiPatchOperatorRegular(SFs,freq; kargs...)
+    end
   end
 end
 
@@ -183,10 +190,11 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
                     SFGridCenter = zeros(0,0),
                     systemMatrices = nothing,
                     mapping=zeros(0),
-		    calibsize = nothing, calibfov = nothing,
-                    grid = nothing, 
-		    tfCorrection = true,
-		    kargs...)
+		                gridsize = hcat(calibSize.(SFs)...),
+                    fov = hcat(calibFov.(SFs)...),
+                    grid = nothing,
+		                tfCorrection = true,
+		                kargs...)
 
   @debug "Loading System matrix"
   numPatches = size(FFPos,2)
@@ -194,8 +202,18 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
 
   if systemMatrices == nothing
-      S = [getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection)[1] for SF in SFs]
+      S=AbstractMatrix[]; gridS=RegularGridPositions[];
+      for i=1:length(SFs)
+        SF_S,SF_gridS = getSF(SFs[i],freq,nothing,"kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i])
+        push!(S,SF_S)
+        push!(gridS,SF_gridS)
+      end
   else
+    if grid == nothing
+      gridS = [getSF(SFs[i],freq,nothing,"kaczmarz", bgCorrection=bgCorrection,tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i])[2] for i in 1:length(SFs)]
+    else
+      gridS = grid
+    end
     S = systemMatrices
   end
 
@@ -224,11 +242,17 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
     diffFFPos = FFPosSF[:,idx] .- FFPos[:,k]
 
     # use the grid parameters of the SM or use given parameter
-    calibsizeTmp = (calibsize == nothing) ? calibSize(SF) : calibsize[:,idx]
-    calibfovTmp = (calibfov == nothing) ? calibFov(SF) : calibfov[:,idx]
+    calibsizeTmp = gridS[idx].shape
+    calibfovTmp = gridS[idx].fov
 
     push!(grids, RegularGridPositions(calibsizeTmp,calibfovTmp,SFGridCenter[:,idx].-diffFFPos))
   end
+
+  #if SMextrapolation != nothing
+  #  for k=1:numPatches
+  #    S[k],grids[k] = extrapolateSM(S[k],grids[k],SMextrapolation)
+  #  end
+  #end
 
   # We now know all the subgrids for each patch, if the corresponding system matrix would be taken as is
   # and if a possible focus field missmatch has been taken into account (by changing the center)

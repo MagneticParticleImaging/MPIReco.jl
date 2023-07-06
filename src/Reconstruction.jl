@@ -158,9 +158,9 @@ end
 function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, emptyMeas = bEmpty, bgFrames = 1,
   denoiseWeight = 0, redFactor = 0.0, thresh = 0.0,
-  loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
+  loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
-  deadPixels=Int[], bgCorrectionInternal=false, bgDictSize=nothing, bgFramesDict=nothing,
+  deadPixels=nothing, bgCorrectionInternal=false, bgDictSize=nothing, bgFramesDict=nothing,
   numPeriodAverages=1, numPeriodGrouping=1, reco=:default, kargs...) where {T<:MPIFile}
 
   (typeof(bgFrames) <: AbstractRange && emptyMeas==nothing) && (emptyMeas = bMeas)
@@ -171,10 +171,10 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   @debug "Loading System matrix"
   S, grid = getSF(bSF, freq, sparseTrafo, solver;
             bgCorrection=bgCorrection, loadasreal=loadasreal,
-            thresh=thresh, redFactor=redFactor, saveTrafo=saveTrafo,
+            thresh=thresh, redFactor=redFactor,
             useDFFoV=useDFFoV, gridsize=gridsize, fov=fov, center=center,
             deadPixels=deadPixels,numPeriodAverages=numPeriodAverages, 
-            numPeriodGrouping=numPeriodGrouping)
+            numPeriodGrouping=numPeriodGrouping)       
 
   if denoiseWeight > 0 && sparseTrafo == nothing
     denoiseSF!(S, shape, weight=denoiseWeight)
