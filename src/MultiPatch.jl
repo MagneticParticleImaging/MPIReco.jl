@@ -167,7 +167,14 @@ end
 
 export ExplicitMultiPatchParameter
 Base.@kwdef struct ExplicitMultiPatchParameter <: AbstractMultiPatchOperatorParameter
-
+  bgCorrection::Bool
+  tfCorrection::Bool = true
+  SFGridCenter::AbstractArray = zeros(0,0)
+  systemMatrices::Union{Nothing, AbstractArray} = nothing
+  mapping::Vector{Int64}
+  calibsize::Union{Nothing, AbstractArray} = nothing
+  calibfov::Union{Nothing, AbstractArray} = nothing
+  grid::Union{Nothing, RegularGridPositions} = nothing
 end
 function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrection::Bool,
                     denoiseWeight=0, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
