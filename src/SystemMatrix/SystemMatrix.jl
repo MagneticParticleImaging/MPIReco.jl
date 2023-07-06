@@ -17,7 +17,7 @@ Base.@kwdef struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGridding
   gridsize::Vector{Int64} = [1, 1, 1]
   fov::Vector{Float64} = [0.0, 0.0, 0.0]
   center::Vector{Float64} = [0.0,0.0,0.0]
-  deadPixels::Vector{Int64} = Int64[]
+  deadPixels::Union{Nothing, Vector{Int64}} = nothing
 end
 # Maybe implement custom defaults with optional given sf -> remove @kwdef
 #function SystemMatrixGriddingParameter(;sf::MPIFile, gridsize = nothing, fov = nothing, center = [0.0, 0.0, 0.0], deadPixels = Int64[])
@@ -180,7 +180,7 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
 
   if deadPixels != nothing
     #repairDeadPixels(S,gridsize,deadPixels)
-    @info "Repairing deadPixels..."
+    @debug "Repairing deadPixels..."
     S = repairSM(S,RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0]),deadPixels)
   end
 
@@ -204,7 +204,7 @@ alongside to your FOV-selection."
       # alternativ ginge direkt: extrapolateSM(SM, grid, fov)
     end
 
-    @info "Perform SF Interpolation..."
+    @debug "Perform SF Interpolation..."
 
     SInterp = zeros(eltype(S),prod(gridsize),length(frequencies)*numPeriods)
     for k=1:length(frequencies)*numPeriods

@@ -179,8 +179,8 @@ Base.@kwdef struct ExplicitMultiPatchParameter <: AbstractMultiPatchOperatorPara
   SFGridCenter::AbstractArray = zeros(0,0)
   systemMatrices::Union{Nothing, AbstractArray} = nothing
   mapping::Vector{Int64}
-  calibsize::Union{Nothing, AbstractArray} = nothing
-  calibfov::Union{Nothing, AbstractArray} = nothing
+  gridsize::Union{Nothing, AbstractArray} = nothing
+  fov::Union{Nothing, AbstractArray} = nothing
   grid::Union{Nothing, RegularGridPositions} = nothing
 end
 function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrection::Bool,
@@ -196,10 +196,14 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
 		                tfCorrection = true,
 		                kargs...)
 
+                    
   @debug "Loading System matrix"
   numPatches = size(FFPos,2)
   M = length(freq)
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
+
+  gridsize = isnothing(gridsize) ? hcat(calibSize.(SFs)...) : gridsize
+  fov = isnothing(fov) ? hcat(calibFov.(SFs)...) : fov
 
   if systemMatrices == nothing
       S=AbstractMatrix[]; gridS=RegularGridPositions[];
