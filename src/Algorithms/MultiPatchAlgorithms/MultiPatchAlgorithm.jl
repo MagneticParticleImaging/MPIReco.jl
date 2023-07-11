@@ -15,13 +15,11 @@ Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P} <: AbstractMulti
   params::P
   # Could also do reconstruction progress meter here
   origParam::Union{AbstractMultiPatchAlgorithmParameters,Nothing} = nothing
-  opParams::AbstractMultiPatchOperatorParameter
+  opParams::Union{AbstractMultiPatchOperatorParameter, Nothing} = nothing
   sf::MultiMPIFile
   ffOp::Union{Nothing, MultiPatchOperator}
-  #gradient::Union{Nothing,AbstractArray}
   ffPos::Union{Nothing,AbstractArray}
   ffPosSF::Union{Nothing,AbstractArray}
-  #grid::RegularGridPositions
   freqs::Vector{Int64}
   output::Channel{Any}
 end

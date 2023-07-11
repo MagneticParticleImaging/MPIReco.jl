@@ -29,3 +29,4 @@ end
 
 
 include("MultiPatchAlgorithm.jl")
+include("MultiPatchPeriodicMotion.jl")
