@@ -101,7 +101,7 @@ function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIF
   # Background
   kwargs = toKwargs(params, ignore = [:neglectBGFrames, :bgCorrection],
     default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))))
-  bgParams = fromKwargs(FrequencyFilteredBackgroundCorrectionParameters; kwargs..., bgParams = params.bgCorrection)
+  bgParams = fromKwargs(FrequencyFilteredBackgroundCorrectionParameters; kwargs..., bgParams = params.bgParams)
   return process(t, result, bgParams)
 end
 
