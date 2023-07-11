@@ -30,7 +30,7 @@ function Base.getproperty(param::TwoStepSubstractionPreProcessingParameter, fiel
   if field == :proj || field == :pre
     return getfield(param, field)
   else
-    return getfield(getfield(param, :pre), field)
+    return getproperty(getfield(param, :pre), field)
   end
 end
 
