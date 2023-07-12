@@ -199,6 +199,7 @@ function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{Str
     t = type(plan, name)
     param = missing
     key = string(name)
+    @info "Parameter $key" 
     if haskey(dict, key)
       if t <: AbstractReconstructionAlgorithm || t <: AbstractReconstructionAlgorithmParameter
         param = loadPlan!(dict[key], modDict)
@@ -206,41 +207,67 @@ function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{Str
       # I think for some of these we need to go back into the modDict to further specify a type
       # As the Plan type can be abstract
       else
-        param = loadPlanValue!(t, dict[key], modDict)
+        param = loadPlanValue(t, dict[key], modDict)
       end
     end
     plan[name] = param
   end
 end
-# Type{<:T} where {T} fields
-function loadPlanValue!(::UnionAll, value::Dict, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}})
+# Type{<:T} where {T}
+function loadPlanValue(::UnionAll, value::Dict, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}})
   re = r"Type\{(.*)\}"
-  m = match(re, pop!(value, ".type"))
-  mod = pop!(value, ".module")
+  m = match(re, value[".type"])
+  mod = value[".module"]
   type = m.captures[1]
   return modDict[mod][type]
 end
 # Vectors
-function loadPlanValue!(::Type{Vector{<:T}}, value::Vector, modDict) where {T}
+function loadPlanValue(::Type{Vector{<:T}}, value::Vector, modDict) where {T}
+  @warn "Vec $T"
   result = Any[]
   for val in value
-    type = modDict[pop!(val, ".module")][pop!(val, ".type")]
+    type = modDict[val[".module"]][val[".type"]]
     push!(result, fromTOML(type, val))
   end
   # Narrow vector
   return identity.(result)
 end
+function loadPlanValue(t::Type{Union{Nothing, T}}, value::Dict, modDict) where {T}
+  if isempty(value)
+    return nothing
+  else
+    return loadPlanValue(T, value, modDict)
+  end
+end
+# "Iterate" over Unions, take first that fits (B here can be another Union)
+function loadPlanValue(t::Type{Union{A, B}}, value, modDict) where {A, B}
+  if t isa Union # ATM this method overshadows loadPlanValue(t, value, modDict) = fromTOML(t, value) for some reason (maybe https://github.com/JuliaLang/julia/issues/49358)
+    return loadPlanUnion(t, value, modDict)
+  else
+    return fromTOML(t, value)
+  end
+end
+function loadPlanUnion(t::Type{Union{A,B}}, value, modDict) where {A, B}
+  val = loadPlanValue(A, value, modDict)
+  if val isa A
+    return val
+  else
+    return loadPlanValue(B, value, modDict)
+  end
+end
 # Structs with fields
-function loadPlanValue!(t::Type{T}, value::Dict, modDict) where {T}
-  if !in(value[".module"], keys(modDict))
+function loadPlanValue(t::Type{T}, value::Dict, modDict) where {T} # This is prefered over loadPlan(::Type{Union}) only because of the Dict
+  if T isa Union # Temporary hack because of union dispatch
+    return loadPlanUnion(t, value, modDict)
+  elseif !in(value[".module"], keys(modDict))
     return fromTOML(t, value)
   else
-    type = modDict[pop!(value, ".module")][pop!(value, ".type")]
-    kwargs = Dict(Symbol(x) => dict[x] for x in keys(value))
+    type = modDict[value[".module"]][value[".type"]]
+    kwargs = Dict(Symbol(x) => dict[x] for x in filter(x-> x != ".module" && x != ".type", keys(value)))
     return type(kwargs...)
   end
 end
-loadPlanValue!(t, value, modDict) = fromTOML(t, value)
+loadPlanValue(t, value, modDict) = fromTOML(t, value)
 
 export savePlan
 savePlan(filename::AbstractString, plan::RecoPlan) = toTOML(filename, plan)

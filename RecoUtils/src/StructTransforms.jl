@@ -18,6 +18,7 @@ toTOML(x::Symbol) = string(x)
 toTOML(x::T) where {T<:Enum} = string(x)
 toTOML(x::Array) = toTOML.(x)
 toTOML(x::Type{T}) where T = string(x)
+toTOML(x::Nothing) = Dict()
 
 fromTOML(t, x) = x
 #function fromTOML(::Type{T}, x::Dict) where {T}
@@ -27,6 +28,14 @@ fromTOML(t, x) = x
 #    return x
 #  end
 #end
+fromTOML(::Type{Union{Nothing, T}}, x) where {T} = fromTOML(T, x)
+function fromTOML(::Type{Union{Nothing, T}}, x::Dict) where {T}
+  if isempty(x)
+    return nothing
+  else
+    return fromTOML(T, x)
+  end
+end
 fromTOML(::Type{V}, x::Vector) where {T, V<:Vector{<:T}} = fromTOML.(T, x)
 
 function toDict(value)

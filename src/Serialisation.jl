@@ -1,14 +1,15 @@
 RecoUtils.toDictValue(file::MPIFile) = filepath(file)
+RecoUtils.toDictValue(file::Union{MultiMPIFile, MultiContrastFile}) = filepath.(file)
 RecoUtils.toDictValue(norm::AbstractRegularizationNormalization) = RecoUtils.toDict(norm)
 
 # TODO Check how nothing is stored and maybe return it here
-RecoUtils.fromTOML(::Type{Union{Nothing, T}}, x) where {T} = RecoUtils.fromTOML(T, x)
-function RecoUtils.fromTOML(::Type{<:UnitRange}, dict::Dict{String, Any})
+function RecoUtils.fromTOML(::Type{T}, dict::Dict{String, Any}) where {T<: UnitRange}
   start = dict["start"]
   stop = dict["stop"]
   return UnitRange(start, stop)
 end
 RecoUtils.fromTOML(::Type{<:MPIFile}, x::AbstractString) = MPIFile(x)
+RecoUtils.fromTOML(::Type{<:MultiMPIFile}, x::Vector) = MultiMPIFile(MPIFile.(x))
 function RecoUtils.fromTOML(::Type{T}, dict::Dict{String, Any}) where {T<: AbstractRegularization}
   λ = dict["λ"]
   filteredKeys = filter(!isequal("λ"), keys(dict))
