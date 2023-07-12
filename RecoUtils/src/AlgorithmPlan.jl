@@ -240,26 +240,17 @@ function loadPlanValue(t::Type{Union{Nothing, T}}, value::Dict, modDict) where {
   end
 end
 # "Iterate" over Unions, take first that fits (B here can be another Union)
-function loadPlanValue(t::Type{Union{A, B}}, value, modDict) where {A, B}
-  if t isa Union # ATM this method overshadows loadPlanValue(t, value, modDict) = fromTOML(t, value) for some reason (maybe https://github.com/JuliaLang/julia/issues/49358)
-    return loadPlanUnion(t, value, modDict)
-  else
-    return fromTOML(t, value)
-  end
-end
-function loadPlanUnion(t::Type{Union{A,B}}, value, modDict) where {A, B}
-  val = loadPlanValue(A, value, modDict)
-  if val isa A
+function loadPlanValue(t::Union, value, modDict)
+  val = loadPlanValue(t.a, value, modDict)
+  if val isa t.a
     return val
   else
-    return loadPlanValue(B, value, modDict)
+    return loadPlanValue(t.b, value, modDict)
   end
 end
 # Structs with fields
-function loadPlanValue(t::Type{T}, value::Dict, modDict) where {T} # This is prefered over loadPlan(::Type{Union}) only because of the Dict
-  if T isa Union # Temporary hack because of union dispatch
-    return loadPlanUnion(t, value, modDict)
-  elseif !in(value[".module"], keys(modDict))
+function loadPlanValue(t::DataType, value::Dict, modDict)
+  if !in(value[".module"], keys(modDict))
     return fromTOML(t, value)
   else
     type = modDict[value[".module"]][value[".type"]]
