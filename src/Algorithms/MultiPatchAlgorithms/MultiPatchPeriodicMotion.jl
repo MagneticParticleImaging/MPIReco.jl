@@ -7,7 +7,7 @@ Base.@kwdef struct PeriodicMotionPreProcessing <: AbstractPreProcessingParameter
   samplingPrecision::Bool = true
   windowType::Int64 = 1
   higherHarmonic::Int64 = 1
-  sf::MPIFile
+  sf::MultiMPIFile
   tfCorrection::Bool = false
   # weightingType::WeightingType = WeightingType.None
 end

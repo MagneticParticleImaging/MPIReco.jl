@@ -3,9 +3,9 @@ abstract type AbstractFrequencyFilterParameter <: AbstractMPIRecoParameters end
 # Could possible also be nested
 export SNRThresholdFrequencyFilterParameter
 Base.@kwdef struct SNRThresholdFrequencyFilterParameter <: AbstractFrequencyFilterParameter
-  minFreq::Float64 = -1.0
-  maxFreq::Float64 = -1.0
-  recChannels::UnitRange{Int64} = 1:1
+  minFreq::Float64 = 0.0
+  maxFreq::Union{Float64, Nothing} = nothing
+  recChannels::Union{UnitRange{Int64}, Nothing} = nothing
   SNRThresh::Float64=-1.0
   sortBySNR::Bool = false
   numPeriodAverages::Int64 = 1
@@ -23,11 +23,14 @@ end
 export FreqNumThresholdFrequencyFilterParameter
 Base.@kwdef struct FreqNumThresholdFrequencyFilterParameter <: AbstractFrequencyFilterParameter
   minFreq::Float64 = 0.0
-  maxFreq::Float64 = 0.0
-  recChannels::UnitRange{Int64} = 1:1
+  maxFreq::Union{Float64, Nothing} = nothing
+  recChannels::Union{UnitRange{Int64}, Nothing} = nothing
   numUsedFreqs::Int64=1
   sortBySNR::Bool = false
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
 end
-RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, file::MPIFile, params::AbstractFrequencyFilterParameter) = filterFrequencies(file; toKwargs(params)...)
+function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, file::MPIFile, params::AbstractFrequencyFilterParameter)
+  kwargs = toKwargs(params, default = Dict{Symbol, Any}(:maxFreq => rxBandwidth(file), :recChannels => 1:rxNumChannels(file))) 
+  filterFrequencies(file; kwargs...)
+end
