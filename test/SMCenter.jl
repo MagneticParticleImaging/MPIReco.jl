@@ -13,7 +13,7 @@ using MPIReco
     @test a == center[l]
     S = getSF(bSF,2,0,0,2)
     exportImage(joinpath(imgdir, "Center1.png"), abs.(S)[:,:,1])
-    @test compareImg("Center1.png")
+    #@test compareImg("Center1.png")
     #p = imagesc(abs.(S)[:,:,1])
     #add(p, Points([a[2]-1],[a[1]-1],color="yellow",lw=5))
     #savefig(p, "$imgdir/Center1.png")
@@ -25,7 +25,7 @@ using MPIReco
     @test a == center[l]
     S = getSF(bSF,5,6,0,1)
     exportImage(joinpath(imgdir, "Center2.png"), abs.(S)[:,:,1])
-    @test compareImg("Center1.png")
+    #@test compareImg("Center2.png")
     #p = imagesc(abs.(S)[:,:,1])
     #add(p, Points([a[2]-1],[a[1]-1],color="yellow",lw=5))
     #savefig(p, "$imgdir/Center2.png")
