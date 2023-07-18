@@ -13,9 +13,6 @@ function RecoPlan(::Type{T}; kwargs...) where {T<:AbstractReconstructionAlgorith
 end
 function RecoPlan(::Type{T}; kwargs...) where {T<:AbstractReconstructionAlgorithm}
   dict = Dict{Symbol, Any}()
-  mod = parentmodule(T)
-  dict[:module] = mod
-  dict[:version] = string(pkgversion(mod))
   dict[:parameter] = missing
   return RecoPlan{getfield(parentmodule(T), nameof(T))}(dict)
 end
@@ -72,12 +69,8 @@ types(::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithmParameter} = field
 type(::RecoPlan{T}, name::Symbol) where {T<:AbstractReconstructionAlgorithmParameter} = fieldtype(T, name)
 
 function type(plan::RecoPlan{T}, name::Symbol) where {T<:AbstractReconstructionAlgorithm}
-  if name == :version
-    return String
-  elseif name == :parameter
-    return Union{Missing, RecoPlan}
-  elseif name == :module
-    return Module
+  if name == :parameter
+    return RecoPlan
   else
     error("type $(typeof(plan)) has no field $name")
   end
@@ -134,10 +127,12 @@ end
 
 toDictModule(plan::RecoPlan{T}) where {T} = parentmodule(T)
 toDictType(plan::RecoPlan{T}) where {T} = RecoPlan{getfield(parentmodule(T), nameof(T))}
-function toDictValue!(dict, value::RecoPlan, field::Symbol)
-  x = getproperty(value, field)
-  if !ismissing(x)
-    dict[string(field)] = toDictValue(x)
+function addDictValue!(dict, value::RecoPlan)
+  for field in propertynames(value)
+    x = getproperty(value, field)
+    if !ismissing(x)
+      dict[string(field)] = toDictValue(type(value, field), x)
+    end
   end
   return dict
 end
@@ -178,10 +173,10 @@ function createModuleDataTypeDict(modules::Vector{Module})
 end
 function loadPlan!(dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}})
   re = r"RecoPlan\{(.*)\}"
-  m = match(re, pop!(dict, ".type"))
+  m = match(re, pop!(dict, TYPE_TAG))
   if !isnothing(m)
     type = m.captures[1]
-    mod = pop!(dict, ".module")
+    mod = pop!(dict, MODULE_TAG)
     plan = RecoPlan(modDict[mod][type])
     loadPlan!(plan, dict, modDict)
     return plan
@@ -199,7 +194,6 @@ function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{Str
     t = type(plan, name)
     param = missing
     key = string(name)
-    @info "Parameter $key" 
     if haskey(dict, key)
       if t <: AbstractReconstructionAlgorithm || t <: AbstractReconstructionAlgorithmParameter
         param = loadPlan!(dict[key], modDict)
@@ -214,51 +208,55 @@ function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{Str
   end
 end
 # Type{<:T} where {T}
-function loadPlanValue(::UnionAll, value::Dict, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}})
-  re = r"Type\{(.*)\}"
-  m = match(re, value[".type"])
-  mod = value[".module"]
-  type = m.captures[1]
-  return modDict[mod][type]
+function loadPlanValue(t::UnionAll, value::Dict, modDict)
+  if value[TYPE_TAG] == string(Type)
+    return modDict[value[MODULE_TAG]][value[VALUE_TAG]]
+  else
+    return fromTOML(specializeType(t, value, modDict), value)
+  end
 end
-# Vectors
 function loadPlanValue(::Type{Vector{<:T}}, value::Vector, modDict) where {T}
-  @warn "Vec $T"
   result = Any[]
   for val in value
-    type = modDict[val[".module"]][val[".type"]]
+    type = modDict[val[MODULE_TAG]][val[TYPE_TAG]]
     push!(result, fromTOML(type, val))
   end
   # Narrow vector
   return identity.(result)
 end
-function loadPlanValue(t::Type{Union{Nothing, T}}, value::Dict, modDict) where {T}
-  if isempty(value)
-    return nothing
-  else
-    return loadPlanValue(T, value, modDict)
+uniontypes(t::Union) = Base.uniontypes(t)
+#uniontypes(t::Union) = [t.a, uniontypes(t.b)...]
+#uniontypes(t::DataType) = [t]
+function loadPlanValue(t::Union, value::Dict, modDict)
+  types = uniontypes(t)
+  idx = findfirst(x-> string(x) == value[UNION_TYPE_TAG], types)
+  if isnothing(idx)
+    toml = tomlType(value, modDict, prefix = "union")
+    idx = !isnothing(toml) ? findfirst(x-> toml <: x, types) : idx # Potentially check if more than one fits and chose most fitting
   end
+  type = isnothing(idx) ? t : types[idx]
+  return loadPlanValue(type, value[VALUE_TAG], modDict)
 end
-# "Iterate" over Unions, take first that fits (B here can be another Union)
-function loadPlanValue(t::Union, value, modDict)
-  val = loadPlanValue(t.a, value, modDict)
-  if val isa t.a
-    return val
-  else
-    return loadPlanValue(t.b, value, modDict)
-  end
-end
-# Structs with fields
-function loadPlanValue(t::DataType, value::Dict, modDict)
-  if !in(value[".module"], keys(modDict))
-    return fromTOML(t, value)
-  else
-    type = modDict[value[".module"]][value[".type"]]
-    kwargs = Dict(Symbol(x) => dict[x] for x in filter(x-> x != ".module" && x != ".type", keys(value)))
-    return type(kwargs...)
-  end
-end
+loadPlanValue(t::DataType, value::Dict, modDict) = fromTOML(specializeType(t, value, modDict), value)
 loadPlanValue(t, value, modDict) = fromTOML(t, value)
+
+function tomlType(dict::Dict, modDict; prefix::String = "")
+  if haskey(dict, ".$(prefix)module") && haskey(dict, ".$(prefix)type")
+    mod = dict[".$(prefix)module"]
+    type = dict[".$(prefix)type"]
+    if haskey(modDict, mod) && haskey(modDict[mod], type)
+      return modDict[mod][type]
+    end
+  end
+  return nothing
+end
+function specializeType(t::Union{DataType, UnionAll}, value::Dict, modDict)
+  if isconcretetype(t)
+    return t
+  end
+  type = tomlType(value, modDict)
+  return !isnothing(type) && type <: t ? type : t 
+end
 
 export savePlan
 savePlan(filename::AbstractString, plan::RecoPlan) = toTOML(filename, plan)

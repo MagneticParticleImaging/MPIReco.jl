@@ -1,5 +1,11 @@
 export toTOML, toDict, toDict!, toDictValue, toKwargs, toKwargs!, fromKwargs
 
+const MODULE_TAG = ".module"
+const TYPE_TAG = ".type"
+const VALUE_TAG = ".value"
+const UNION_TYPE_TAG = ".uniontype"
+const UNION_MODULE_TAG = ".unionmodule"
+
 function toTOML(fileName::AbstractString, value)
   open(fileName, "w") do io
     toTOML(io, value)
@@ -21,20 +27,11 @@ toTOML(x::Type{T}) where T = string(x)
 toTOML(x::Nothing) = Dict()
 
 fromTOML(t, x) = x
-#function fromTOML(::Type{T}, x::Dict) where {T}
-#  if fieldcount(T) > 0
-#    
-#  else
-#    return x
-#  end
-#end
-fromTOML(::Type{Union{Nothing, T}}, x) where {T} = fromTOML(T, x)
-function fromTOML(::Type{Union{Nothing, T}}, x::Dict) where {T}
+function fromTOML(::Type{Nothing}, x::Dict) where {T}
   if isempty(x)
     return nothing
-  else
-    return fromTOML(T, x)
   end
+  error("Unexpected value $x for Nothing, expected empty Dict")
 end
 fromTOML(::Type{V}, x::Vector) where {T, V<:Vector{<:T}} = fromTOML.(T, x)
 
@@ -44,21 +41,20 @@ function toDict(value)
 end
 
 function toDict!(dict, value)
-  dict[".module"] = toDictModule(value)
-  dict[".type"] = toDictType(value)
-  for field in propertynames(value)
-    toDictValue!(dict, value, field)
-  end
+  dict[MODULE_TAG] = toDictModule(value)
+  dict[TYPE_TAG] = toDictType(value)
+  addDictValue!(dict, value)
   return dict
 end
 toDictModule(value) = parentmodule(typeof(value))
 toDictType(value) = nameof(typeof(value))
-
-function toDictValue!(dict, value, field::Symbol)
-  x = getproperty(value, field)
-  dict[string(field)] = toDictValue(x)
-  return dict
+function addDictValue!(dict, value)
+  for field in fieldnames(typeof(value))
+    dict[string(field)] = toDictValue(fieldtype(typeof(value), field), getfield(value, field))
+  end
 end
+
+toDictValue(type, value) = toDictValue(value)
 function toDictValue(x)
   if fieldcount(typeof(x)) > 0
     return toDict(x)
@@ -68,9 +64,20 @@ function toDictValue(x)
 end
 toDictValue(x::Array) = toDictValue.(x)
 toDictValue(x::Type{T}) where T = toDict(x)
-function toDict!(dict, x::Type{T}) where T
-  dict[".module"] = parentmodule(T)
-  dict[".type"] = Type{T}
+function toDict!(dict, ::Type{T}) where T
+  dict[MODULE_TAG] = parentmodule(T)
+  dict[TYPE_TAG] = Type
+  dict[VALUE_TAG] = T
+  return dict
+end
+
+function toDictValue(type::Union, value)
+  dict = Dict{String, Any}()
+  dict[MODULE_TAG] = toDictModule(type)
+  dict[TYPE_TAG] = toDictType(type)
+  dict[VALUE_TAG] = toDictValue(value)
+  dict[UNION_TYPE_TAG] = typeof(value) # directly type to not remove parametric fields
+  dict[UNION_MODULE_TAG] = toDictModule(typeof(value))
   return dict
 end
 
