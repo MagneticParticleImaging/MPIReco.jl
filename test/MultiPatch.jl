@@ -21,6 +21,7 @@ using MPIReco
   @test axisnames(c1) == names
   @test axisvalues(c1) == values1
   exportImage(joinpath(imgdir, "MultiPatch1.png"), arraydata(c1[1,:,:,1,1]))
+  @test compareImg("MultiPatch1.png")
 
   # TODO test description
   c2 = reconstruction(bSF, b;
@@ -30,6 +31,7 @@ using MPIReco
   @test axisnames(c2) == names
   @test axisvalues(c2) == values1
   exportImage(joinpath(imgdir, "MultiPatch2.png"), arraydata(c2[1,:,:,1,1]))
+  @test compareImg("MultiPatch2.png")
 
   # multi-patch reconstruction using multiple system matrices
   dirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]
@@ -41,6 +43,7 @@ using MPIReco
   @test axisnames(c3) == names
   @test axisvalues(c3) == values2
   exportImage(joinpath(imgdir, "MultiPatch3.png"), arraydata(c3[1,:,:,1,1]))
+  @test compareImg("MultiPatch3.png")
 
   # flexible multi-patch reconstruction
   dirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]
@@ -63,5 +66,6 @@ using MPIReco
   @test axisnames(c4) == names
   @test axisvalues(c4) == values2
   exportImage(joinpath(imgdir, "MultiPatch4.png"), arraydata(c4[1,:,:,1,1]))
+  @test compareImg("MultiPatch4.png")
   # TODO the last test shows odd results
 end

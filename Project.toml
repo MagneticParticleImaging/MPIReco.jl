@@ -35,6 +35,8 @@ HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 Scratch = "6c6a2e73-6563-6170-7368-637461726353"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
+
 
 [targets]
-test = ["Test", "HTTP", "FileIO", "LazyArtifacts", "Scratch"]
+test = ["Test", "HTTP", "FileIO", "LazyArtifacts", "Scratch", "ImageMagick"]
