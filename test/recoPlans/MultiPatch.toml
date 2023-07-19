@@ -1,0 +1,42 @@
+".type" = "RecoPlan{MultiPatchReconstructionAlgorithm}"
+".module" = "MPIReco"
+
+[parameter]
+".type" = "RecoPlan{MultiPatchParameters}"
+".module" = "MPIReco"
+
+    [parameter.reco]
+    ".type" = "RecoPlan{MultiPatchReconstructionParameter}"
+    ".module" = "MPIReco"
+
+        [parameter.reco.ffPos]
+        ".type" = "RecoPlan{DefaultFocusFieldPositions}"
+        ".module" = "MPIReco"
+
+        [parameter.reco.freqFilter]
+        ".type" = "RecoPlan{SNRThresholdFrequencyFilterParameter}"
+        ".module" = "MPIReco"
+
+        [parameter.reco.opParams]
+        ".type" = "RecoPlan{RegularMultiPatchOperatorParameter}"
+        ".module" = "MPIReco"
+
+        [parameter.reco.ffPosSF]
+        ".type" = "RecoPlan{DefaultFocusFieldPositions}"
+        ".module" = "MPIReco"
+
+        [parameter.reco.solverParams]
+        ".type" = "RecoPlan{SimpleSolverParameters}"
+        ".module" = "MPIReco"
+
+    [parameter.pre]
+    ".type" = "RecoPlan{CommonPreProcessingParameters}"
+    ".module" = "MPIReco"
+
+        [parameter.pre.bgParams]
+        ".type" = "RecoPlan{NoBackgroundCorrectionParameters}"
+        ".module" = "MPIReco"
+
+    [parameter.post]
+    ".type" = "RecoPlan{NoPostProcessing}"
+    ".module" = "MPIReco"

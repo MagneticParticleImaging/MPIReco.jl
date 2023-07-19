@@ -207,7 +207,7 @@ function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{Str
     plan[name] = param
   end
 end
-loadPlanValue(parent::Type{AbstractReconstructionAlgorithmParameter}, field::Symbol, type, value, modDict) = loadPlanValue(type, value, modDict)
+loadPlanValue(parent::Type{T}, field::Symbol, type, value, modDict) where T <: AbstractReconstructionAlgorithmParameter = loadPlanValue(type, value, modDict)
 # Type{<:T} where {T}
 function loadPlanValue(t::UnionAll, value::Dict, modDict)
   if value[TYPE_TAG] == string(Type)
