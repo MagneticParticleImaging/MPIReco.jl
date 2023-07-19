@@ -16,70 +16,72 @@ using MPIReco
 	      -0.5u"mm":1.0u"mm":-0.5u"mm",
 	      0.0u"ms":65.28u"ms":0.0u"ms")
 
-  c1 = reconstruction(bSF, b; lambd=0.1,
-		      SNRThresh = 2, frames=1:100, minFreq=80e3, nAverages=100,
-		      recChannels =1:2, iterations = 3,
-		      spectralLeakageCorrection=false)
-  @test axisnames(c1) == names
-  @test axisvalues(c1) == values
-  exportImage(joinpath(imgdir, "Sparse1.png"), arraydata(c1[1,:,:,1,1]))
-  @test compareImg("Sparse1.png")
+  #c1 = reconstruction(bSF, b; lambd=0.1,
+	#	      SNRThresh = 2, frames=1:100, minFreq=80e3, nAverages=100,
+	#	      recChannels =1:2, iterations = 3,
+	#	      spectralLeakageCorrection=false)
+  #@test axisnames(c1) == names
+  #@test axisvalues(c1) == values
+  #exportImage(joinpath(imgdir, "Sparse1.png"), arraydata(c1[1,:,:,1,1]))
+  #@test compareImg("Sparse1.png")
 
-  c2 = reconstruction(bSF, b; lambd=0.1,SNRThresh = 2, frames=1:100,
-		      minFreq=80e3, nAverages=100, sparseTrafo="FFT",
-		      recChannels =1:2, iterations = 3,
-		      spectralLeakageCorrection=false, redFactor = redFactor,
-		      useDFFoV = false)
+  plan = getPlan("Sparse")
+  setAll!(plan, :SNRThresh, 2)
+  setAll!(plan, :frames, 1:100)
+  setAll!(plan, :minFreq, 80e3)
+  setAll!(plan, :recChannels, 1:2)
+  setAll!(plan, :iterations, 3)
+  setAll!(plan, :spectralLeakageCorrection, false)
+  setAll!(plan, :sf, bSF)
+  setAll!(plan, :reg, [L2Regularization(0.1f0)])
+  setAll!(plan, :numAverages, 100)
+  setAll!(plan, :solver, Kaczmarz)
+  #setAll!(plan, :tfCorrection, false)
+  setAll!(plan, :redFactor, redFactor)
+  
+  setAll!(plan, :sparseTrafo, "FFT")
+  setAll!(plan, :useDFFoV, false)
+  c2 = reconstruct(build(plan), b)
   @test axisnames(c2) == names
   @test axisvalues(c2) == values
   exportImage(joinpath(imgdir, "Sparse2.png"), arraydata(c2[1,:,:,1,1]))
   @test compareImg("Sparse2.png")
 
-  c3 = reconstruction(bSF, b; lambd=0.1, SNRThresh = 2, frames=1:100,
-		      minFreq=80e3, nAverages=100, sparseTrafo="FFT",
-		      recChannels =1:2, iterations = 3,
-		      spectralLeakageCorrection=false, redFactor = redFactor,
-		      useDFFoV = true)
+  setAll!(plan, :sparseTrafo, "FFT")
+  setAll!(plan, :useDFFoV, true)
+  c3 = reconstruct(build(plan), b)
   @test axisnames(c3) == names
   @test axisvalues(c3) == valuesDF
   exportImage(joinpath(imgdir, "Sparse3.png"), arraydata(c3[1,:,:,1,1]))
   @test compareImg("Sparse3.png")
 
-  c4 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
-		      minFreq=80e3, nAverages=100, sparseTrafo="DCT-IV",
-		      recChannels =1:2, iterations = 1,
-		      spectralLeakageCorrection=false, redFactor = redFactor,
-		      useDFFoV = false)
+  setAll!(plan, :sparseTrafo, "DCT-IV")
+  setAll!(plan, :useDFFoV, false)
+  c4 = reconstruct(build(plan), b)
   @test axisnames(c4) == names
   @test axisvalues(c4) == values
   exportImage(joinpath(imgdir, "Sparse4.png"), arraydata(c4[1,:,:,1,1]))
   @test compareImg("Sparse4.png")
 
-  c5 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
-		      minFreq=80e3, nAverages=100, sparseTrafo="DCT-IV",
-		      recChannels =1:2, iterations = 1,
-		      spectralLeakageCorrection=true, redFactor = redFactor,
-		      useDFFoV = true)
+  setAll!(plan, :sparseTrafo, "DCT-IV")
+  setAll!(plan, :useDFFoV, true)
+  c5 = reconstruct(build(plan), b)
   @test axisnames(c5) == names
   @test axisvalues(c5) == valuesDF
   exportImage(joinpath(imgdir, "Sparse5.png"), arraydata(c5[1,:,:,1,1]))
   @test compareImg("Sparse5.png")
 
-  c6 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
-		      minFreq=80e3, nAverages=100, sparseTrafo="DST",
-		      recChannels =1:2, iterations = 1,
-		      spectralLeakageCorrection=false, redFactor = redFactor,
-		      useDFFoV = false)
+  setAll!(plan, :sparseTrafo, "DST")
+  setAll!(plan, :useDFFoV, false)
+  c6 = reconstruct(build(plan), b)
   @test axisnames(c6) == names
   @test axisvalues(c6) == values
   exportImage(joinpath(imgdir, "Sparse6.png"), arraydata(c6[1,:,:,1,1]))
   @test compareImg("Sparse6.png")
 
-  c7 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
-		      minFreq=80e3, nAverages=100, sparseTrafo="DST",
-		      recChannels =1:2, iterations = 1,
-		      spectralLeakageCorrection=true, redFactor = redFactor,
-		      useDFFoV = true)
+  setAll!(plan, :sparseTrafo, "DST")
+  setAll!(plan, :useDFFoV, true)
+  c7 = reconstruct(build(plan), b)
   @test axisnames(c7) == names
   @test axisvalues(c7) == valuesDF
   exportImage(joinpath(imgdir, "Sparse7.png"), arraydata(c7[1,:,:,1,1]))

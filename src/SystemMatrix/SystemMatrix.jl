@@ -38,6 +38,17 @@ Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterPa
   gridding::G
   bgCorrection::Bool = false
 end
+function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter)
+  # Construct freqFilter
+  freqs = process(t, sf, params.freqFilter)
+  S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
+  return freqs, S, grid
+end
+function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter{<:FrequencyFilteredPreProcessingParameters})
+  freqs = params.freqFilter.frequencies
+  S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
+  return freqs, S, grid
+end
 
 export SparseSystemMatrixLoadingParameter
 Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilterParameter} <: AbstractSystemMatrixLoadingParameter
@@ -48,15 +59,15 @@ Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilter
   bgCorrection::Bool = false
   useDFFoV::Bool = false
 end
-function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter)
+function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::SparseSystemMatrixLoadingParameter)
   # Construct freqFilter
   freqs = process(t, sf, params.freqFilter)
-  S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
+  S, grid = getSF(sf, freqs, params.sparseTrafo; toKwargs(params)...)
   return freqs, S, grid
 end
-function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter{<:FrequencyFilteredPreProcessingParameters})
+function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::SparseSystemMatrixLoadingParameter{<:FrequencyFilteredPreProcessingParameters})
   freqs = params.freqFilter.frequencies
-  S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
+  S, grid = getSF(sf, freqs, params.sparseTrafo; toKwargs(params)...)
   return freqs, S, grid
 end
 
