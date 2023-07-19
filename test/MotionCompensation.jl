@@ -46,5 +46,6 @@ using MPIReco
                                 SNRThresh=10, minFreq=80e3, recChannels=[1,2,3]) #frequency selection
 
   exportImage(joinpath(imgdir, "MotionComp.png"), maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
+  @test compareImg("MotionComp.png")
 
 end

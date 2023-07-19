@@ -15,6 +15,7 @@ using MPIReco
   @test axisvalues(c1) == (1:1, -26.0u"mm":1.0u"mm":26.0u"mm", -26.75u"mm":1.0u"mm":26.25u"mm", 0.0u"mm":1.0u"mm":0.0u"mm", 0.0u"ms":0.6528u"ms":0.0u"ms")
   im1 = reverse(c1[1,:,:,1,1]',dims=1)
   exportImage(joinpath(imgdir, "MultiGradient1.png"), im1)
+  @test compareImg("MultiGradient1.png")
 
   #Iabs = abs.(im1)
   #Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
@@ -33,6 +34,7 @@ using MPIReco
   @test axisvalues(c2) == (1:1, -26.0u"mm":1.0u"mm":26.0u"mm", -26.500000000000004u"mm":1.0u"mm":30.499999999999996u"mm", 0.0u"mm":1.0u"mm":0.0u"mm", 0.0u"ms":0.6528u"ms":0.0u"ms")
   im2 = reverse(c2[1,:,:,1,1]',dims=1)
   exportImage(joinpath(imgdir, "MultiGradient2.png"), im2)
+  @test compareImg("MultiGradient2.png")
 
   #Iabs = abs.(im2)
   #Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0
@@ -49,6 +51,7 @@ using MPIReco
 			    recChannels=1:2,iterations=3, roundPatches=false)
   im3 = reverse(c3[1,:,:,1,1]',dims=1)
   exportImage(joinpath(imgdir, "MultiGradient3.png"), im3)
+  @test compareImg("MultiGradient3.png")
 
   #Iabs = abs.(im3)
   #Iabs[Iabs .< 0.2*maximum(Iabs)] .= 0

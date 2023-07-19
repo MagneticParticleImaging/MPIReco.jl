@@ -1,19 +1,16 @@
 name = "MPIReco"
 uuid = "e4246700-6248-511e-8146-a1d1f47669d2"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.3.12"
+version = "0.3.13"
 
 [deps]
-BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
-CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 DistributedArrays = "aaf54ef3-cdf8-58ed-94cc-d582ad619b94"
-Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 ImageUtils = "8ad4436d-4835-5a14-8bce-3ae014d2950b"
 IniFile = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 MPIFiles = "371237a9-e6c1-5201-9adb-3d8cfa78fa9f"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 RecoUtils = "a4b4fdbf-6459-4ec9-990d-77e1fa24a91b"
@@ -23,14 +20,11 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 ThreadPools = "b189fb0b-2eb5-4ed4-bc0c-d34c51242431"
 
 [compat]
-BSON = "0.3.4"
-CUDA = "3.5.0"
 DSP = "0.6, 0.7"
 DistributedArrays = "0.6"
-Distributions = "0.25.35"
-Flux = "0.12.8, 0.13"
 ImageUtils = "0.2"
 IniFile = "0.5"
+LinearOperators = "2.3.3"
 MPIFiles = "0.12"
 ProgressMeter = "1.2"
 Reexport = "1.0"
@@ -43,6 +37,9 @@ HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 Scratch = "6c6a2e73-6563-6170-7368-637461726353"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
+ImageQualityIndexes = "2996bd0c-7a13-11e9-2da2-2f5ce47296a9"
+
 
 [targets]
-test = ["Test", "HTTP", "FileIO", "LazyArtifacts", "Scratch"]
+test = ["Test", "HTTP", "FileIO", "LazyArtifacts", "Scratch", "ImageMagick", "ImageQualityIndexes"]

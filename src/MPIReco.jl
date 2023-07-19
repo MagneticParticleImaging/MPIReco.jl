@@ -17,14 +17,6 @@ module MPIReco
   # TODO sort out import for Base and RecoUtils to avoid boiler plate
   import Base: put!, take!
 
-  # ML Stuff
-  import Distributions
-  using Flux
-  using CUDA
-  using BSON
-
-  # SMextrapolation
-  import SparseArrays.spdiagm
 
   include("AlgorithmInterface.jl")
   include("Background.jl")
@@ -39,7 +31,6 @@ module MPIReco
   include("Reconstruction.jl")
   include("MultiPatch.jl")
   include("MotionCompensation/MotionCompensation.jl")
-  include("MachineLearning/MachineLearning.jl")
   include("Algorithms/Algorithms.jl")
   include("Serialisation.jl")
 end # module

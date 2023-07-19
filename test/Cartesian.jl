@@ -21,6 +21,7 @@ using MPIReco
            spectralLeakageCorrection=false)
 
   exportImage(joinpath(imgdir, "Cartesian1.png"), arraydata(c1[1,:,:,1,1]))
+  @test compareImg("Cartesian1.png")
 
   # SP Reco
   numPeriodGrouping = numPatches
@@ -33,6 +34,7 @@ using MPIReco
            spectralLeakageCorrection=false)
 
   exportImage(joinpath(imgdir, "Cartesian2.png"), arraydata(c2[1,:,:,1,1]))
+  @test compareImg("Cartesian2.png")
 
   # from Postprocessed
   saveasMDF(fnSMProc1, fnSM, numPeriodAverages=65, applyCalibPostprocessing=true, numPeriodGrouping=100)
@@ -47,6 +49,7 @@ using MPIReco
            spectralLeakageCorrection=false)
 
   exportImage(joinpath(imgdir, "Cartesian3.png"), arraydata(c2[1,:,:,1,1]))
+  @test compareImg("Cartesian3.png")
 
   ####  Low Level ####
 
@@ -69,7 +72,7 @@ using MPIReco
   c3 = reshape(reconstruction(transpose(S), u, lambd=0.01, iterations=100), N[1], N[2])
 
   exportImage(joinpath(imgdir, "Cartesian4.png"), c3)
-
+  @test compareImg("Cartesian4.png")
 
   ## SP
   numPeriodGrouping = numPatches
@@ -88,6 +91,7 @@ using MPIReco
   c4 = reshape(reconstruction(transpose(S), u, lambd=0.01, iterations=100), N[1], N[2])
 
   exportImage(joinpath(imgdir, "Cartesian5.png"), c4)
+  @test compareImg("Cartesian5.png")
 
   ####  Multi Color ####
 
@@ -98,5 +102,6 @@ using MPIReco
            spectralLeakageCorrection=false)
 
   exportImage(joinpath(imgdir, "Cartesian6.png"), arraydata(c5[1,:,:,1,1]))
+  @test compareImg("Cartesian6.png")
   
 end

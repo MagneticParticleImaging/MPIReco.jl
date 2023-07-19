@@ -23,6 +23,7 @@ using MPIReco
   @test axisnames(c1) == names
   @test axisvalues(c1) == values
   exportImage(joinpath(imgdir, "Sparse1.png"), arraydata(c1[1,:,:,1,1]))
+  @test compareImg("Sparse1.png")
 
   c2 = reconstruction(bSF, b; lambd=0.1,SNRThresh = 2, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="FFT",
@@ -32,6 +33,7 @@ using MPIReco
   @test axisnames(c2) == names
   @test axisvalues(c2) == values
   exportImage(joinpath(imgdir, "Sparse2.png"), arraydata(c2[1,:,:,1,1]))
+  @test compareImg("Sparse2.png")
 
   c3 = reconstruction(bSF, b; lambd=0.1, SNRThresh = 2, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="FFT",
@@ -41,6 +43,7 @@ using MPIReco
   @test axisnames(c3) == names
   @test axisvalues(c3) == valuesDF
   exportImage(joinpath(imgdir, "Sparse3.png"), arraydata(c3[1,:,:,1,1]))
+  @test compareImg("Sparse3.png")
 
   c4 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="DCT-IV",
@@ -50,6 +53,7 @@ using MPIReco
   @test axisnames(c4) == names
   @test axisvalues(c4) == values
   exportImage(joinpath(imgdir, "Sparse4.png"), arraydata(c4[1,:,:,1,1]))
+  @test compareImg("Sparse4.png")
 
   c5 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="DCT-IV",
@@ -59,6 +63,7 @@ using MPIReco
   @test axisnames(c5) == names
   @test axisvalues(c5) == valuesDF
   exportImage(joinpath(imgdir, "Sparse5.png"), arraydata(c5[1,:,:,1,1]))
+  @test compareImg("Sparse5.png")
 
   c6 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="DST",
@@ -68,6 +73,7 @@ using MPIReco
   @test axisnames(c6) == names
   @test axisvalues(c6) == values
   exportImage(joinpath(imgdir, "Sparse6.png"), arraydata(c6[1,:,:,1,1]))
+  @test compareImg("Sparse6.png")
 
   c7 = reconstruction(bSF, b; lambd=0.01, SNRThresh = 3, frames=1:100,
 		      minFreq=80e3, nAverages=100, sparseTrafo="DST",
@@ -77,4 +83,5 @@ using MPIReco
   @test axisnames(c7) == names
   @test axisvalues(c7) == valuesDF
   exportImage(joinpath(imgdir, "Sparse7.png"), arraydata(c7[1,:,:,1,1]))
+  @test compareImg("Sparse7.png")
 end
