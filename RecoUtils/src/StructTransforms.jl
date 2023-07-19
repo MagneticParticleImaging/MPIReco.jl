@@ -1,5 +1,6 @@
 export toTOML, toDict, toDict!, toDictValue, toKwargs, toKwargs!, fromKwargs
 
+# TODO adapt tomlType
 const MODULE_TAG = ".module"
 const TYPE_TAG = ".type"
 const VALUE_TAG = ".value"

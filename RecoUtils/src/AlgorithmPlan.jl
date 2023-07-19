@@ -173,10 +173,10 @@ function createModuleDataTypeDict(modules::Vector{Module})
 end
 function loadPlan!(dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}})
   re = r"RecoPlan\{(.*)\}"
-  m = match(re, pop!(dict, TYPE_TAG))
+  m = match(re, dict[TYPE_TAG])
   if !isnothing(m)
     type = m.captures[1]
-    mod = pop!(dict, MODULE_TAG)
+    mod = dict[MODULE_TAG]
     plan = RecoPlan(modDict[mod][type])
     loadPlan!(plan, dict, modDict)
     return plan
@@ -201,12 +201,13 @@ function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{Str
       # I think for some of these we need to go back into the modDict to further specify a type
       # As the Plan type can be abstract
       else
-        param = loadPlanValue(t, dict[key], modDict)
+        param = loadPlanValue(T, name, t, dict[key], modDict)
       end
     end
     plan[name] = param
   end
 end
+loadPlanValue(parent::Type{AbstractReconstructionAlgorithmParameter}, field::Symbol, type, value, modDict) = loadPlanValue(type, value, modDict)
 # Type{<:T} where {T}
 function loadPlanValue(t::UnionAll, value::Dict, modDict)
   if value[TYPE_TAG] == string(Type)
