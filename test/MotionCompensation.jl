@@ -25,10 +25,8 @@ using MPIReco
   bSF = MultiMPIFile(joinpath.(datadirSF, SFall))
 
   # Background frames
-  bgFrames = [1:200, 201:400, 401:600 ,601:800]
-
-  # Selected frames
-  recoFrame = 1
+  #bgFrames = vcat(collect.([1:200, 201:400, 401:600 ,601:800])...)
+  bgFrames = 1:1 # TODO improve bg correction for multi patch, bgFrames used to be ignored
 
   ####################
   ## Reconstruction ##
@@ -38,14 +36,28 @@ using MPIReco
   lambda = 0.01
   iterations = 1
 
-  c = reconstruction(bSF, bMeas, periodicMotionCorrection = true,
-                                bEmpty = bBG, bgFrames = bgFrames, #background measurement
-                                alpha = alpha, choosePeak = choosePeak, recoFrame = recoFrame,
-                                windowType=windowType, higherHarmonic=choosePeak,
-                                lambda=lambda, iterations=iterations, # reconstruction parameter
-                                SNRThresh=10, minFreq=80e3, recChannels=[1,2,3]) #frequency selection
+  plan = getPlan("Motion")
+  setAll!(plan, :sf, bSF)
+  setAll!(plan, :frames, 1:1)
+  setAll!(plan, :alpha, alpha)
+  setAll!(plan, :choosePeak, choosePeak)
+  setAll!(plan, :windowType, windowType)
+  setAll!(plan, :higherHarmonic, choosePeak)
+  setAll!(plan, :lambda, lambda)
+  setAll!(plan, :iterations, iterations) # reconstruction parameter
+  setAll!(plan, :SNRThresh, 10)
+  setAll!(plan, :minFreq, 80e3)
+  setAll!(plan, :recChannels, 1:3)
+  setAll!(plan, :λ, 0.0f0)
 
-  exportImage(joinpath(imgdir, "MotionComp.png"), maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
-  @test compareImg("MotionComp.png")
+  c = reconstruct(build(plan), bMeas)
+  exportImage(joinpath(imgdir, "Motion1.png"), maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
+  @test compareImg("Motion1.png")
+
+  setAll!(plan, :bgParams, SimpleExternalBackgroundCorrectionParameters(;emptyMeas = bBG, bgFrames = bgFrames))
+  c = reconstruct(build(plan), bMeas)
+  exportImage(joinpath(imgdir, "Motion2.png"), maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
+  @test compareImg("Motion2.png")
+
 
 end
