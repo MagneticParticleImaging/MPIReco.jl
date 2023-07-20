@@ -1,5 +1,5 @@
 export PeriodicMotionPreProcessing, PeriodicMotionReconstructionParameter
-Base.@kwdef struct PeriodicMotionPreProcessing <: AbstractPreProcessingParameters
+Base.@kwdef struct PeriodicMotionPreProcessing{BG<:AbstractBackgroundCorrectionParameters} <: AbstractPreProcessingParameters{BG}
   # Periodic Motion
   frames::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
   alpha::Float64 = 3.0
@@ -9,6 +9,7 @@ Base.@kwdef struct PeriodicMotionPreProcessing <: AbstractPreProcessingParameter
   higherHarmonic::Int64 = 1
   sf::MultiMPIFile
   tfCorrection::Bool = false
+  bgParams::BG = NoBackgroundCorrectionParameters()
   # weightingType::WeightingType = WeightingType.None
 end
 
@@ -29,7 +30,7 @@ function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:Period
   return MultiPatchReconstructionAlgorithm(filteredParams, params, nothing, reco.sf, nothing, nothing, nothing, freqs, Channel{Any}(Inf))
 end
 
-function RecoUtils.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {P<:PeriodicMotionPreProcessing, PT<:Union{P, FrequencyFilteredPreProcessingParameters{P}}, R, T}
+function RecoUtils.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {B, P<:PeriodicMotionPreProcessing{B}, PT<:Union{P, FrequencyFilteredPreProcessingParameters{B, P}}, R, T}
   result = process(algo, data, algo.params)
 
   # Create Image (maybe image parameter as post params?)
@@ -43,8 +44,8 @@ function RecoUtils.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParame
   Base.put!(algo.output, result)
 end
 
-function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, f::MPIFile,
-      params::FrequencyFilteredPreProcessingParameters{PeriodicMotionPreProcessing}) where {P<:PeriodicMotionPreProcessing, PT<:Union{P, FrequencyFilteredPreProcessingParameters{P}}, R, T}
+function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
+      params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:PeriodicMotionPreProcessing})
   ffPos_ = ffPos(f)
   motFreq = getMotionFreq(params.sf, f, params.choosePeak) ./ params.higherHarmonic
   tmot = getRepetitionsOfSameState(f, motFreq, params.frames)
@@ -56,7 +57,7 @@ function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm{MultiPatchPar
 
   mapping = collect(1:acqNumPatches(f)) 
   resortedInd = zeros(Int64, acqNumPatches(f), p)
-  @show size(resortedInd)   
+  
   for i=1:acqNumPatches(f)
     resortedInd[i,:] = unflattenOffsetFieldShift(ffPos_)[i][1:p]
   end
@@ -69,30 +70,15 @@ function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm{MultiPatchPar
   return uReco
 end
 
-#function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm{MultiPatchParameters{PeriodicMotionPreProcessing, R, T}}}, f::MPIFile,
-#     params::FrequencyFilteredPreProcessingParameters{PeriodicMotionPreProcessing{SimpleExternalBackgroundCorrectionParameters}}) where {R, T}
-#  # Foreground, ignore BGCorrection to reuse preprocessing
-#  kwargs = toKwargs(params, ignore = [:neglectBGFrames, :bgCorrection],
-#      default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))))
-#  fgParams = fromKwargs(FrequencyFilteredPreProcessingParameters; kwargs..., bgParams = NoBackgroundCorrectionParameters())
-#  result = process(t, f, fgParams)
-#  # Background
-#  bgParams = fromKwargs(FrequencyFilteredBackgroundCorrectionParameters; kwargs..., bgParams = params.bgCorrection)
-#  return process(t, result, bgParams)
-#end
-#
-#function RecoUtils.process(::Type{<:MultiPatchReconstructionAlgorithm{MultiPatchParameters{PeriodicMotionPreProcessing, R, T}}}, data::Array,
-#   params::FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}) where {R, T}
-#  kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
-#  # TODO migrate with hardcoded params as in old code or reuse given preprocessing options?
-#  empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=1, kwargs...)
-#  numFrames = acqNumPeriodsPerPatch(params.bgParams.emptyMeas)
-#  bgFrames = [1+(i-1)*numFrames:i*numFrames for i=1:acqNumPatches(params.bgParams.emptyMeas)]
-#  for i=1:size(data, 2)  # Is this equivalent to acqNumPatches(bMeas)?
-#    data[:,i,:] = data[:,i,:] .- mean(empty[:,bgFrames[i],:],dims=(2,3))
-#  end
-#  return data
-#end
+function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
+  params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:PeriodicMotionPreProcessing})
+  # Foreground
+  fgParams = fromKwargs(PeriodicMotionPreProcessing; toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
+  result = process(algo, f, FrequencyFilteredPreProcessingParameters(params.frequencies, fgParams))
+  # Background
+  bgParams = fromKwargs(FrequencyFilteredBackgroundCorrectionParameters; toKwargs(params)..., bgParams = params.bgParams, spectralLeakageCorrection=true)
+  return process(algo, result, bgParams)
+end
 
 function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, u::Array, params::PeriodicMotionReconstructionParameter)
   solver = LeastSquaresParameters(Kaczmarz, nothing, algo.ffOp, [L2Regularization(params.λ)], params.solverParams)

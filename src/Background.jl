@@ -31,7 +31,7 @@ end
 export SimpleExternalBackgroundCorrectionParameters
 Base.@kwdef struct SimpleExternalBackgroundCorrectionParameters <: ExternalBackgroundCorrection
   emptyMeas::MPIFile
-  bgFrames::UnitRange{Int64} = 1:1
+  bgFrames::Union{Vector{Int64}, UnitRange{Int64}} = [1]
 end
 function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::SimpleExternalBackgroundCorrectionParameters)
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgFrames))

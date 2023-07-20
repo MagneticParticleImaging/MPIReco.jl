@@ -14,8 +14,11 @@ abstract type AbstractMachineLearningReconstructionAlgorithm <: AbstractMPIRecon
 export AbstractMPIRecoParameters
 abstract type AbstractMPIRecoParameters <: AbstractReconstructionAlgorithmParameter end
 
+export AbstractBackgroundCorrectionParameters
+abstract type AbstractBackgroundCorrectionParameters <: AbstractMPIRecoParameters end
+
 export AbstractPreProcessingParameters
-abstract type AbstractPreProcessingParameters <: AbstractMPIRecoParameters end
+abstract type AbstractPreProcessingParameters{T<:AbstractBackgroundCorrectionParameters} <: AbstractMPIRecoParameters end
 
 export AbstractPostProcessingParameters, NoPostProcessing
 abstract type AbstractPostProcessingParameters <: AbstractMPIRecoParameters end
@@ -27,28 +30,6 @@ abstract type AbstractReconstructionParameters <: AbstractMPIRecoParameters end
 
 export AbstractRecoAlgorithmParameters
 abstract type AbstractRecoAlgorithmParameters <: AbstractMPIRecoParameters end
-
-export AbstractBackgroundCorrectionParameters
-abstract type AbstractBackgroundCorrectionParameters <: AbstractMPIRecoParameters end
-
-export MPIFilesPreprocessingParameters
-Base.@kwdef struct MPIFilesPreprocessingParameters <: AbstractPreProcessingParameters
-  "Flag whether a background correction shall be applied."
-  bgCorrection::Bool = false
-  "Flag whether the background frames shall be neglected."
-  neglectBGFrames::Bool = true
-  "Flag whether a transfer function shall be applied."
-  tfCorrection::Bool = true
-  "Flag whether the frames shall be sorted (e.g. according to a grid from the positions API)."
-  sortFrames::Bool = false
-  "Number of frames averages that shall be applied to the raw data. Setting this to `nothing` implies using the default value."
-  numAverages::Union{Integer, Nothing} = nothing
-  "Number of period averages that shall be applied to the raw data. Setting this to `nothing` implies using the default value."
-  numPeriodAverages::Union{Integer, Nothing} = nothing
-  "Number of periods that shall be grouped together in the samples dimension. Setting this to `nothing` implies using the default value."
-  numPeriodGrouping::Union{Integer, Nothing} = nothing
-  # ...
-end
 
 # Traits
 abstract type ReconstructionAlgorithmType end

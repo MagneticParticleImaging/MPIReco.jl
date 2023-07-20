@@ -83,7 +83,7 @@ function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, 
              gradient = gradient, FFPos = ffPos_, FFPosSF = ffPosSF)
 end
 
-function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{CommonPreProcessingParameters{NoBackgroundCorrectionParameters}})
+function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:CommonPreProcessingParameters})
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgCorrection])
   result = getMeasurementsFD(f, bgCorrection = false; kwargs...)
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos(f))
@@ -94,7 +94,7 @@ function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIF
   return uTotal
 end
 
-function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{CommonPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters}})
+function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:CommonPreProcessingParameters})
   # Foreground, ignore BGCorrection to reuse preprocessing
   fgParams = CommonPreProcessingParameters(;toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
   result = process(t, f, FrequencyFilteredPreProcessingParameters(params.frequencies, fgParams))
@@ -105,7 +105,7 @@ function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIF
   return process(t, result, bgParams)
 end
 
-function RecoUtils.process(::Type{<:MultiPatchReconstructionAlgorithm}, data::Array, params::FrequencyFilteredBackgroundCorrectionParameters{CommonPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters}})
+function RecoUtils.process(::Type{<:MultiPatchReconstructionAlgorithm}, data::Array, params::FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters})
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
   # TODO migrate with hardcoded params as in old code or reuse given preprocessing options?
   empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=1, kwargs...)

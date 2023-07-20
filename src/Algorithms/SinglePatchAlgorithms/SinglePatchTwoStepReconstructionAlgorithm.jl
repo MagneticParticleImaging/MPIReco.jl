@@ -22,7 +22,7 @@ Base.@kwdef mutable struct SinglePatchTwoStepReconstructionAlgorithm{P} <: Abstr
 end
 
 # Bit hacky: Create transparent parameter to give to inner algorithm
-Base.@kwdef mutable struct TwoStepSubstractionPreProcessingParameter{PR<:AbstractPreProcessingParameters} <: AbstractPreProcessingParameters
+Base.@kwdef mutable struct TwoStepSubstractionPreProcessingParameter{B, PR<:AbstractPreProcessingParameters{B}} <: AbstractPreProcessingParameters{B}
   pre::PR
   proj::Vector{ComplexF32} = zeros(ComplexF32, 1)
 end
