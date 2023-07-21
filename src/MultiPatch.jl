@@ -451,8 +451,9 @@ function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization,
     trace = RegularizedLeastSquares.normalize(norm, regs, op.S[1], b)
     trace *= op.nPatches #*prod(Op.PixelSizeSF)/prod(Op.PixelSizeC)
   else
-    trace = sum([RegularizedLeastSquares.normalize(norm, regs, S, b) for S in op.S])
+    trace = sum([RegularizedLeastSquares.normalize(norm, regs, S, b)*size(S, 2) for S in op.S])
     #trace *= prod(Op.PixelSizeSF)/prod(Op.PixelSizeC)
+    trace/=size(op, 2)
   end
   return trace
 end
