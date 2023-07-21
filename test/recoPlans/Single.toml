@@ -1,0 +1,34 @@
+".type" = "RecoPlan{SinglePatchReconstructionAlgorithm}"
+".module" = "MPIReco"
+
+[parameter]
+".type" = "RecoPlan{SinglePatchParameters}"
+".module" = "MPIReco"
+
+    [parameter.reco]
+    ".type" = "RecoPlan{SinglePatchReconstructionParameter}"
+    ".module" = "MPIReco"
+
+        [parameter.reco.sfLoad]
+        ".type" = "RecoPlan{DenseSystemMatixLoadingParameter}"
+        ".module" = "MPIReco"
+
+            [parameter.reco.sfLoad.freqFilter]
+            ".type" = "RecoPlan{SNRThresholdFrequencyFilterParameter}"
+            ".module" = "MPIReco"
+
+            [parameter.reco.sfLoad.gridding]
+            ".type" = "RecoPlan{SystemMatrixGriddingParameter}"
+            ".module" = "MPIReco"
+
+        [parameter.reco.solverParams]
+        ".type" = "RecoPlan{SimpleSolverParameters}"
+        ".module" = "MPIReco"
+
+    [parameter.pre]
+    ".type" = "RecoPlan{CommonPreProcessingParameters}"
+    ".module" = "MPIReco"
+
+    [parameter.post]
+    ".type" = "RecoPlan{NoPostProcessing}"
+    ".module" = "MPIReco"

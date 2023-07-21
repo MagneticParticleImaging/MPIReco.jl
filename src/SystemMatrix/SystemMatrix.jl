@@ -37,6 +37,7 @@ Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterPa
   freqFilter::F
   gridding::G
   bgCorrection::Bool = false
+  loadasreal=false
 end
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter)
   # Construct freqFilter
@@ -57,6 +58,7 @@ Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilter
   tresh::Float64 = 0.0
   redFactor::Float64 = 0.1
   bgCorrection::Bool = false
+  loadasreal=false
   useDFFoV::Bool = false
 end
 function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::SparseSystemMatrixLoadingParameter)

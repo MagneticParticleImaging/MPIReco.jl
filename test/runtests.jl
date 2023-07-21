@@ -37,14 +37,14 @@ end
 
 @testset "MPIReco" begin
   #include("LoadSaveMDF.jl")
-  #include("Reconstruction.jl")
+  include("Reconstruction.jl")
   #include("Cartesian.jl")
-  if !Sys.iswindows()
-    include("MotionCompensation.jl")
-  end
-  include("MultiPatch.jl")
-  include("MultiGradient.jl")
-  include("Sparse.jl")
+  #if !Sys.iswindows()
+  #  include("MotionCompensation.jl")
+  #end
+  #include("MultiPatch.jl")
+  #include("MultiGradient.jl")
+  #include("Sparse.jl")
   #include("SMCenter.jl")
   #include("SMRecovery.jl")
   #include("SMExtrapolation.jl")

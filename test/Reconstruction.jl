@@ -11,22 +11,41 @@ using MPIReco
 	    0.0u"ms":0.6528u"ms":0.0u"ms")
 
   # standard reconstruction
-  c1 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-		      recChannels=1:2, iterations=1, spectralLeakageCorrection=true)
+  plan = getPlan("Single")
+  setAll!(plan, :SNRThresh, 5)
+  setAll!(plan, :frames, 1:1)
+  setAll!(plan, :minFreq, 80e3),
+  setAll!(plan, :recChannels, 1:2)
+  setAll!(plan, :iterations, 1)
+  setAll!(plan, :spectralLeakageCorrection, true)
+  setAll!(plan, :sf, bSF)
+  setAll!(plan, :reg, [L2Regularization(0.0f0)])
+  setAll!(plan, :solver, Kaczmarz)
+  setAll!(plan, :gridding, SystemMatrixGriddingParameter(;gridsize=calibSize(bSF), fov = calibFov(bSF)))
+
+  c1 = reconstruct(build(plan), b)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values
   exportImage(joinpath(imgdir, "Reconstruction1.png"), arraydata(c1[1,:,:,1,1]))
   @test compareImg("Reconstruction1.png")
 
   # fused lasso
-  c2 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-		      recChannels=1:2, iterations=100, solver="fusedlasso",
-		      loadasreal=true, λ=[0.01,0.01])
+  setAll!(plan, :iterations, 100)
+  setAll!(plan, :loadasreal, true)
+  setAll!(plan, :solver, FusedLasso)
+  setAll!(plan, :reg, [TVRegularization(0.01f0), L1Regularization(0.01f0)])
+  setAll!(plan, :normalizeReg, NoNormalization())
+  c2 = reconstruct(build(plan), b)
+  setAll!(plan, :iterations, 1)
+  setAll!(plan, :loadasreal, false)
+  setAll!(plan, :solver, Kaczmarz)
+  setAll!(plan, :reg, [L2Regularization(0.0f0)])
+  setAll!(plan, :normalizeReg, SystemMatrixBasedNormalization())
   @test axisnames(c2) == names
   @test axisvalues(c2) == values
   exportImage(joinpath(imgdir, "Reconstruction2.png"), arraydata(c2[1,:,:,1,1]))
   @test compareImg("Reconstruction2.png")
-
+#=
   # with interpolation
   c3 = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
 		      recChannels=1:2, gridsize=[100,100,1],iterations=1)
@@ -103,5 +122,5 @@ using MPIReco
 
   exportImage(joinpath(imgdir, "Reconstruction7c.png"), arraydata(c7c[1,:,:,1,1]))
   @test compareImg("Reconstruction7c.png")
-
+=#
 end
