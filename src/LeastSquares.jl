@@ -16,7 +16,7 @@ end
 export SimpleSolverParameters
 Base.@kwdef struct SimpleSolverParameters <: AbstractSolverParameters
   iterations::Int64=10
-  enforceReal::Bool=false
+  enforceReal::Bool=true
   enforcePositive::Bool=true
   normalizeReg::AbstractRegularizationNormalization = SystemMatrixBasedNormalization()
 end
