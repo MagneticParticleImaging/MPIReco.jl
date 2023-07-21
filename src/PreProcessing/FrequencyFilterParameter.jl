@@ -10,6 +10,7 @@ Base.@kwdef struct SNRThresholdFrequencyFilterParameter <: AbstractFrequencyFilt
   sortBySNR::Bool = false
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
+  maxMixingOrder::Int64 = -1
 end
 #function SNRThresholdFrequencyFilterParameter(;sf::MPIFile, maxFreq = nothing, recChannels = nothing)
 #  if isnothing(maxFreq)
@@ -29,6 +30,7 @@ Base.@kwdef struct FreqNumThresholdFrequencyFilterParameter <: AbstractFrequency
   sortBySNR::Bool = false
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
+  maxMixingOrder::Int64 = -1
 end
 function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, file::MPIFile, params::AbstractFrequencyFilterParameter)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:maxFreq => rxBandwidth(file), :recChannels => 1:rxNumChannels(file))) 
