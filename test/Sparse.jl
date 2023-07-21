@@ -16,14 +16,23 @@ using MPIReco
 	      -0.5u"mm":1.0u"mm":-0.5u"mm",
 	      0.0u"ms":65.28u"ms":0.0u"ms")
 
-  #c1 = reconstruction(bSF, b; lambd=0.1,
-	#	      SNRThresh = 2, frames=1:100, minFreq=80e3, nAverages=100,
-	#	      recChannels =1:2, iterations = 3,
-	#	      spectralLeakageCorrection=false)
-  #@test axisnames(c1) == names
-  #@test axisvalues(c1) == values
-  #exportImage(joinpath(imgdir, "Sparse1.png"), arraydata(c1[1,:,:,1,1]))
-  #@test compareImg("Sparse1.png")
+  plan = getPlan("Single")
+  setAll!(plan, :SNRThresh, 2)
+  setAll!(plan, :frames, 1:100)
+  setAll!(plan, :numAverages, 100)
+  setAll!(plan, :minFreq, 80e3),
+  setAll!(plan, :recChannels, 1:2)
+  setAll!(plan, :iterations, 3)
+  setAll!(plan, :spectralLeakageCorrection, false)
+  setAll!(plan, :sf, bSF)
+  setAll!(plan, :reg, [L2Regularization(0.1f0)])
+  setAll!(plan, :solver, Kaczmarz)
+  setAll!(plan, :gridding, SystemMatrixGriddingParameter(;gridsize=calibSize(bSF), fov = calibFov(bSF)))
+  c1 = reconstruct(build(plan), b)
+  @test axisnames(c1) == names
+  @test axisvalues(c1) == values
+  exportImage(joinpath(imgdir, "Sparse1.png"), arraydata(c1[1,:,:,1,1]))
+  @test compareImg("Sparse1.png")
 
   plan = getPlan("Sparse")
   setAll!(plan, :SNRThresh, 2)
