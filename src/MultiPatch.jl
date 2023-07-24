@@ -157,15 +157,15 @@ end
 
 MultiPatchOperator(SFs, meas, freq, bgCorr; kwargs...) = MultiPatchOperator(SFs, freq; kwargs..., bgCorrection = bgCorr)
 function MultiPatchOperator(SFs::MultiMPIFile, freq;
-        mapping=zeros(0),fov=hcat(calibFov.(SFs)...), gridsize=hcat(calibSize.(SFs)...), kargs...)
+        mapping=zeros(0),fov=hcat(calibFov.(SFs)...), gridsize=hcat(calibSize.(SFs)...), center = hcat(calibFovCenter.(SFs)...), kargs...)
   if length(mapping) > 0
-    return MultiPatchOperatorExpliciteMapping(SFs,freq; mapping=mapping, gridsize=gridsize, fov=fov, kargs...)
+    return MultiPatchOperatorExpliciteMapping(SFs,freq; mapping=mapping, gridsize=gridsize, fov=fov, SFGridCenter=center, kargs...)
   else
     if any(fov .> hcat(calibFov.(SFs)...))      
         mapping=collect(1:length(SFs))
         @warn "You try to performe a system matrix extrapolation on multi-patch data without giving an explicit mapping.
 Thus, the mapping is automatically set to $mapping."
-        return MultiPatchOperatorExpliciteMapping(SFs,freq; mapping=mapping, gridsize=gridsize, fov=fov, kargs...)
+        return MultiPatchOperatorExpliciteMapping(SFs,freq; mapping=mapping, gridsize=gridsize, fov=fov, SFGridCenter=center, kargs...)
     else
       return MultiPatchOperatorRegular(SFs,freq; kargs...)
     end
@@ -187,7 +187,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
                     denoiseWeight=0, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
                     gradient=zeros(0,0,0),
                     roundPatches = false,
-                    SFGridCenter = zeros(0,0),
+                    SFGridCenter = hcat(calibFovCenter.(SFs)...),
                     systemMatrices = nothing,
                     mapping=zeros(0),
 		                gridsize = hcat(calibSize.(SFs)...),
