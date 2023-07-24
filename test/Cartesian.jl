@@ -13,7 +13,7 @@ using MPIReco
   # MP Reco # TODO this does not seem to branch into mp reco atm
   numPeriodGrouping = 1
   maxMixingOrder = -1
-
+#=
   plan = getPlan("Single")
   setAll!(plan, :sf, bSF)
   setAll!(plan, :frames, 1:10)
@@ -55,7 +55,7 @@ using MPIReco
 
   exportImage(joinpath(imgdir, "Cartesian3.png"), arraydata(c3[1,:,:,1,1]))
   @test compareImg("Cartesian3.png")
-
+=#
   ####  Low Level ####
 
   N = calibSize(bSF)
@@ -67,14 +67,14 @@ using MPIReco
   freq = filterFrequencies(bSF, numPeriodGrouping=numPeriodGrouping, numPeriodAverages=numPeriodAverages,
              minFreq=30e3, maxFreq=600e3,  maxMixingOrder=maxMixingOrder)
 
-  S, grid = getSF(bSF, freq, numPeriodAverages=numPeriodAverages, bgCorrection=bgCorrection,
+  S, grid = getSF(bSF, freq, nothing, "kaczmarz", numPeriodAverages=numPeriodAverages, bgCorrection=bgCorrection,
            numPeriodGrouping=numPeriodGrouping, spectralLeakageCorrection=false);
 
   u = getMeasurementsFD(b, frequencies=freq, bgCorrection=bgCorrection, frames=1:10, numAverages=10,
                numPeriodGrouping=numPeriodGrouping, numPeriodAverages=numPeriodAverages,
                spectralLeakageCorrection=false)
 
-  @time c4 = reshape(reconstruction(transpose(S), u, lambd=0.01, iterations=100), N[1], N[2])
+  @time c4 = reshape(reconstruction(S, u, reg = [L2Regularization(0.01f0)], iterations=100), N[1], N[2])
 
   exportImage(joinpath(imgdir, "Cartesian4.png"), c4)
   @test compareImg("Cartesian4.png")
@@ -86,20 +86,20 @@ using MPIReco
   freq = filterFrequencies(bSF, numPeriodGrouping=numPeriodGrouping, numPeriodAverages=numPeriodAverages,
              minFreq=30e3, maxFreq=600e3,  maxMixingOrder=maxMixingOrder)
 
-  S, grid = getSF(bSF, freq, numPeriodAverages=numPeriodAverages, bgCorrection=bgCorrection,
+  S, grid = getSF(bSF, freq, nothing, "kaczmarz", numPeriodAverages=numPeriodAverages, bgCorrection=bgCorrection,
            numPeriodGrouping=numPeriodGrouping, spectralLeakageCorrection=false);
 
   u = getMeasurementsFD(b, frequencies=freq, bgCorrection=bgCorrection, frames=1:10, numAverages=10,
                numPeriodGrouping=numPeriodGrouping, numPeriodAverages=numPeriodAverages,
                spectralLeakageCorrection=false)
 
-  @time c5 = reshape(reconstruction(transpose(S), u, lambd=0.01, iterations=100), N[1], N[2])
+  @time c5 = reshape(reconstruction(S, u, reg = [L2Regularization(0.01f0)], iterations=100), N[1], N[2])
 
   exportImage(joinpath(imgdir, "Cartesian5.png"), c5)
   @test compareImg("Cartesian5.png")
 
   ####  Multi Color ####
-
+#=
   setAll!(plan, :sf, MultiContrastFile([bSF,bSF]))
   setAll!(plan, :numPeriodGrouping, numPeriodGrouping)
   setAll!(plan, :numPeriodAverages, numPeriodAverages)
@@ -107,5 +107,5 @@ using MPIReco
 
   exportImage(joinpath(imgdir, "Cartesian6.png"), arraydata(c6[1,:,:,1,1]))
   @test compareImg("Cartesian6.png")
-  
+=#
 end

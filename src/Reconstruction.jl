@@ -341,7 +341,7 @@ Low level reconstruction method
 function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = nothing,
                         lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "kaczmarz",
                         weights=nothing, enforceReal=true, enforcePositive=true,
-                        relativeLambda=true, kargs...)
+                        relativeLambda=true, reg = nothing, kargs...)
 
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
@@ -351,20 +351,14 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
   c = zeros(N,L)
   #c = zeros(real(eltype(u)),N,L) Change by J.Dora
 
-  if sum(abs.(λ)) > 0 && solver != "fusedlasso" && relativeLambda
-    trace = calculateTraceOfNormalMatrix(S,weights)
-    if isa(λ,AbstractVector) 
-      λ[1:1] *= trace / N
-    else
-      λ *= trace / N
-    end
-    setlambda(S,λ)
+  norm = NoNormalization()
+  if (!isnothing(reg) || sum(abs.(λ)) > 0) && solver != "fusedlasso" && relativeLambda
+    norm = SystemMatrixBasedNormalization()
   end
 
   solv = createLinearSolver(solver, S; weights=weights, λ=λ,
                             sparseTrafo=sparseTrafo, enforceReal=enforceReal,
-			                      enforcePositive=enforcePositive, kargs...)
-
+			                      enforcePositive=enforcePositive, normalizeReg = norm, reg = reg, kargs...)
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
   for l=1:L
 
