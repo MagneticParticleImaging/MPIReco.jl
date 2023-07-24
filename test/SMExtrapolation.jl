@@ -43,7 +43,7 @@ using MPIReco
     c_extr2 = reconstruct(build(plan), b)
     @test size(c1[1,:,:,:,1]) == size(c_extr2[1,:,:,:,1])
     exportImage(joinpath(imgdir, "Extrapolated2.png"), arraydata(c_extr2[1,:,:,1,1]))
-    @test compareImg("Extrapolated1.png")
+    @test compareImg("Extrapolated2.png")
 
     SFdirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]
     bSFs = MultiMPIFile(joinpath.(datadir, "calibrations", SFdirs))
