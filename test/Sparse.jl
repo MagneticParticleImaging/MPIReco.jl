@@ -64,6 +64,9 @@ using MPIReco
   exportImage(joinpath(imgdir, "Sparse3.png"), arraydata(c3[1,:,:,1,1]))
   @test compareImg("Sparse3.png")
 
+  setAll!(plan, :SNRThresh, 3)
+  setAll!(plan, :iterations, 1)
+  setAll!(plan, :reg, [L2Regularization(0.01f0)])
   setAll!(plan, :sparseTrafo, "DCT-IV")
   setAll!(plan, :useDFFoV, false)
   c4 = reconstruct(build(plan), b)
@@ -72,9 +75,11 @@ using MPIReco
   exportImage(joinpath(imgdir, "Sparse4.png"), arraydata(c4[1,:,:,1,1]))
   @test compareImg("Sparse4.png")
 
+  setAll!(plan, :spectralLeakageCorrection, true)
   setAll!(plan, :sparseTrafo, "DCT-IV")
   setAll!(plan, :useDFFoV, true)
   c5 = reconstruct(build(plan), b)
+  setAll!(plan, :spectralLeakageCorrection, false)
   @test axisnames(c5) == names
   @test axisvalues(c5) == valuesDF
   exportImage(joinpath(imgdir, "Sparse5.png"), arraydata(c5[1,:,:,1,1]))
@@ -88,6 +93,7 @@ using MPIReco
   exportImage(joinpath(imgdir, "Sparse6.png"), arraydata(c6[1,:,:,1,1]))
   @test compareImg("Sparse6.png")
 
+  setAll!(plan, :spectralLeakageCorrection, true)
   setAll!(plan, :sparseTrafo, "DST")
   setAll!(plan, :useDFFoV, true)
   c7 = reconstruct(build(plan), b)
