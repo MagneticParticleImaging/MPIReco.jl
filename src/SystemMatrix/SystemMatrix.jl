@@ -181,7 +181,7 @@ end
 function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer=1,
                bgcorrection=false, bgCorrection=bgcorrection, loadasreal=false,
 	             gridsize=collect(calibSize(bSF)), numPeriodAverages=1,numPeriodGrouping=1,
-	             fov=calibFov(bSF), center=[0.0,0.0,0.0],deadPixels=nothing, kargs...)
+	             fov=calibFov(bSF), center=calibFovCenter(bSF),deadPixels=nothing, kargs...)
 
   nFreq = rxNumFrequencies(bSF)
 
@@ -193,23 +193,23 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
 
   if deadPixels != nothing
     #repairDeadPixels(S,gridsize,deadPixels)
-    @debug "Repairing deadPixels..."
-    S = repairSM(S,RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0]),deadPixels)
+    @info "Repairing deadPixels..."
+    S = repairSM(S,RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF)),deadPixels)
   end
 
   if collect(gridsize) != collect(calibSize(bSF)) ||
-    center != [0.0,0.0,0.0] ||
+    center != calibFovCenter(bSF) ||
     fov != calibFov(bSF)
 
-    origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
+    origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF))
     target = RegularGridPositions(gridsize,fov,center)
 
     if any(fov .> calibFov(bSF))
       #round.(Int,(fov .- origin.fov).*(origin.shape./(2 .* origin.fov)))
       if gridsize == collect(calibSize(bSF))
-        gridsize_new = round.(Int, fov .* origin.shape ./ (2 * origin.fov)) * 2
+        gridsize_new = round.(Int, fov .* origin.shape ./ (2 * origin.fov),RoundNearestTiesUp) * 2
         @info "You selected a customized (bigger) FOV, without selecting a bigger grid. Thus, an Extrapolation to
-the new FOV is followed by a Interpolation to the old grid-size, leading to a change in gridpoint-size. If you want
+the new FOV is followed by an Interpolation to the old grid-size, leading to a change in gridpoint-size. If you want
 to roughly keep the original gridpoint-size, define the key-word gridsize = $gridsize_new,
 alongside to your FOV-selection."
       end
@@ -227,7 +227,7 @@ alongside to your FOV-selection."
     S = SInterp
     grid = target
   else
-    grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
+    grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF))
   end
 
   if loadasreal

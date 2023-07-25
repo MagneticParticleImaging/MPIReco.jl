@@ -171,7 +171,7 @@ function extrapolateSM(bSF::MPIFile, freq::Vector{T}, ex_size; method=1, sparseT
 end
 
 function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, fov::Vector{T}; method=1) where {T<:AbstractFloat}
-	extrapolationSize = Tuple(round.(Int,(fov .- grid.fov).*(grid.shape./(2 .* grid.fov))))
+	extrapolationSize = Tuple(round.(Int,(fov .- grid.fov).*(grid.shape./(2 .* grid.fov)),RoundNearestTiesUp))
 	@info "The given FOV leads (after rounding) to an extrapolation of the SystemMatrix by +- $extrapolationSize voxels."
 	return extrapolateSM(SM, grid, extrapolationSize; method=method)
 end
@@ -202,13 +202,14 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
 
     if N3 != 1
         M1,M2,M3 = N1+2*ex_size[1],N2+2*ex_size[2],N3+2*ex_size[3]
-        S_extr = zeros(Complex{Float32},M1,M2,M3,K)
+		P1,P2,P3 = [ex_size[i] > 0 ? 2 : 0 for i in [1,2,3]]
+        S_extr = zeros(Complex{Float32},M1+P1,M2+P2,M3+P3,K)
         progress==nothing ? p = ProgressMeter.Progress(K, 1, "Extrapolating 3D SystemMatrix...") : p = progress
 
         for k=1:K
             S_miss = convert(Array{Union{Missing, Complex{Float32}}}, S_extr[:,:,:,k])
             S_miss[2:end-1,2:end-1,2:end-1] .= missing
-            S_miss[ex_size[1]+1:end-ex_size[1],ex_size[2]+1:end-ex_size[2],ex_size[3]+1:end-ex_size[3],:] = S[:,:,:,k]
+            S_miss[ex_size[1]+1+Int(P1/2):end-ex_size[1]-Int(P1/2),ex_size[2]+1+Int(P2/2):end-ex_size[2]-Int(P2/2),ex_size[3]+1+Int(P3/2):end-ex_size[3]-Int(P3/2),:] = S[:,:,:,k]
             S_rl=fillmissing(real.(S_miss),method=method)
             S_im=fillmissing(imag.(S_miss),method=method)
             S_extr[:,:,:,k]=S_rl+S_im*im
@@ -216,17 +217,18 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
         end
 		extrfov = (2 .* [ex_size[1], ex_size[2], ex_size[3]] .* (grid.fov ./ grid.shape)) .+ grid.fov
 		extrgrid = RegularGridPositions{Float64}([M1,M2,M3], extrfov, grid.center, grid.sign)
-        extrSM = transposed ? transpose(reshape(S_extr,(M1*M2*M3,K))) : reshape(S_extr,(M1*M2*M3,K))
+        extrSM = transposed ? transpose(reshape(S_extr[1+Int(P1/2):end-Int(P1/2),1+Int(P2/2):end-Int(P2/2),1+Int(P3/2):end-Int(P3/2),:],(M1*M2*M3,K))) : reshape(S_extr[1+Int(P1/2):end-Int(P1/2),1+Int(P2/2):end-Int(P2/2),1+Int(P3/2):end-Int(P3/2),:],(M1*M2*M3,K))
 		return extrSM,extrgrid
     else
         M1,M2 = N1+2*ex_size[1],N2+2*ex_size[2]
-        S_extr = zeros(Complex{Float32},N1+2*ex_size[1],N2+2*ex_size[2],1,K)
+		P1,P2 = [ex_size[i] > 0 ? 2 : 0 for i in [1,2]]
+        S_extr = zeros(Complex{Float32},M1+P1,M2+P2,1,K)
         progress==nothing ? p = Progress(K, 1, "Extrapolating 2D SystemMatrix...") : p = progress
 
         for k=1:K
             S_miss = convert(Array{Union{Missing, Complex{Float32}}}, S_extr[:,:,1,k])
             S_miss[2:end-1,2:end-1] .= missing
-            S_miss[ex_size[1]+1:end-ex_size[1],ex_size[2]+1:end-ex_size[2],:] = S[:,:,1,k]
+            S_miss[ex_size[1]+1+Int(P1/2):end-ex_size[1]-Int(P1/2),ex_size[2]+1+Int(P2/2):end-ex_size[2]-Int(P2/2),:] = S[:,:,1,k]
             S_rl=fillmissing(real.(S_miss),method=method)
             S_im=fillmissing(imag.(S_miss),method=method)
             S_extr[:,:,1,k]=S_rl+S_im*im
@@ -234,7 +236,7 @@ function extrapolateSM(SM::AbstractMatrix, grid::RegularGridPositions, ex_size::
         end
 		extrfov = (2 .* [ex_size[1], ex_size[2], 0] .* (grid.fov ./ grid.shape)) .+ grid.fov
 		extrgrid = RegularGridPositions{Float64}([M1,M2,1], extrfov, grid.center, grid.sign)
-		extrSM = transposed ? transpose(reshape(S_extr,(M1*M2,K))) : reshape(S_extr,(M1*M2,K))
+		extrSM = transposed ? transpose(reshape(S_extr[1+Int(P1/2):end-Int(P1/2),1+Int(P2/2):end-Int(P2/2),1,:],(M1*M2,K))) : reshape(S_extr[1+Int(P1/2):end-Int(P1/2),1+Int(P2/2):end-Int(P2/2),1,:],(M1*M2,K))
         return extrSM,extrgrid
     end
 end

@@ -204,28 +204,27 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
 
   gridsize = isnothing(gridsize) ? hcat(calibSize.(SFs)...) : gridsize
   fov = isnothing(fov) ? hcat(calibFov.(SFs)...) : fov
-
-  if systemMatrices == nothing
-      S=AbstractMatrix[]; gridS=RegularGridPositions[];
-      for i=1:length(SFs)
-        SF_S,SF_gridS = getSF(SFs[i],freq,nothing,"kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i])
-        push!(S,SF_S)
-        push!(gridS,SF_gridS)
-      end
-  else
-    if grid == nothing
-      gridS = [getSF(SFs[i],freq,nothing,"kaczmarz", bgCorrection=bgCorrection,tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i])[2] for i in 1:length(SFs)]
-    else
-      gridS = grid
-    end
-    S = systemMatrices
-  end
-
   if length(SFGridCenter) == 0
     SFGridCenter = zeros(3,length(SFs))
     for l=1:length(SFs)
       SFGridCenter[:,l] = calibFovCenter(SFs[l])
     end
+  end
+
+  if systemMatrices == nothing
+      S=AbstractMatrix[]; gridS=RegularGridPositions[];
+      for i=1:length(SFs)
+        SF_S,SF_gridS = getSF(SFs[i],freq,nothing,"kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i],center=SFGridCenter[:,i])
+        push!(S,SF_S)
+        push!(gridS,SF_gridS)
+      end
+  else
+    if grid == nothing
+      gridS = [getSF(SFs[i],freq,nothing,"kaczmarz", bgCorrection=bgCorrection,tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i],center=SFGridCenter[:,i])[2] for i in 1:length(SFs)]
+    else
+      gridS = grid
+    end
+    S = systemMatrices
   end
 
   gradientSF = [acqGradient(SF) for SF in SFs]
