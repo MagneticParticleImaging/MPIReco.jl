@@ -11,7 +11,7 @@ Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractPreProcessingParame
   post::PT = NoPostProcessing() 
 end
   
-function RecoUtils.process(algo::T, data::MPIFile, params::SinglePatchParameters) where {T<:AbstractSinglePatchReconstructionAlgorithm}
+function process(algo::T, data::MPIFile, params::SinglePatchParameters) where {T<:AbstractSinglePatchReconstructionAlgorithm}
   result = process(algo, data, params.pre)
   result = process(algo, result, params.reco)
   result = process(algo, result, params.post)

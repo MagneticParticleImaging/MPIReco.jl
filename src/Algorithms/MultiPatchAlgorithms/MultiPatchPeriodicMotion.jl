@@ -30,7 +30,7 @@ function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:Period
   return MultiPatchReconstructionAlgorithm(filteredParams, params, nothing, reco.sf, nothing, nothing, nothing, freqs, Channel{Any}(Inf))
 end
 
-function RecoUtils.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {B, P<:PeriodicMotionPreProcessing{B}, PT<:Union{P, FrequencyFilteredPreProcessingParameters{B, P}}, R, T}
+function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {B, P<:PeriodicMotionPreProcessing{B}, PT<:Union{P, FrequencyFilteredPreProcessingParameters{B, P}}, R, T}
   result = process(algo, data, algo.params)
 
   # Create Image (maybe image parameter as post params?)
@@ -44,7 +44,7 @@ function RecoUtils.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParame
   Base.put!(algo.output, result)
 end
 
-function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
+function process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
       params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:PeriodicMotionPreProcessing})
   ffPos_ = ffPos(f)
   motFreq = getMotionFreq(params.sf, f, params.choosePeak) ./ params.higherHarmonic
@@ -70,7 +70,7 @@ function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
   return uReco
 end
 
-function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
+function process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
   params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:PeriodicMotionPreProcessing})
   # Foreground
   fgParams = fromKwargs(PeriodicMotionPreProcessing; toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
@@ -80,7 +80,7 @@ function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
   return process(algo, result, bgParams)
 end
 
-function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, u::Array, params::PeriodicMotionReconstructionParameter)
+function process(algo::MultiPatchReconstructionAlgorithm, u::Array, params::PeriodicMotionReconstructionParameter)
   solver = LeastSquaresParameters(Kaczmarz, nothing, algo.ffOp, [L2Regularization(params.λ)], params.solverParams)
 
   result = process(algo, u, solver)

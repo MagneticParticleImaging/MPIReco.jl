@@ -139,7 +139,7 @@ end
 
 export plandir, planpath
 function plandir(m::Module)
-  if m != RecoUtils && hasproperty(m, :plandir)
+  if m != AbstractImageReconstruction && hasproperty(m, :plandir)
     return getproperty(m, :plandir)()
   else
     return @get_scratch!(string(m))

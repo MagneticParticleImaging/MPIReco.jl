@@ -31,7 +31,7 @@ function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:Abst
   return SinglePatchReconstructionAlgorithm(filteredParams, params, params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
-RecoUtils.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.origParam
+AbstractImageReconstruction.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
   freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, reco.sfLoad)
@@ -40,9 +40,9 @@ function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) wher
 end
 
 
-RecoUtils.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.output)
+AbstractImageReconstruction.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.output)
 
-function RecoUtils.put!(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
+function AbstractImageReconstruction.put!(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
   consistenceCheck(algo.sf, data)
   
   result = process(algo, data, algo.params)
@@ -58,7 +58,7 @@ function RecoUtils.put!(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
   Base.put!(algo.output, result)
 end
 
-function RecoUtils.similar(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
+function AbstractImageReconstruction.similar(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
   # TODO Check num receive channel
 
   # This isnt a nice structure atm, because the corrections of the params cant be done individually
@@ -90,8 +90,8 @@ function RecoUtils.similar(algo::SinglePatchReconstructionAlgorithm, data::MPIFi
   end
 
   pre = fromKwargs(FrequencyFilteredPreProcessingParameters; toKwargs(params.pre, flatten = DataType[], overwrite = Dict{Symbol, Any}(:numPeriodGrouping => numPeriodGrouping, :numPeriodAverages => numPeriodAverages, :frequencies => freqs))...)
-  reco = RecoUtils.similar(algo, data, algo.params.reco)
-  post = RecoUtils.similar(algo, data, algo.params.post)
+  reco = AbstractImageReconstruction.similar(algo, data, algo.params.reco)
+  post = AbstractImageReconstruction.similar(algo, data, algo.params.post)
 
   params = SinglePatchParameters(pre, reco, post)
 
@@ -100,7 +100,7 @@ function RecoUtils.similar(algo::SinglePatchReconstructionAlgorithm, data::MPIFi
   return result
 end
 
-function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
+function process(algo::SinglePatchReconstructionAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
   result = process(typeof(algo), f, params)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
@@ -110,7 +110,7 @@ function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, f::MPIFile,
 end
 
 
-function RecoUtils.process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::SinglePatchReconstructionParameter)
+function process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::SinglePatchReconstructionParameter)
   weights = nothing # getWeights(...)
 
   B = getLinearOperator(algo, params)

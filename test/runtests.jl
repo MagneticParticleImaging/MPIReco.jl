@@ -1,5 +1,5 @@
 using HTTP
-using RecoUtils
+using AbstractImageReconstruction
 using Test
 using FileIO
 using Scratch
@@ -37,15 +37,15 @@ end
 
 @testset "MPIReco" begin
   #include("LoadSaveMDF.jl")
-  include("Reconstruction.jl")
-  #include("Cartesian.jl")
-  #if !Sys.iswindows()
-  #  include("MotionCompensation.jl")
-  #end
-  #include("MultiPatch.jl")
-  #include("MultiGradient.jl")
-  #include("Sparse.jl")
+  include("Reconstruction.jl") # FussedLasso causes segfault atm
+  include("Cartesian.jl")
+  if !Sys.iswindows()
+    include("MotionCompensation.jl")
+  end
+  include("MultiPatch.jl")
+  include("MultiGradient.jl")
+  include("Sparse.jl")
+  include("SMExtrapolation.jl")
   #include("SMCenter.jl")
-  #include("SMRecovery.jl")
-  #include("SMExtrapolation.jl")
+  #include("SMRecovery.jl") # will be moved to SMTools
 end

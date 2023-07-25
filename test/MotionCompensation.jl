@@ -54,9 +54,9 @@ using MPIReco
   exportImage(joinpath(imgdir, "Motion1.png"), maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
   @test compareImg("Motion1.png")
 
-  #setAll!(plan, :bgParams, SimpleExternalBackgroundCorrectionParameters(;emptyMeas = bBG, bgFrames = bgFrames))
-  #c = reconstruct(build(plan), bMeas)
-  #exportImage(joinpath(imgdir, "Motion2.png"), maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
-  #@test compareImg("Motion2.png")
+  setAll!(plan, :bgParams, SimpleExternalBackgroundCorrectionParameters(;emptyMeas = bBG, bgFrames = bgFrames))
+  c = reconstruct(build(plan), bMeas)
+  exportImage(joinpath(imgdir, "Motion2.png"), maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
+  @test compareImg("Motion2.png")
 
 end

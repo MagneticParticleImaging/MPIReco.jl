@@ -34,7 +34,7 @@ function SinglePatchBGEstimationAlgorithm(params::SinglePatchParameters{<:Abstra
   return SinglePatchBGEstimationAlgorithm(filteredParams, params, params.reco.sf, S, process(SinglePatchBGEstimationAlgorithm, freqs, params.reco.bgDict), grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchBGEstimationAlgorithm}) = SystemMatrixBasedAlgorithm()
-RecoUtils.parameter(algo::SinglePatchBGEstimationAlgorithm) = algo.origParam
+AbstractImageReconstruction.parameter(algo::SinglePatchBGEstimationAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchBGEstimationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
   freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, reco.sfLoad)
@@ -42,9 +42,9 @@ function prepareSystemMatrix(reco::SinglePatchBGEstimationReconstructionParamete
   return freqs, sf, grid
 end
 
-RecoUtils.take!(algo::SinglePatchBGEstimationAlgorithm) = Base.take!(algo.output)
+AbstractImageReconstruction.take!(algo::SinglePatchBGEstimationAlgorithm) = Base.take!(algo.output)
 
-function RecoUtils.put!(algo::SinglePatchBGEstimationAlgorithm, data::MPIFile)
+function AbstractImageReconstruction.put!(algo::SinglePatchBGEstimationAlgorithm, data::MPIFile)
   consistenceCheck(algo.sf, data)
 
   result = process(algo, data, algo.params)
@@ -61,7 +61,7 @@ function RecoUtils.put!(algo::SinglePatchBGEstimationAlgorithm, data::MPIFile)
 end
 
 
-function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
+function process(algo::SinglePatchBGEstimationAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
   result = process(typeof(algo), f, params)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
@@ -71,7 +71,7 @@ function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, f::MPIFile, p
 end
 
 
-function RecoUtils.process(algo::SinglePatchBGEstimationAlgorithm, u::Array, params::SinglePatchBGEstimationReconstructionParameter)
+function process(algo::SinglePatchBGEstimationAlgorithm, u::Array, params::SinglePatchBGEstimationReconstructionParameter)
   weights = nothing # getWeights(...)
 
   # Prepare Regularization

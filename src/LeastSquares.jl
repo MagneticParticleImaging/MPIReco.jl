@@ -1,5 +1,5 @@
 export LeastSquaresParameters
-# TODO this could be moved to RecoUtils, depends on how MRIReco.jl structures its data arrays
+# TODO this could be moved to AbstractImageReconstruction, depends on how MRIReco.jl structures its data arrays
 abstract type AbstractSolverParameters <: AbstractMPIRecoParameters end
 
 export LeastSquaresParameters
@@ -26,7 +26,7 @@ Base.@kwdef struct ConstraintMaskedSolverParameters{P<:AbstractSolverParameters}
   params::P
 end
 
-function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, u::Array, params::LeastSquaresParameters)
+function process(t::Type{<:AbstractMPIReconstructionAlgorithm}, u::Array, params::LeastSquaresParameters)
 
   N = size(params.S, 2)
   M = div(length(params.S), N)

@@ -4,7 +4,7 @@ module MPIReco
   @reexport using ImageUtils
   @reexport using MPIFiles
   const shape = MPIFiles.shape
-  using RecoUtils
+  using AbstractImageReconstruction
   @reexport using DSP
   using ProgressMeter
   using LinearAlgebra
@@ -14,8 +14,9 @@ module MPIReco
   # using TensorDecompositions
   using IniFile
   import LinearAlgebra: ldiv!, \
-  # TODO sort out import for Base and RecoUtils to avoid boiler plate
+  # TODO sort out import for Base and AbstractImageReconstruction to avoid boiler plate
   import Base: put!, take!
+  import AbstractImageReconstruction: process, parameter
 
 
   include("AlgorithmInterface.jl")

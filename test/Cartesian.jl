@@ -13,7 +13,7 @@ using MPIReco
   # MP Reco # TODO this does not seem to branch into mp reco atm
   numPeriodGrouping = 1
   maxMixingOrder = -1
-#=
+
   plan = getPlan("Single")
   setAll!(plan, :sf, bSF)
   setAll!(plan, :frames, 1:10)
@@ -55,7 +55,7 @@ using MPIReco
 
   exportImage(joinpath(imgdir, "Cartesian3.png"), arraydata(c3[1,:,:,1,1]))
   @test compareImg("Cartesian3.png")
-=#
+
   ####  Low Level ####
 
   N = calibSize(bSF)
@@ -99,7 +99,7 @@ using MPIReco
   @test compareImg("Cartesian5.png")
 
   ####  Multi Color ####
-#=
+
   setAll!(plan, :sf, MultiContrastFile([bSF,bSF]))
   setAll!(plan, :numPeriodGrouping, numPeriodGrouping)
   setAll!(plan, :numPeriodAverages, numPeriodAverages)
@@ -107,5 +107,5 @@ using MPIReco
 
   exportImage(joinpath(imgdir, "Cartesian6.png"), arraydata(c6[1,:,:,1,1]))
   @test compareImg("Cartesian6.png")
-=#
+
 end

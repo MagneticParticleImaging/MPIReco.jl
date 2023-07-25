@@ -44,11 +44,11 @@ function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:Abstra
   return MultiPatchReconstructionAlgorithm(filteredParams, params, reco.opParams, reco.sf, nothing, ffPos_, ffPosSF, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{MultiPatchReconstruction}) = SystemMatrixBasedAlgorithm()
-RecoUtils.parameter(algo::MultiPatchReconstructionAlgorithm) = algo.origParam
+AbstractImageReconstruction.parameter(algo::MultiPatchReconstructionAlgorithm) = algo.origParam
 
-RecoUtils.take!(algo::MultiPatchReconstructionAlgorithm) = Base.take!(algo.output)
+AbstractImageReconstruction.take!(algo::MultiPatchReconstructionAlgorithm) = Base.take!(algo.output)
 
-function RecoUtils.put!(algo::MultiPatchReconstructionAlgorithm, data::MPIFile)
+function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm, data::MPIFile)
   #consistenceCheck(algo.sf, data)
 
   algo.ffOp = process(algo, data, algo.opParams)
@@ -66,7 +66,7 @@ function RecoUtils.put!(algo::MultiPatchReconstructionAlgorithm, data::MPIFile)
   Base.put!(algo.output, result)
 end
 
-function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, params::AbstractMultiPatchOperatorParameter)
+function process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, params::AbstractMultiPatchOperatorParameter)
   ffPos_ = ffPos(f)
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos_)
   idxFirstPeriod = getindex.(periodsSortedbyFFPos,1)
@@ -83,7 +83,7 @@ function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, 
              gradient = gradient, FFPos = ffPos_, FFPosSF = ffPosSF)
 end
 
-function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:CommonPreProcessingParameters})
+function process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:CommonPreProcessingParameters})
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgCorrection])
   result = getMeasurementsFD(f, bgCorrection = false; kwargs...)
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos(f))
@@ -94,7 +94,7 @@ function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIF
   return uTotal
 end
 
-function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:CommonPreProcessingParameters})
+function process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:CommonPreProcessingParameters})
   # Foreground, ignore BGCorrection to reuse preprocessing
   fgParams = CommonPreProcessingParameters(;toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
   result = process(t, f, FrequencyFilteredPreProcessingParameters(params.frequencies, fgParams))
@@ -105,7 +105,7 @@ function RecoUtils.process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIF
   return process(t, result, bgParams)
 end
 
-function RecoUtils.process(::Type{<:MultiPatchReconstructionAlgorithm}, data::Array, params::FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters})
+function process(::Type{<:MultiPatchReconstructionAlgorithm}, data::Array, params::FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters})
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
   # TODO migrate with hardcoded params as in old code or reuse given preprocessing options?
   empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=1, kwargs...)
@@ -117,7 +117,7 @@ function RecoUtils.process(::Type{<:MultiPatchReconstructionAlgorithm}, data::Ar
   return data
 end
 
-function RecoUtils.process(algo::MultiPatchReconstructionAlgorithm, u::Array, params::MultiPatchReconstructionParameter)
+function process(algo::MultiPatchReconstructionAlgorithm, u::Array, params::MultiPatchReconstructionParameter)
   solver = LeastSquaresParameters(Kaczmarz, nothing, algo.ffOp, [L2Regularization(params.λ)], params.solverParams)
 
   result = process(algo, u, solver)

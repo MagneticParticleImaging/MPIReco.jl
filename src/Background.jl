@@ -33,12 +33,12 @@ Base.@kwdef struct SimpleExternalBackgroundCorrectionParameters <: ExternalBackg
   emptyMeas::MPIFile
   bgFrames::Union{Vector{Int64}, UnitRange{Int64}} = [1]
 end
-function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::SimpleExternalBackgroundCorrectionParameters)
+function process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::SimpleExternalBackgroundCorrectionParameters)
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgFrames))
   empty = getMeasurementsFD(params.emptyMeas, false; bgCorrection = false, numAverages=length(bgFrames), kwargs...)
   return data .-empty
 end
-function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::Union{ExternalPreProcessedBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}, FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}})
+function process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::Union{ExternalPreProcessedBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}, FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}})
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
   empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=length(params.bgParams.bgFrames), kwargs...)
   return data .-empty
@@ -50,7 +50,7 @@ Base.@kwdef struct LinearInterpolatedExternalBackgroundCorrectionParameters <: A
   bgFrames::UnitRange{Int64} = 1:1
   bgFramesPost::UnitRange{Int64} = 1:1
 end
-function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::LinearInterpolatedExternalBackgroundCorrectionParameters)
+function process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::LinearInterpolatedExternalBackgroundCorrectionParameters)
   kwargs = toKwargs(params)
   kwargs[:frames] = params.bgFrames
   empty = getMeasurementsFD(bgParams.emptyMeas, false; bgCorrection = false, numAverages=length(params.bgFrames), kwargs...)
@@ -62,7 +62,7 @@ function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::A
   end
   return result
 end
-function RecoUtils.process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::Union{ExternalPreProcessedBackgroundCorrectionParameters{LinearInterpolatedExternalBackgroundCorrectionParameters}, FrequencyFilteredBackgroundCorrectionParameters{LinearInterpolatedExternalBackgroundCorrectionParameters}})
+function process(::Type{<:AbstractMPIReconstructionAlgorithm}, data::Array, params::Union{ExternalPreProcessedBackgroundCorrectionParameters{LinearInterpolatedExternalBackgroundCorrectionParameters}, FrequencyFilteredBackgroundCorrectionParameters{LinearInterpolatedExternalBackgroundCorrectionParameters}})
   kwargs = toKwargs(params, ignore = [:bgParams])
   bgParams = params.bgParams
   kwargs[:frames] = bgParams.bgFrames
@@ -86,7 +86,7 @@ Base.@kwdef struct MeasurementBGDictLoader{T} <: AbstractBGDictLoader where {T<:
   numPeriodAverages::Int64 = 1
   bgAverages::Int64 = 1
 end
-function RecoUtils.process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs::Vector{Int64}, params::MeasurementBGDictLoader)
+function process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs::Vector{Int64}, params::MeasurementBGDictLoader)
   uEmpty = getMeasurementsFD(params.file, false, frequencies=freqs, frames=params.bgFrames, numAverages=params.bgAverages, spectralLeakageCorrection=false, bgCorrection=false, numPeriodGrouping = params.numPeriodGrouping, numPeriodAverages = params.numPeriodAverages)
   return transpose(reshape(uEmpty, :, div(length(params.bgFrames),params.bgAverages)))
 end
@@ -94,7 +94,7 @@ export SystemMatrixBGDictLoader
 Base.@kwdef struct SystemMatrixBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
   file::T
 end
-function RecoUtils.process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs::Vector{Int64}, params::SystemMatrixBGDictLoader)
+function process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs::Vector{Int64}, params::SystemMatrixBGDictLoader)
   idxBGFrames = measBGFrameIdx(params.file)
   D = measData(params.file, idxBGFrames)
   D_ = reshape(D, size(D,1), size(D,2)*size(D,3), size(D,4))
@@ -126,7 +126,7 @@ Base.@kwdef struct BGDictParameter <: AbstractMPIRecoParameters
   dictSize::Int64 = 2
 end
 
-function RecoUtils.process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs, params::BGDictParameter)
+function process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs, params::BGDictParameter)
   U,S,V = process(algoT, freqs, params.loader)
   for l=1:params.dictSize
     U[:,l] *= (S[l] / S[1])^(1/2)
@@ -134,7 +134,7 @@ function RecoUtils.process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, fr
   return U[:,1:params.dictSize]
 end
 
-function RecoUtils.process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs, loader::Vector{T}) where {T<:AbstractBGDictLoader}
+function process(algoT::Type{<:AbstractMPIReconstructionAlgorithm}, freqs, loader::Vector{T}) where {T<:AbstractBGDictLoader}
   tempBGs = []
   for load in loader
     push!(tempBGs, process(algoT, freqs, load))

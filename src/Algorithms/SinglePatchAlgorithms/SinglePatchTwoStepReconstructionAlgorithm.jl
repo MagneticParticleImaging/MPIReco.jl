@@ -34,7 +34,7 @@ function Base.getproperty(param::TwoStepSubstractionPreProcessingParameter, fiel
   end
 end
 
-function RecoUtils.process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::TwoStepSubstractionPreProcessingParameter)
+function process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::TwoStepSubstractionPreProcessingParameter)
   meas = process(t, f, params.pre)
   return meas - params.proj
 end
@@ -53,10 +53,10 @@ function SinglePatchTwoStepReconstructionAlgorithm(params::SinglePatchParameters
   algoLow = SinglePatchReconstructionAlgorithm(paramsLow, nothing, params.reco.sf, algoLow.S, algoLow.grid, algoLow.freqs, algoLow.output)
   return SinglePatchTwoStepReconstructionAlgorithm(params, algoHigh, algoLow, Channel{Any}(Inf))
 end
-RecoUtils.parameter(algo::SinglePatchTwoStepReconstructionAlgorithm) = algo.params
-RecoUtils.take!(algo::SinglePatchTwoStepReconstructionAlgorithm) = Base.take!(algo.output)
+AbstractImageReconstruction.parameter(algo::SinglePatchTwoStepReconstructionAlgorithm) = algo.params
+AbstractImageReconstruction.take!(algo::SinglePatchTwoStepReconstructionAlgorithm) = Base.take!(algo.output)
 
-function RecoUtils.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data::MPIFile)
+function AbstractImageReconstruction.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data::MPIFile)
   # First reco
   cPre = reconstruct(algo.algoHigh, data)
 
@@ -79,10 +79,10 @@ function RecoUtils.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data::M
   Base.put!(algo.output, result)
 end
 
-function RecoUtils.similar(algo::SinglePatchTwoStepReconstructionAlgorithm, data::MPIFile)
-  algoHigh = RecoUtils.similar(algo.algoHigh, data)
+function AbstractImageReconstruction.similar(algo::SinglePatchTwoStepReconstructionAlgorithm, data::MPIFile)
+  algoHigh = AbstractImageReconstruction.similar(algo.algoHigh, data)
   pre = fromKwargs(CommonPreProcessingParameters; toKwargs(algoHigh.params.pre)...)
-  reco = RecoUtils.similar(algo, data, algo.params.reco)
-  post = RecoUtils.similar(algo, data, algo.params.post)
+  reco = AbstractImageReconstruction.similar(algo, data, algo.params.reco)
+  post = AbstractImageReconstruction.similar(algo, data, algo.params.post)
   return SinglePatchReconstruction(SinglePatchParameters(pre, reco, post))
 end

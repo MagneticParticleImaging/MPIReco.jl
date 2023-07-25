@@ -20,7 +20,7 @@ Base.@kwdef mutable struct MultiPatchParameters{PR<:AbstractPreProcessingParamet
   post::PT = NoPostProcessing() 
 end
   
-function RecoUtils.process(algo::T, data::MPIFile, params::MultiPatchParameters) where {T<:AbstractMultiPatchReconstructionAlgorithm}
+function process(algo::T, data::MPIFile, params::MultiPatchParameters) where {T<:AbstractMultiPatchReconstructionAlgorithm}
   result = process(algo, data, params.pre)
   result = process(algo, result, params.reco)
   result = process(algo, result, params.post)

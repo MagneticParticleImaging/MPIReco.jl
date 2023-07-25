@@ -38,7 +38,7 @@ function SinglePatchTemporalRegularizationAlgorithm(params::SinglePatchParameter
     ,params.reco.idxFG, params.reco.idxBG, grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchTemporalRegularizationAlgorithm}) = SystemMatrixBasedAlgorithm()
-RecoUtils.parameter(algo::SinglePatchTemporalRegularizationAlgorithm) = algo.origParam
+AbstractImageReconstruction.parameter(algo::SinglePatchTemporalRegularizationAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchTemporalRegularizationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
   freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, reco.sfLoad)
@@ -46,9 +46,9 @@ function prepareSystemMatrix(reco::SinglePatchTemporalRegularizationReconstructi
   return freqs, sf, grid
 end
 
-RecoUtils.take!(algo::SinglePatchTemporalRegularizationAlgorithm) = Base.take!(algo.output)
+AbstractImageReconstruction.take!(algo::SinglePatchTemporalRegularizationAlgorithm) = Base.take!(algo.output)
 
-function RecoUtils.put!(algo::SinglePatchTemporalRegularizationAlgorithm, data::MPIFile)
+function AbstractImageReconstruction.put!(algo::SinglePatchTemporalRegularizationAlgorithm, data::MPIFile)
   consistenceCheck(algo.sf, data)
 
   result = process(algo, data, algo.params)
@@ -65,7 +65,7 @@ function RecoUtils.put!(algo::SinglePatchTemporalRegularizationAlgorithm, data::
 end
 
 
-function RecoUtils.process(algo::SinglePatchTemporalRegularizationAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
+function process(algo::SinglePatchTemporalRegularizationAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
   result = process(typeof(algo), f, params)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
@@ -75,7 +75,7 @@ function RecoUtils.process(algo::SinglePatchTemporalRegularizationAlgorithm, f::
 end
 
 
-function RecoUtils.process(algo::SinglePatchTemporalRegularizationAlgorithm, u::Array, params::SinglePatchTemporalRegularizationReconstructionParameter)
+function process(algo::SinglePatchTemporalRegularizationAlgorithm, u::Array, params::SinglePatchTemporalRegularizationReconstructionParameter)
   weights = nothing # getWeights(...)
 
   L = size(u)[end]

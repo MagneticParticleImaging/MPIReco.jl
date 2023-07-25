@@ -1,8 +1,9 @@
-module RecoUtils
+module AbstractImageReconstruction
 
 using TOML
 using ThreadPools
 using Scratch
+using RegularizedLeastSquares
 
 import Base: put!, take!, fieldtypes, fieldtype, ismissing, propertynames
 
