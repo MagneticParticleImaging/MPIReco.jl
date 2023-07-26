@@ -7,23 +7,28 @@ mutable struct RecoPlan{T<:Union{AbstractReconstructionAlgorithmParameter, Abstr
   parent::Union{Nothing, RecoPlan}
   values::Dict{Symbol, Any}
   listeners::Dict{Symbol, Vector{AbstractPlanListener}}
+  setProperties::Dict{Symbol, Bool}
   function RecoPlan(::Type{T}; kwargs...) where {T<:AbstractReconstructionAlgorithmParameter}
     dict = Dict{Symbol, Any}()
     listeners = Dict{Symbol, Vector{AbstractPlanListener}}()
+    setProperties = Dict{Symbol, Bool}()
     for field in fieldnames(T)
       dict[field] =  missing
       listeners[field] = AbstractPlanListener[]
+      setProperties[field] = false
     end
-    plan = new{getfield(parentmodule(T), nameof(T))}(nothing, dict, listeners)
+    plan = new{getfield(parentmodule(T), nameof(T))}(nothing, dict, listeners, setProperties)
     setvalues!(plan, kwargs...)
     return plan
   end
   function RecoPlan(::Type{T}) where {T<:AbstractReconstructionAlgorithm}
     dict = Dict{Symbol, Any}()
     listeners = Dict{Symbol, Vector{AbstractPlanListener}}()
+    setProperties = Dict{Symbol, Bool}()
     dict[:parameter] = missing
     listeners[:parameter] = AbstractPlanListener[]
-    return new{getfield(parentmodule(T), nameof(T))}(nothing, dict, listeners)
+    setProperties[:parameter] = false
+    return new{getfield(parentmodule(T), nameof(T))}(nothing, dict, listeners, setProperties)
   end  
 end
 
@@ -67,17 +72,23 @@ Base.propertynames(plan::RecoPlan{T}) where {T} = keys(getfield(plan, :values))
 Base.getproperty(plan::RecoPlan{T}, name::Symbol) where {T} = getfield(plan, :values)[name]
 Base.getindex(plan::RecoPlan{T}, name::Symbol) where {T} = Base.getproperty(plan, name)
 
-export propertyupdate!
+export propertyupdate!, ispropertyset, setvalue!
 function propertyupdate!(listener::AbstractPlanListener, origin, field, old, new)
   # NOP
 end
 function Base.setproperty!(plan::RecoPlan{T}, name::Symbol, x::X) where {T, X}
   old = getproperty(plan, name) 
   setvalue!(plan, name, x)
+  getfield(plan, :setProperties)[name] = true
   for listener in getlisteners(plan, name)
-    propertyupdate!(listener, plan, name, old, x)
+    try
+      propertyupdate!(listener, plan, name, old, x)
+    catch e
+      @error "Exception in listener $listener " e
+    end
   end
 end
+ispropertyset(plan::RecoPlan, name::Symbol) = getfield(plan, :setProperties)[name]
 Base.setindex!(plan::RecoPlan, x, name::Symbol) = Base.setproperty!(plan, name, x)
 function setvalue!(plan::RecoPlan{T}, name::Symbol, x::X) where {T, X}
   t = type(plan, name)
@@ -135,9 +146,15 @@ types(::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithm} = [type(plan, na
 export clear!
 function clear!(plan::RecoPlan{T}, preserve::Bool = true) where {T<:AbstractReconstructionAlgorithmParameter}
   dict = getfield(plan, :values)
+  set = getfield(plan, :setProperties)
   for key in keys(dict)
     value = dict[key]
-    dict[key] = typeof(value) <: RecoPlan && preserve ? clear!(value, preserve) : missing
+    if typeof(value) <: RecoPlan && preserve 
+      clear!(value, preserve)
+    else
+      dict[key] = missing
+      set[key] = false
+    end
   end
   return plan
 end
