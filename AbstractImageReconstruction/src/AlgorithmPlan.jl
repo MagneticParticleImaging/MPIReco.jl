@@ -72,7 +72,7 @@ Base.propertynames(plan::RecoPlan{T}) where {T} = keys(getfield(plan, :values))
 Base.getproperty(plan::RecoPlan{T}, name::Symbol) where {T} = getfield(plan, :values)[name]
 Base.getindex(plan::RecoPlan{T}, name::Symbol) where {T} = Base.getproperty(plan, name)
 
-export propertyupdate!, ispropertyset, setvalue!
+export propertyupdate!, ispropertyset, setvalue!, valueupdate
 function propertyupdate!(listener::AbstractPlanListener, origin, field, old, new)
   # NOP
 end
@@ -90,7 +90,11 @@ function Base.setproperty!(plan::RecoPlan{T}, name::Symbol, x::X) where {T, X}
 end
 ispropertyset(plan::RecoPlan, name::Symbol) = getfield(plan, :setProperties)[name]
 Base.setindex!(plan::RecoPlan, x, name::Symbol) = Base.setproperty!(plan, name, x)
+function valueupdate(listener::AbstractPlanListener, origin, field, old, new)
+  # NOP
+end
 function setvalue!(plan::RecoPlan{T}, name::Symbol, x::X) where {T, X}
+  old = Base.getproperty(plan, name)
   t = type(plan, name)
   if !haskey(getfield(plan, :values), name)
     error("type $T has no field $name")
@@ -99,7 +103,15 @@ function setvalue!(plan::RecoPlan{T}, name::Symbol, x::X) where {T, X}
   else
     getfield(plan, :values)[name] = convert(t, x)
   end
-  return Base.getproperty(plan, name)
+  new = Base.getproperty(plan, name)
+  for listener in getlisteners(plan, name)
+    try
+      valueupdate(listener, plan, name, old, new)
+    catch e
+      @error "Exception in listener $listener " e
+    end
+  end
+  return new
 end
 
 Base.ismissing(plan::RecoPlan, name::Symbol) = ismissing(getfield(plan, :values)[name])
@@ -354,3 +366,5 @@ end
 export savePlan
 savePlan(filename::AbstractString, plan::RecoPlan) = toTOML(filename, plan)
 savePlan(m::Module, planname::AbstractString, plan::RecoPlan) = savePlan(planpath(m, planname), plan)
+
+include("LinkedFieldListener.jl")
