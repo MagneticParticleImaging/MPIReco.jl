@@ -19,6 +19,9 @@ Base.@kwdef struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGridding
   center::Vector{Float64} = [0.0,0.0,0.0]
   deadPixels::Union{Nothing, Vector{Int64}} = nothing
 end
+export defaultGridSize
+defaultGridSize(old, new::MPIFile) = gridSizeCommon(new)
+defaultGridSize(old, new::Missing) = missing
 # Maybe implement custom defaults with optional given sf -> remove @kwdef
 #function SystemMatrixGriddingParameter(;sf::MPIFile, gridsize = nothing, fov = nothing, center = [0.0, 0.0, 0.0], deadPixels = Int64[])
 #  if isnothing(gridsize)

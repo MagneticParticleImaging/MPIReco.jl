@@ -55,6 +55,11 @@ function addDictValue!(dict, value)
   end
 end
 
+toDictType(value::Function) = nameof(value)
+function addDictValue!(dict, value::Function)
+  # NOP
+end
+
 toDictValue(type, value) = toDictValue(value)
 function toDictValue(x)
   if fieldcount(typeof(x)) > 0

@@ -236,6 +236,14 @@ function addDictValue!(dict, value::RecoPlan)
       dict[string(field)] = toDictValue(type(value, field), x)
     end
   end
+  listeners = filter(x-> !isempty(last(x)), getfield(value, :listeners))
+  if !isempty(listeners)
+    listenerDict = Dict{String, Any}()
+    for (field, l) in listeners
+      listenerDict[string(field)] = toDictValue(typeof(l), l)
+    end
+    dict[".listener"] = listenerDict
+  end
   return dict
 end
 

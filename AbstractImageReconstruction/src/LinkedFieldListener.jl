@@ -10,3 +10,9 @@ function propertyupdate!(listener::LinkedFieldListener, origin::RecoPlan, name::
     setvalue!(listener.plan, listener.field, listener.fn(old, new))
   end
 end
+
+function addDictValue!(dict, value::LinkedFieldListener)
+  dict["plan"] = toDictValue(parentfields(value.plan))
+  dict["field"] = toDictValue(value.field)
+  dict["fn"] = toDict(value.fn)
+end
