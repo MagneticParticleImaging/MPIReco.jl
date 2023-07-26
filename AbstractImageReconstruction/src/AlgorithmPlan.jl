@@ -1,26 +1,32 @@
 export RecoPlan
+
+export AbstractPlanListener
+abstract type AbstractPlanListener end
+
 mutable struct RecoPlan{T<:Union{AbstractReconstructionAlgorithmParameter, AbstractReconstructionAlgorithm}}
   parent::Union{Nothing, RecoPlan}
   values::Dict{Symbol, Any}
-  function RecoPlan(::Type{T}) where {T<:AbstractReconstructionAlgorithmParameter}
+  listeners::Dict{Symbol, Vector{AbstractPlanListener}}
+  function RecoPlan(::Type{T}; kwargs...) where {T<:AbstractReconstructionAlgorithmParameter}
     dict = Dict{Symbol, Any}()
+    listeners = Dict{Symbol, Vector{AbstractPlanListener}}()
     for field in fieldnames(T)
       dict[field] =  missing
+      listeners[field] = AbstractPlanListener[]
     end
-    return new{getfield(parentmodule(T), nameof(T))}(nothing, dict)
+    plan = new{getfield(parentmodule(T), nameof(T))}(nothing, dict, listeners)
+    setvalues!(plan, kwargs...)
+    return plan
   end
-  function RecoPlan(::Type{T}; kwargs...) where {T<:AbstractReconstructionAlgorithm}
+  function RecoPlan(::Type{T}) where {T<:AbstractReconstructionAlgorithm}
     dict = Dict{Symbol, Any}()
+    listeners = Dict{Symbol, Vector{AbstractPlanListener}}()
     dict[:parameter] = missing
-    return new{getfield(parentmodule(T), nameof(T))}(nothing, dict)
+    listeners[:parameter] = AbstractPlanListener[]
+    return new{getfield(parentmodule(T), nameof(T))}(nothing, dict, listeners)
   end  
 end
 
-function RecoPlan(::Type{T}; kwargs...) where {T<:AbstractReconstructionAlgorithmParameter}
-  plan = RecoPlan(T)
-  setvalues!(plan, kwargs...)
-  return plan
-end
 function setvalues!(plan::RecoPlan{T}; kwargs...) where {T<:AbstractReconstructionAlgorithmParameter}
   kwargs = values(kwargs)
   for field in propertynames(plan)
@@ -61,7 +67,17 @@ Base.propertynames(plan::RecoPlan{T}) where {T} = keys(getfield(plan, :values))
 Base.getproperty(plan::RecoPlan{T}, name::Symbol) where {T} = getfield(plan, :values)[name]
 Base.getindex(plan::RecoPlan{T}, name::Symbol) where {T} = Base.getproperty(plan, name)
 
-Base.setproperty!(plan::RecoPlan{T}, name::Symbol, x::X) where {T, X} = setvalue!(plan, name, x)
+export propertyupdate!
+function propertyupdate!(listener::AbstractPlanListener, origin, field, old, new)
+  # NOP
+end
+function Base.setproperty!(plan::RecoPlan{T}, name::Symbol, x::X) where {T, X}
+  old = getproperty(plan, name) 
+  setvalue!(plan, name, x)
+  for listener in getlisteners(plan, name)
+    propertyupdate!(listener, plan, name, old, x)
+  end
+end
 Base.setindex!(plan::RecoPlan, x, name::Symbol) = Base.setproperty!(plan, name, x)
 function setvalue!(plan::RecoPlan{T}, name::Symbol, x::X) where {T, X}
   t = type(plan, name)
@@ -126,6 +142,18 @@ function clear!(plan::RecoPlan{T}, preserve::Bool = true) where {T<:AbstractReco
   return plan
 end
 clear!(plan::RecoPlan{T}, preserve::Bool = true) where {T<:AbstractReconstructionAlgorithm} = clear!(plan.parameter, preserve)
+
+export getlisteners, addListener!, removeListener!
+getlisteners(plan::RecoPlan, field::Symbol) = getfield(plan, :listeners)[field]
+function addListener!(plan::RecoPlan, field::Symbol, listener::AbstractPlanListener)
+  listeners = getlisteners(plan, field)
+  push!(listeners, listener)
+end
+function removeListener!(plan::RecoPlan, field::Symbol, listener::AbstractPlanListener)
+  listeners = getlisteners(plan, field)
+  idx = findall(x->isequal(x, listener), listeners)
+  isnothing(idx) && deleteat!(listeners, idx)
+end
 
 export build
 function build(plan::RecoPlan{T}) where {T<:AbstractReconstructionAlgorithmParameter}
@@ -234,7 +262,7 @@ end
 function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}}) where {T<:AbstractReconstructionAlgorithm}
   temp = loadPlan!(dict["parameter"], modDict)
   parent!(temp, plan)
-  plan.parameter = temp
+  setvalue!(plan, :parameter, temp)
   return plan
 end
 function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}}) where {T<:AbstractReconstructionAlgorithmParameter}
@@ -250,7 +278,7 @@ function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{Str
         param = loadPlanValue(T, name, t, dict[key], modDict)
       end
     end
-    plan[name] = param
+    setvalue!(plan, name, param)
   end
   return plan
 end
