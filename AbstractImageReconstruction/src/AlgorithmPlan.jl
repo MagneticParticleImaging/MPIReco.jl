@@ -238,13 +238,18 @@ function addDictValue!(dict, value::RecoPlan)
       dict[string(field)] = toDictValue(type(value, field), x)
     end
   end
-  listeners = filter(x-> !isempty(last(x)) && x isa SerializableListener, getfield(value, :listeners))
+  listeners = filter(x-> !isempty(last(x)), getfield(value, :listeners))
   if !isempty(listeners)
     listenerDict = Dict{String, Any}()
     for (field, l) in listeners
-      listenerDict[string(field)] = toDictValue(typeof(l), l)
+      serializable = filter(x-> x isa SerializableListener, l)
+      if !isempty(serializable)
+        listenerDict[string(field)] = toDictValue(typeof(l), l)
+      end
     end
-    dict[".listener"] = listenerDict
+    if !isempty(listenerDict) 
+      dict[".listener"] = listenerDict
+    end
   end
   return dict
 end
