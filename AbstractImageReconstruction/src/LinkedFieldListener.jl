@@ -16,3 +16,13 @@ function addDictValue!(dict, value::LinkedFieldListener)
   dict["field"] = toDictValue(value.field)
   dict["fn"] = toDict(value.fn)
 end
+
+function loadListener(::Type{LinkedFieldListener}, root::RecoPlan, dict, modDict)
+  plan = root
+  for param in dict["plan"][1:end]
+    plan = plan[Symbol(param)]
+  end
+  field = Symbol(dict["field"])
+  fn = tomlType(dict["fn"], modDict)
+  return LinkedFieldListener(plan, field, fn)
+end

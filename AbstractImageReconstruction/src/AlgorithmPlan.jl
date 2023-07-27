@@ -264,16 +264,18 @@ loadPlan(m::Module, name::AbstractString, modules::Vector{Module}) = loadPlan(pl
 function loadPlan(filename::AbstractString, modules::Vector{Module})
   dict = TOML.parsefile(filename)
   modDict = createModuleDataTypeDict(modules)
-  return loadPlan!(dict, modDict)
+  plan = loadPlan!(dict, modDict)
+  loadListeners!(plan, dict, modDict)
+  return plan
 end
 function createModuleDataTypeDict(modules::Vector{Module})
-  modDict = Dict{String, Dict{String, Union{DataType, UnionAll}}}()
+  modDict = Dict{String, Dict{String, Union{DataType, UnionAll, Function}}}()
   for mod in modules
-    typeDict = Dict{String, Union{DataType, UnionAll}}()
+    typeDict = Dict{String, Union{DataType, UnionAll, Function}}()
     for field in names(mod)
       try
         t = getfield(mod, field)
-        if t isa DataType || t isa UnionAll
+        if t isa DataType || t isa UnionAll || t isa Function
           typeDict[string(t)] = t
         end
       catch
@@ -283,7 +285,7 @@ function createModuleDataTypeDict(modules::Vector{Module})
   end
   return modDict
 end
-function loadPlan!(dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}})
+function loadPlan!(dict::Dict{String, Any}, modDict)
   re = r"RecoPlan\{(.*)\}"
   m = match(re, dict[TYPE_TAG])
   if !isnothing(m)
@@ -298,13 +300,13 @@ function loadPlan!(dict::Dict{String, Any}, modDict::Dict{String, Dict{String, U
     error("Not implemented yet")
   end
 end
-function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}}) where {T<:AbstractReconstructionAlgorithm}
+function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict) where {T<:AbstractReconstructionAlgorithm}
   temp = loadPlan!(dict["parameter"], modDict)
   parent!(temp, plan)
   setvalue!(plan, :parameter, temp)
   return plan
 end
-function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict::Dict{String, Dict{String, Union{DataType, UnionAll}}}) where {T<:AbstractReconstructionAlgorithmParameter}
+function loadPlan!(plan::RecoPlan{T}, dict::Dict{String, Any}, modDict) where {T<:AbstractReconstructionAlgorithmParameter}
   for name in propertynames(plan)
     t = type(plan, name)
     param = missing
@@ -371,6 +373,32 @@ function specializeType(t::Union{DataType, UnionAll}, value::Dict, modDict)
   end
   type = tomlType(value, modDict)
   return !isnothing(type) && type <: t ? type : t 
+end
+
+loadListeners!(plan, dict, modDict) = loadListeners!(plan, plan, dict, modDict)
+function loadListeners!(root::RecoPlan, plan::RecoPlan{T}, dict, modDict) where {T<:AbstractReconstructionAlgorithm}
+  loadListeners!(root, plan.parameter, dict["parameter"], modDict)
+end
+function loadListeners!(root::RecoPlan, plan::RecoPlan{T}, dict, modDict) where {T<:AbstractReconstructionAlgorithmParameter}
+  if haskey(dict, ".listener")
+    for (property, listenerDicts) in dict[".listener"]
+      for listenerDict in listenerDicts
+        listener = loadListener(root, listenerDict, modDict)
+        addListener!(plan, Symbol(property), listener)
+      end
+    end
+  end
+  for property in propertynames(plan)
+    value = plan[property]
+    if value isa RecoPlan
+      loadListeners!(root, value, dict[string(property)], modDict)
+    end
+  end
+end
+export loadListener
+function loadListener(root, dict, modDict)
+  type = tomlType(dict, modDict)
+  return loadListener(type, root, dict, modDict)
 end
 
 export savePlan
