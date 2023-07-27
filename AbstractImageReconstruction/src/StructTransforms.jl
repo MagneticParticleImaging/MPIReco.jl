@@ -99,7 +99,7 @@ function toKwargs(values::Vector; kwargs...)
 end
 
 function toKwargs!(dict, value; flatten::Vector{DataType} = DataType[], ignore::Vector{Symbol} = Symbol[], default::Dict{Symbol, Any} = Dict{Symbol, Any}(), overwrite::Dict{Symbol, Any} = Dict{Symbol, Any}())
-  for field in fieldnames(typeof(value))
+  for field in propertynames(value)
     prop = getproperty(value, field)
     if in(field, ignore)
       # NOP
