@@ -1,7 +1,9 @@
 export RecoPlan
 
-export AbstractPlanListener
+export AbstractPlanListener, TransientListener, SerializableListener
 abstract type AbstractPlanListener end
+abstract type TransientListener <: AbstractPlanListener end
+abstract type SerializableListener <: AbstractPlanListener end
 
 mutable struct RecoPlan{T<:Union{AbstractReconstructionAlgorithmParameter, AbstractReconstructionAlgorithm}}
   parent::Union{Nothing, RecoPlan}
@@ -236,7 +238,7 @@ function addDictValue!(dict, value::RecoPlan)
       dict[string(field)] = toDictValue(type(value, field), x)
     end
   end
-  listeners = filter(x-> !isempty(last(x)), getfield(value, :listeners))
+  listeners = filter(x-> !isempty(last(x)) && x isa SerializableListener, getfield(value, :listeners))
   if !isempty(listeners)
     listenerDict = Dict{String, Any}()
     for (field, l) in listeners
