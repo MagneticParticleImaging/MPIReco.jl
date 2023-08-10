@@ -1,5 +1,5 @@
-export SinglePatchTwoStepReconstructionParameters
-Base.@kwdef struct SinglePatchTwoStepReconstructionParameters{L_H, L_L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver, SP_H, SP_L<:AbstractSolverParameters, R_H, R_L<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
+export SinglePatchTwoStepReconstructionParameters, SinglePatchTwoStepReconstructionAlgorithm
+Base.@kwdef struct SinglePatchTwoStepReconstructionParameters{L_H<:AbstractSystemMatrixLoadingParameter, L_L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver, SP_H<:AbstractSolverParameters, SP_L<:AbstractSolverParameters, R_H<:AbstractRegularization, R_L<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
   # Threshhold
   Γ::Float64
   # File
@@ -74,7 +74,8 @@ function AbstractImageReconstruction.put!(algo::SinglePatchTwoStepReconstruction
   cPost = reconstruct(algo.algoLow, data)
 
   # Addition
-  result = cPost + cThresh
+  result = AxisArray(cPost.data + cThresh, cPost.data.axes)
+  result = ImageMeta(result, properties(cPost))
 
   Base.put!(algo.output, result)
 end
