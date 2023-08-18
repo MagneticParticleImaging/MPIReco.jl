@@ -74,7 +74,7 @@ using MPIReco
                numPeriodGrouping=numPeriodGrouping, numPeriodAverages=numPeriodAverages,
                spectralLeakageCorrection=false)
 
-  @time c4 = reshape(reconstruction(S, u, reg = [L2Regularization(0.01f0)], iterations=100), N[1], N[2])
+  @time c4 = reshape(reconstruction(S, u, reg = [L2Regularization(0.01f0), PositiveRegularization()], iterations=100), N[1], N[2])
 
   exportImage(joinpath(imgdir, "Cartesian4.png"), c4)
   @test compareImg("Cartesian4.png")
@@ -93,7 +93,7 @@ using MPIReco
                numPeriodGrouping=numPeriodGrouping, numPeriodAverages=numPeriodAverages,
                spectralLeakageCorrection=false)
 
-  @time c5 = reshape(reconstruction(S, u, reg = [L2Regularization(0.01f0)], iterations=100), N[1], N[2])
+  @time c5 = reshape(reconstruction(S, u, reg = [L2Regularization(0.01f0), PositiveRegularization()], iterations=100), N[1], N[2])
 
   exportImage(joinpath(imgdir, "Cartesian5.png"), c5)
   @test compareImg("Cartesian5.png")

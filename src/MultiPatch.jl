@@ -445,7 +445,7 @@ size(FFOp::MultiPatchOperator) = (FFOp.M,FFOp.N)
 length(FFOp::MultiPatchOperator) = size(FFOp,1)*size(FFOp,2)
 
 ### The following is intended to use the standard kaczmarz method ###
-function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization, regs, op::MultiPatchOperator, b)
+function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization, op::MultiPatchOperator, b)
   if length(op.S) == 1
     trace = RegularizedLeastSquares.normalize(norm, regs, op.S[1], b)
     trace *= op.nPatches #*prod(Op.PixelSizeSF)/prod(Op.PixelSizeC)
