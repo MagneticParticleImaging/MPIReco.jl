@@ -1,7 +1,5 @@
-using HTTP
 using AbstractImageReconstruction
 using Test
-using FileIO
 using Scratch
 using ImageMagick
 using ImageQualityIndexes
