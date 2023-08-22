@@ -79,11 +79,3 @@ function AbstractImageReconstruction.put!(algo::SinglePatchTwoStepReconstruction
 
   Base.put!(algo.output, result)
 end
-
-function AbstractImageReconstruction.similar(algo::SinglePatchTwoStepReconstructionAlgorithm, data::MPIFile)
-  algoHigh = AbstractImageReconstruction.similar(algo.algoHigh, data)
-  pre = fromKwargs(CommonPreProcessingParameters; toKwargs(algoHigh.params.pre)...)
-  reco = AbstractImageReconstruction.similar(algo, data, algo.params.reco)
-  post = AbstractImageReconstruction.similar(algo, data, algo.params.post)
-  return SinglePatchReconstruction(SinglePatchParameters(pre, reco, post))
-end

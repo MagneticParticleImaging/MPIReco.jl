@@ -58,48 +58,6 @@ function AbstractImageReconstruction.put!(algo::SinglePatchReconstructionAlgorit
   Base.put!(algo.output, result)
 end
 
-function AbstractImageReconstruction.similar(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
-  # TODO Check num receive channel
-
-  # This isnt a nice structure atm, because the corrections of the params cant be done individually
-  # and in certain parts should only be applied after construction
-
-  # Check if freq still valid
-  freqs = algo.freqs
-  S = algo.S
-  grid = algo.grid
-  params = parameter(algo)
-  if rxNumSamplingPoints(algo.sf) == rxNumSamplingPoints(data)
-    # Ensure that no frequencies are used that are not present in the measurement
-    freqParams = fromKwargs(PreProcessedFrequencyFilterParameter; toKwargs([params.pre, params.reco]; flatten = DataType[AbstractSystemMatrixLoadingParameter])...)
-    measFreqs = process(AbstractMPIReconstructionAlgorithm, data, freqParams)
-    freqs = intersect(algo.freqs, measFreqs)
-    if freqs != algo.freqs
-      S, grid = getSF(params.reco.sf, freqs, nothing; toKwargs(params.pre)...)
-      S, grid = prepareSF(params.reco.solver, S, grid)
-    end
-  end
-
-  numPeriodGrouping = params.pre.numPeriodGrouping
-  if rxNumSamplingPoints(params.reco.sf) > rxNumSamplingPoints(data)
-    numPeriodGrouping = rxNumSamplingPoints(params.reco.sf) ÷ rxNumSamplingPoints(data)
-  end
-  numPeriodAverages = params.pre.numPeriodAverages
-  if acqNumPeriodsPerFrame(params.reco.sf) < acqNumPeriodsPerFrame(data)
-    numPeriodAverages = acqNumPeriodsPerFrame(data) ÷ (acqNumPeriodsPerFrame(params.reco.sf) * numPeriodGrouping)
-  end
-
-  pre = fromKwargs(FrequencyFilteredPreProcessingParameters; toKwargs(params.pre, flatten = DataType[], overwrite = Dict{Symbol, Any}(:numPeriodGrouping => numPeriodGrouping, :numPeriodAverages => numPeriodAverages, :frequencies => freqs))...)
-  reco = AbstractImageReconstruction.similar(algo, data, algo.params.reco)
-  post = AbstractImageReconstruction.similar(algo, data, algo.params.post)
-
-  params = SinglePatchParameters(pre, reco, post)
-
-  result = SinglePatchReconstructionAlgorithm(params, params, algo.params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
-
-  return result
-end
-
 function process(algo::SinglePatchReconstructionAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
   result = process(typeof(algo), f, params)
   if eltype(algo.S) != eltype(result)
