@@ -1,5 +1,5 @@
 export AbstractMPIReconstructionAlgorithm
-abstract type AbstractMPIReconstructionAlgorithm <: AbstractReconstructionAlgorithm end
+abstract type AbstractMPIReconstructionAlgorithm <: AbstractImageReconstructionAlgorithm end
 
 export AbstractSystemMatrixReconstructionAlgorithm
 abstract type AbstractSystemMatrixReconstructionAlgorithm <: AbstractMPIReconstructionAlgorithm end
@@ -12,7 +12,7 @@ abstract type AbstractMachineLearningReconstructionAlgorithm <: AbstractMPIRecon
 
 
 export AbstractMPIRecoParameters
-abstract type AbstractMPIRecoParameters <: AbstractReconstructionAlgorithmParameter end
+abstract type AbstractMPIRecoParameters <: AbstractImageReconstructionParameter end
 
 export AbstractBackgroundCorrectionParameters
 abstract type AbstractBackgroundCorrectionParameters <: AbstractMPIRecoParameters end
@@ -46,7 +46,7 @@ export plandir
 plandir() = abspath(homedir(), ".mpi", "RecoPlans")
 
 # Check if contains
-isSystemMatrixBased(::T) where T <: AbstractReconstructionAlgorithm = recoAlgorithmTypes(T) isa SystemMatrixBasedAlgorithm
-isXSpaceBased(::T) where T <: AbstractReconstructionAlgorithm = recoAlgorithmTypes(T) isa XSpaceBasedAlgorithm
-isMachineLearningBased(::T) where T <: AbstractReconstructionAlgorithm = recoAlgorithmTypes(T) isa MachineLearningBasedAlgorithm
-isMixedAlgorithm(::T) where T <: AbstractReconstructionAlgorithm = true # TODO
+isSystemMatrixBased(::T) where T <: AbstractImageReconstructionAlgorithm = recoAlgorithmTypes(T) isa SystemMatrixBasedAlgorithm
+isXSpaceBased(::T) where T <: AbstractImageReconstructionAlgorithm = recoAlgorithmTypes(T) isa XSpaceBasedAlgorithm
+isMachineLearningBased(::T) where T <: AbstractImageReconstructionAlgorithm = recoAlgorithmTypes(T) isa MachineLearningBasedAlgorithm
+isMixedAlgorithm(::T) where T <: AbstractImageReconstructionAlgorithm = true # TODO
