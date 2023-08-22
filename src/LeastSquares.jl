@@ -35,7 +35,7 @@ function process(t::Type{<:AbstractMPIReconstructionAlgorithm}, u::Array, params
   c = zeros(N, L)
 
   args = toKwargs(params.solverParams)
-  reg = prepareRegularization(params.reg, params.solverParams)
+  reg = prepareRegularization(params.reg, params)
   args[:reg] = reg
   args[:sparseTrafo] = params.op
   solv = createLinearSolver(params.solver, params.S; args...)
@@ -52,13 +52,22 @@ function process(t::Type{<:AbstractMPIReconstructionAlgorithm}, u::Array, params
 
 end
 
-function prepareRegularization(reg::Vector{R}, params::SimpleSolverParameters) where R<:AbstractRegularization
+function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) where R<:AbstractRegularization
+  params = regLS.solverParams
+
   result = AbstractRegularization[]
   push!(result, reg...)
+
+  # Add further constraints
   if params.enforceReal && params.enforcePositive
     push!(result, PositiveRegularization())
   elseif params.enforceReal
     push!(result, RealRegularization())
+  end
+
+  # Add sparsity op
+  if !isnothing(regLS.op)
+    result = map(r -> SparseRegularization(r, regLS.op), result)
   end
   return result
 end
