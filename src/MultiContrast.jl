@@ -52,7 +52,7 @@ calibSize(bs::MultiContrastFile) = [calibSize(b) for b in bs]
 gridSizeCommon(bs::MultiContrastFile) = gridSize(bs[1])
 fov(b::MultiContrastFile) = fov(b[1])
 
-function filterFrequencies(bSFs::MultiContrastFile; kargs...) where {T<:MPIFile}
+function filterFrequencies(bSFs::MultiContrastFile; kargs...)
   return intersect([filterFrequencies(bSF; kargs...) for bSF in bSFs]...)
 end
 
