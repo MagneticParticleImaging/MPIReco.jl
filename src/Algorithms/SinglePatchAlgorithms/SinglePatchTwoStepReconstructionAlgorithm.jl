@@ -22,7 +22,7 @@ Base.@kwdef mutable struct SinglePatchTwoStepReconstructionAlgorithm{P} <: Abstr
 end
 
 # Bit hacky: Create transparent parameter to give to inner algorithm
-Base.@kwdef mutable struct TwoStepSubstractionPreProcessingParameter{B, PR<:AbstractPreProcessingParameters{B}} <: AbstractPreProcessingParameters{B}
+Base.@kwdef mutable struct TwoStepSubstractionPreProcessingParameter{B, PR<:AbstractMPIPreProcessingParameters{B}} <: AbstractMPIPreProcessingParameters{B}
   pre::PR
   proj::Vector{ComplexF32} = zeros(ComplexF32, 1)
 end
@@ -34,15 +34,15 @@ function Base.getproperty(param::TwoStepSubstractionPreProcessingParameter, fiel
   end
 end
 
-function process(t::Type{<:AbstractMPIReconstructionAlgorithm}, f::MPIFile, params::TwoStepSubstractionPreProcessingParameter)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, f::MPIFile, params::TwoStepSubstractionPreProcessingParameter)
   meas = process(t, f, params.pre)
   return meas - params.proj
 end
 
-function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProcessingParameters, <:SinglePatchTwoStepReconstructionParameters, PT}) where {PT <:AbstractPostProcessingParameters}
+function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProcessingParameters, <:SinglePatchTwoStepReconstructionParameters, PT}) where {PT <:AbstractMPIPostProcessingParameters}
   return SinglePatchTwoStepReconstructionAlgorithm(params)
 end
-function SinglePatchTwoStepReconstructionAlgorithm(params::SinglePatchParameters{<:CommonPreProcessingParameters, <:SinglePatchTwoStepReconstructionParameters, PT}) where {PT <:AbstractPostProcessingParameters}
+function SinglePatchTwoStepReconstructionAlgorithm(params::SinglePatchParameters{<:CommonPreProcessingParameters, <:SinglePatchTwoStepReconstructionParameters, PT}) where {PT <:AbstractMPIPostProcessingParameters}
   recoHigh = SinglePatchReconstructionParameter(; sf = params.reco.sf, sfLoad = params.reco.sfLoadHigh, solver = params.reco.solver, solverParams = params.reco.solverParams_high, reg = params.reco.reg_high)
   recoLow = SinglePatchReconstructionParameter(; sf = params.reco.sf, sfLoad = params.reco.sfLoadLow, solver = params.reco.solver, solverParams = params.reco.solverParams_low, reg = params.reco.reg_low)
   algoHigh = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoHigh, params.post))

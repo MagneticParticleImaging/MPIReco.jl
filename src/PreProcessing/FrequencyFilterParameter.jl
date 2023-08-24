@@ -32,7 +32,7 @@ Base.@kwdef struct FreqNumThresholdFrequencyFilterParameter <: AbstractFrequency
   numPeriodGrouping::Int64 = 1
   maxMixingOrder::Int64 = -1
 end
-function process(::Type{<:AbstractMPIReconstructionAlgorithm}, file::MPIFile, params::AbstractFrequencyFilterParameter)
+function process(::Type{<:AbstractMPIRecoAlgorithm}, file::MPIFile, params::AbstractFrequencyFilterParameter)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:maxFreq => rxBandwidth(file), :recChannels => 1:rxNumChannels(file))) 
   filterFrequencies(file; kwargs...)
 end

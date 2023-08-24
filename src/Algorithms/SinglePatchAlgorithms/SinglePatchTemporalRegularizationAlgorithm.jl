@@ -27,10 +27,10 @@ Base.@kwdef mutable struct SinglePatchTemporalRegularizationAlgorithm{P} <: Abst
   output::Channel{Any}
 end
 
-function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractPreProcessingParameters,<:SinglePatchTemporalRegularizationReconstructionParameter,PT}) where {PT<:AbstractPostProcessingParameters}
+function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,<:SinglePatchTemporalRegularizationReconstructionParameter,PT}) where {PT<:AbstractMPIPostProcessingParameters}
   return SinglePatchTemporalRegularizationAlgorithm(params)
 end
-function SinglePatchTemporalRegularizationAlgorithm(params::SinglePatchParameters{<:AbstractPreProcessingParameters,R,PT}) where {R<:SinglePatchTemporalRegularizationReconstructionParameter,PT<:AbstractPostProcessingParameters}
+function SinglePatchTemporalRegularizationAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:SinglePatchTemporalRegularizationReconstructionParameter,PT<:AbstractMPIPostProcessingParameters}
   freqs, S, grid = prepareSystemMatrix(params.reco)
   filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
@@ -41,7 +41,7 @@ recoAlgorithmTypes(::Type{SinglePatchTemporalRegularizationAlgorithm}) = SystemM
 AbstractImageReconstruction.parameter(algo::SinglePatchTemporalRegularizationAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchTemporalRegularizationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
-  freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, reco.sfLoad)
+  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sf, reco.sfLoad)
   sf, grid = prepareSF(Kaczmarz, sf, grid)
   return freqs, sf, grid
 end
@@ -65,7 +65,7 @@ function AbstractImageReconstruction.put!(algo::SinglePatchTemporalRegularizatio
 end
 
 
-function process(algo::SinglePatchTemporalRegularizationAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
+function process(algo::SinglePatchTemporalRegularizationAlgorithm, f::MPIFile, params::AbstractMPIPreProcessingParameters)
   result = process(typeof(algo), f, params)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."

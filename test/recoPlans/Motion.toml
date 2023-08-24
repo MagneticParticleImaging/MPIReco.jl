@@ -1,26 +1,26 @@
-".type" = "RecoPlan{MultiPatchReconstructionAlgorithm}"
-".module" = "MPIReco"
+_type = "RecoPlan{MultiPatchReconstructionAlgorithm}"
+_module = "MPIReco"
 
 [parameter]
-".type" = "RecoPlan{MultiPatchParameters}"
-".module" = "MPIReco"
+_type = "RecoPlan{MultiPatchParameters}"
+_module = "MPIReco"
 
     [parameter.reco]
-    ".type" = "RecoPlan{PeriodicMotionReconstructionParameter}"
-    ".module" = "MPIReco"
+    _type = "RecoPlan{PeriodicMotionReconstructionParameter}"
+    _module = "MPIReco"
 
         [parameter.reco.freqFilter]
-        ".type" = "RecoPlan{SNRThresholdFrequencyFilterParameter}"
-        ".module" = "MPIReco"
+        _type = "RecoPlan{SNRThresholdFrequencyFilterParameter}"
+        _module = "MPIReco"
 
         [parameter.reco.solverParams]
-        ".type" = "RecoPlan{SimpleSolverParameters}"
-        ".module" = "MPIReco"
+        _type = "RecoPlan{SimpleSolverParameters}"
+        _module = "MPIReco"
 
     [parameter.pre]
-    ".type" = "RecoPlan{PeriodicMotionPreProcessing}"
-    ".module" = "MPIReco"
+    _type = "RecoPlan{PeriodicMotionPreProcessing}"
+    _module = "MPIReco"
 
     [parameter.post]
-    ".type" = "RecoPlan{NoPostProcessing}"
-    ".module" = "MPIReco"
+    _type = "RecoPlan{NoPostProcessing}"
+    _module = "MPIReco"

@@ -24,10 +24,10 @@ Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P} <: AbstractMulti
   output::Channel{Any}
 end
 
-function MultiPatchReconstruction(params::MultiPatchParameters{<:AbstractPreProcessingParameters,R,PT}) where {R<:AbstractMultiPatchReconstructionParameters,PT<:AbstractPostProcessingParameters}
+function MultiPatchReconstruction(params::MultiPatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:AbstractMultiPatchReconstructionParameters,PT<:AbstractMPIPostProcessingParameters}
   return MultiPatchReconstructionAlgorithm(params)
 end
-function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:AbstractPreProcessingParameters,<:MultiPatchReconstructionParameter,<:AbstractPostProcessingParameters})
+function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:AbstractMPIPreProcessingParameters,<:MultiPatchReconstructionParameter,<:AbstractMPIPostProcessingParameters})
   reco = params.reco
   freqs = process(MultiPatchReconstructionAlgorithm, reco.sf, reco.freqFilter)
   filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)

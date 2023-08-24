@@ -21,10 +21,10 @@ Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P} <: AbstractSing
   output::Channel{Any}
 end
 
-function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
+function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractMPIPostProcessingParameters}
   return SinglePatchReconstructionAlgorithm(params)
 end
-function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:AbstractPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractPostProcessingParameters}
+function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractMPIPostProcessingParameters}
   freqs, S, grid = prepareSystemMatrix(params.reco)
   filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
@@ -34,7 +34,7 @@ recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorit
 AbstractImageReconstruction.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
-  freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, reco.sfLoad)
+  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sf, reco.sfLoad)
   sf, grid = prepareSF(S, sf, grid) 
   return freqs, sf, grid
 end
@@ -58,7 +58,7 @@ function AbstractImageReconstruction.put!(algo::SinglePatchReconstructionAlgorit
   Base.put!(algo.output, result)
 end
 
-function process(algo::SinglePatchReconstructionAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
+function process(algo::SinglePatchReconstructionAlgorithm, f::MPIFile, params::AbstractMPIPreProcessingParameters)
   result = process(typeof(algo), f, params)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."

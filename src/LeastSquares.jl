@@ -26,7 +26,7 @@ Base.@kwdef struct ConstraintMaskedSolverParameters{P<:AbstractSolverParameters}
   params::P
 end
 
-function process(t::Type{<:AbstractMPIReconstructionAlgorithm}, u::Array, params::LeastSquaresParameters)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, u::Array, params::LeastSquaresParameters)
 
   N = size(params.S, 2)
   M = div(length(params.S), N)
@@ -67,7 +67,7 @@ function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) wh
 
   # Add sparsity op
   if !isnothing(regLS.op)
-    result = map(r -> SparseRegularization(r, regLS.op), result)
+    result = map(r -> TransformedRegularization(r, regLS.op), result)
   end
   return result
 end

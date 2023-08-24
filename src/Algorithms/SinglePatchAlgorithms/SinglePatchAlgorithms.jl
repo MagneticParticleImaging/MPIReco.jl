@@ -1,11 +1,11 @@
 export SinglePatchReconstructionAlgorithm, SinglePatchReconstructionParameter, SinglePatchParameters
 
-abstract type AbstractSinglePatchReconstructionAlgorithm <: AbstractMPIReconstructionAlgorithm end
-abstract type AbstractSinglePatchReconstructionParameters <: AbstractReconstructionParameters end
+abstract type AbstractSinglePatchReconstructionAlgorithm <: AbstractMPIRecoAlgorithm end
+abstract type AbstractSinglePatchReconstructionParameters <: AbstractMPIReconstructionParameters end
 abstract type AbstractSinglePatchAlgorithmParameters <: AbstractMPIRecoParameters end
 
-Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractPreProcessingParameters,
-     R<:AbstractSinglePatchReconstructionParameters, PT<:AbstractPostProcessingParameters} <: AbstractSinglePatchAlgorithmParameters
+Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractMPIPreProcessingParameters,
+     R<:AbstractSinglePatchReconstructionParameters, PT<:AbstractMPIPostProcessingParameters} <: AbstractSinglePatchAlgorithmParameters
   pre::PR
   reco::R
   post::PT = NoPostProcessing() 

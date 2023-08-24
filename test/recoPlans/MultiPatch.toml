@@ -1,42 +1,42 @@
-".type" = "RecoPlan{MultiPatchReconstructionAlgorithm}"
-".module" = "MPIReco"
+_type = "RecoPlan{MultiPatchReconstructionAlgorithm}"
+_module = "MPIReco"
 
 [parameter]
-".type" = "RecoPlan{MultiPatchParameters}"
-".module" = "MPIReco"
+_type = "RecoPlan{MultiPatchParameters}"
+_module = "MPIReco"
 
     [parameter.reco]
-    ".type" = "RecoPlan{MultiPatchReconstructionParameter}"
-    ".module" = "MPIReco"
+    _type = "RecoPlan{MultiPatchReconstructionParameter}"
+    _module = "MPIReco"
 
         [parameter.reco.ffPos]
-        ".type" = "RecoPlan{DefaultFocusFieldPositions}"
-        ".module" = "MPIReco"
+        _type = "RecoPlan{DefaultFocusFieldPositions}"
+        _module = "MPIReco"
 
         [parameter.reco.freqFilter]
-        ".type" = "RecoPlan{SNRThresholdFrequencyFilterParameter}"
-        ".module" = "MPIReco"
+        _type = "RecoPlan{SNRThresholdFrequencyFilterParameter}"
+        _module = "MPIReco"
 
         [parameter.reco.opParams]
-        ".type" = "RecoPlan{RegularMultiPatchOperatorParameter}"
-        ".module" = "MPIReco"
+        _type = "RecoPlan{RegularMultiPatchOperatorParameter}"
+        _module = "MPIReco"
 
         [parameter.reco.ffPosSF]
-        ".type" = "RecoPlan{DefaultFocusFieldPositions}"
-        ".module" = "MPIReco"
+        _type = "RecoPlan{DefaultFocusFieldPositions}"
+        _module = "MPIReco"
 
         [parameter.reco.solverParams]
-        ".type" = "RecoPlan{SimpleSolverParameters}"
-        ".module" = "MPIReco"
+        _type = "RecoPlan{SimpleSolverParameters}"
+        _module = "MPIReco"
 
     [parameter.pre]
-    ".type" = "RecoPlan{CommonPreProcessingParameters}"
-    ".module" = "MPIReco"
+    _type = "RecoPlan{CommonPreProcessingParameters}"
+    _module = "MPIReco"
 
         [parameter.pre.bgParams]
-        ".type" = "RecoPlan{NoBackgroundCorrectionParameters}"
-        ".module" = "MPIReco"
+        _type = "RecoPlan{NoBackgroundCorrectionParameters}"
+        _module = "MPIReco"
 
     [parameter.post]
-    ".type" = "RecoPlan{NoPostProcessing}"
-    ".module" = "MPIReco"
+    _type = "RecoPlan{NoPostProcessing}"
+    _module = "MPIReco"

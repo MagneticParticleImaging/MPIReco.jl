@@ -42,13 +42,13 @@ Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterPa
   bgCorrection::Bool = false
   loadasreal::Bool=false
 end
-function process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter)
   # Construct freqFilter
   freqs = process(t, sf, params.freqFilter)
   S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
   return freqs, S, grid
 end
-function process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter{<:FrequencyFilteredPreProcessingParameters})
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, sf::MPIFile, params::DenseSystemMatixLoadingParameter{<:FrequencyFilteredPreProcessingParameters})
   freqs = params.freqFilter.frequencies
   S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
   return freqs, S, grid
@@ -64,13 +64,13 @@ Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilter
   loadasreal::Bool=false
   useDFFoV::Bool = false
 end
-function process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::SparseSystemMatrixLoadingParameter)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, sf::MPIFile, params::SparseSystemMatrixLoadingParameter)
   # Construct freqFilter
   freqs = process(t, sf, params.freqFilter)
   S, grid = getSF(sf, freqs, params.sparseTrafo; toKwargs(params)...)
   return freqs, S, grid
 end
-function process(t::Type{<:AbstractMPIReconstructionAlgorithm}, sf::MPIFile, params::SparseSystemMatrixLoadingParameter{<:FrequencyFilteredPreProcessingParameters})
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, sf::MPIFile, params::SparseSystemMatrixLoadingParameter{<:FrequencyFilteredPreProcessingParameters})
   freqs = params.freqFilter.frequencies
   S, grid = getSF(sf, freqs, params.sparseTrafo; toKwargs(params)...)
   return freqs, S, grid

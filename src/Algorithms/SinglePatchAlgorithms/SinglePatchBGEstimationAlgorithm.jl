@@ -24,10 +24,10 @@ Base.@kwdef mutable struct SinglePatchBGEstimationAlgorithm{P} <: AbstractSingle
   output::Channel{Any}
 end
 
-function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractPreProcessingParameters,<:SinglePatchBGEstimationReconstructionParameter,PT}) where {PT<:AbstractPostProcessingParameters}
+function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,<:SinglePatchBGEstimationReconstructionParameter,PT}) where {PT<:AbstractMPIPostProcessingParameters}
   return SinglePatchBGEstimationAlgorithm(params)
 end
-function SinglePatchBGEstimationAlgorithm(params::SinglePatchParameters{<:AbstractPreProcessingParameters,R,PT}) where {R<:SinglePatchBGEstimationReconstructionParameter,PT<:AbstractPostProcessingParameters}
+function SinglePatchBGEstimationAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:SinglePatchBGEstimationReconstructionParameter,PT<:AbstractMPIPostProcessingParameters}
   freqs, S, grid = prepareSystemMatrix(params.reco)
   filter = fromKwargs(FrequencyFilteredPreProcessingParameters; frequencies=freqs, toKwargs(params.pre; flatten=DataType[])...)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
@@ -37,7 +37,7 @@ recoAlgorithmTypes(::Type{SinglePatchBGEstimationAlgorithm}) = SystemMatrixBased
 AbstractImageReconstruction.parameter(algo::SinglePatchBGEstimationAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchBGEstimationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
-  freqs, sf, grid = process(AbstractMPIReconstructionAlgorithm, reco.sf, reco.sfLoad)
+  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sf, reco.sfLoad)
   sf, grid = prepareSF(Kaczmarz, sf, grid)
   return freqs, sf, grid
 end
@@ -61,7 +61,7 @@ function AbstractImageReconstruction.put!(algo::SinglePatchBGEstimationAlgorithm
 end
 
 
-function process(algo::SinglePatchBGEstimationAlgorithm, f::MPIFile, params::AbstractPreProcessingParameters)
+function process(algo::SinglePatchBGEstimationAlgorithm, f::MPIFile, params::AbstractMPIPreProcessingParameters)
   result = process(typeof(algo), f, params)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."

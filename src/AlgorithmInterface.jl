@@ -1,35 +1,35 @@
-export AbstractMPIReconstructionAlgorithm
-abstract type AbstractMPIReconstructionAlgorithm <: AbstractImageReconstructionAlgorithm end
+export AbstractMPIRecoAlgorithm
+abstract type AbstractMPIRecoAlgorithm <: AbstractImageReconstructionAlgorithm end
 
-export AbstractSystemMatrixReconstructionAlgorithm
-abstract type AbstractSystemMatrixReconstructionAlgorithm <: AbstractMPIReconstructionAlgorithm end
+export AbstractSystemMatrixMPIRecoAlgorithm
+abstract type AbstractSystemMatrixMPIRecoAlgorithm <: AbstractMPIRecoAlgorithm end
 
-export AbstractXSpaceReconstructionAlgorithm
-abstract type AbstractXSpaceReconstructionAlgorithm <: AbstractMPIReconstructionAlgorithm end
+export AbstractXSpaceMPIRecoAlgorithm
+abstract type AbstractXSpaceMPIRecoAlgorithm <: AbstractMPIRecoAlgorithm end
 
-export AbstractMachineLearningReconstructionAlgorithm
-abstract type AbstractMachineLearningReconstructionAlgorithm <: AbstractMPIReconstructionAlgorithm end
+export AbstractMachineLearningMPIRecoAlgorithm
+abstract type AbstractMachineLearningMPIRecoAlgorithm <: AbstractMPIRecoAlgorithm end
 
 
 export AbstractMPIRecoParameters
-abstract type AbstractMPIRecoParameters <: AbstractImageReconstructionParameter end
+abstract type AbstractMPIRecoParameters <: AbstractImageReconstructionParameters end
 
-export AbstractBackgroundCorrectionParameters
-abstract type AbstractBackgroundCorrectionParameters <: AbstractMPIRecoParameters end
+export AbstractMPIBackgroundCorrectionParameters
+abstract type AbstractMPIBackgroundCorrectionParameters <: AbstractMPIRecoParameters end
 
-export AbstractPreProcessingParameters
-abstract type AbstractPreProcessingParameters{T<:AbstractBackgroundCorrectionParameters} <: AbstractMPIRecoParameters end
+export AbstractMPIPreProcessingParameters
+abstract type AbstractMPIPreProcessingParameters{T<:AbstractMPIBackgroundCorrectionParameters} <: AbstractMPIRecoParameters end
 
-export AbstractPostProcessingParameters, NoPostProcessing
-abstract type AbstractPostProcessingParameters <: AbstractMPIRecoParameters end
-struct NoPostProcessing <: AbstractPostProcessingParameters end # TODO remove later
-process(algo::AbstractMPIReconstructionAlgorithm, data, ::NoPostProcessing) = data
+export AbstractMPIPostProcessingParameters, NoPostProcessing
+abstract type AbstractMPIPostProcessingParameters <: AbstractMPIRecoParameters end
+struct NoPostProcessing <: AbstractMPIPostProcessingParameters end # TODO remove later
+process(algo::AbstractMPIRecoAlgorithm, data, ::NoPostProcessing) = data
 
-export AbstractReconstructionParameters
-abstract type AbstractReconstructionParameters <: AbstractMPIRecoParameters end
+export AbstractMPIReconstructionParameters
+abstract type AbstractMPIReconstructionParameters <: AbstractMPIRecoParameters end
 
-export AbstractRecoAlgorithmParameters
-abstract type AbstractRecoAlgorithmParameters <: AbstractMPIRecoParameters end
+export AbstractMPIRecoAlgorithmParameters
+abstract type AbstractMPIRecoAlgorithmParameters <: AbstractMPIRecoParameters end
 
 # Traits
 abstract type ReconstructionAlgorithmType end

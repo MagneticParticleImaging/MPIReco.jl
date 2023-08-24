@@ -1,5 +1,5 @@
 export PeriodicMotionPreProcessing, PeriodicMotionReconstructionParameter
-Base.@kwdef struct PeriodicMotionPreProcessing{BG<:AbstractBackgroundCorrectionParameters} <: AbstractPreProcessingParameters{BG}
+Base.@kwdef struct PeriodicMotionPreProcessing{BG<:AbstractMPIBackgroundCorrectionParameters} <: AbstractMPIPreProcessingParameters{BG}
   # Periodic Motion
   frames::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
   alpha::Float64 = 3.0
@@ -21,7 +21,7 @@ Base.@kwdef struct PeriodicMotionReconstructionParameter{F<:AbstractFrequencyFil
   # weightingType::WeightingType = WeightingType.None
 end
 
-function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:PeriodicMotionPreProcessing,<:PeriodicMotionReconstructionParameter,<:AbstractPostProcessingParameters})
+function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:PeriodicMotionPreProcessing,<:PeriodicMotionReconstructionParameter,<:AbstractMPIPostProcessingParameters})
   reco = params.reco
   freqs = process(MultiPatchReconstructionAlgorithm, reco.sf, reco.freqFilter)
   filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
