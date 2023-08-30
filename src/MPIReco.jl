@@ -17,6 +17,8 @@ module MPIReco
   # TODO sort out import for Base and AbstractImageReconstruction to avoid boiler plate
   import Base: put!, take!
   import AbstractImageReconstruction: process, parameter
+  using FFTW
+  using LinearOperatorCollection
 
 
   include("AlgorithmInterface.jl")

@@ -92,7 +92,7 @@ end
 setlambda(S::AbstractMatrix, λ) = nothing
 
 function getSF(bSF, frequencies, sparseTrafo, solver::AbstractString; kargs...)
-  if solver == "kaczmarz"
+  if solver == "Kaczmarz"
     return getSF(bSF, frequencies, sparseTrafo, Kaczmarz; kargs...)
   elseif solver == "pseudoinverse"
     return getSF(bSF, frequencies, sparseTrafo, PseudoInverse; kargs...)
@@ -112,7 +112,7 @@ end
 
 prepareSF(solver::Type{Kaczmarz}, SF, grid) = transpose(SF), grid
 prepareSF(solver::Type{PseudoInverse}, SF, grid) = SVD(svd(transpose(SF))...), grid
-prepareSF(solver::Union{Type{CGNR}, Type{FusedLasso}}, SF, grid) = copy(transpose(SF)), grid
+prepareSF(solver::Union{Type{CGNR}}, SF, grid) = copy(transpose(SF)), grid
 prepareSF(solver::Type{DirectSolver}, SF, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
 prepareSF(solver::Type{<:RegularizedLeastSquares.AbstractLinearSolver}, SF, grid) = SF, grid
 

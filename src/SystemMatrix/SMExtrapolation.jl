@@ -153,8 +153,8 @@ function fillmissing(A::Array; method::Integer=1)
 	rhs = -Δ[lidx_work, lidx_known] * A[lidx_known]
 
 	# build solver
-	reg = Regularization("L1", 0.01; shape=(length(lidx_work),length(lidx_unknown)))
-	solver = createLinearSolver("admm",Δ[lidx_work, lidx_unknown];reg=reg, ρ=0.1, iterations=5)
+	reg = L1Regularization(0.01; shape=(length(lidx_work),length(lidx_unknown))) # shape not necessary here
+	solver = createLinearSolver(ADMM,Δ[lidx_work, lidx_unknown];reg=reg, ρ=0.1, iterations=5)
 		
 	# Solving
 	B = copy(A)
@@ -165,7 +165,7 @@ function fillmissing(A::Array; method::Integer=1)
 	return B
 end
 
-function extrapolateSM(bSF::MPIFile, freq::Vector{T}, ex_size; method=1, sparseTrafo=nothing, solver="kaczmarz", kargs...) where {T<:Int}
+function extrapolateSM(bSF::MPIFile, freq::Vector{T}, ex_size; method=1, sparseTrafo=nothing, solver="Kaczmarz", kargs...) where {T<:Int}
     SM, grid = getSF(bSF, freq, sparseTrafo, solver; kargs...)
     return extrapolateSM(SM, grid, ex_size; method=method)
 end

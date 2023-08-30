@@ -67,7 +67,7 @@ using MPIReco
   freq = filterFrequencies(bSF, numPeriodGrouping=numPeriodGrouping, numPeriodAverages=numPeriodAverages,
              minFreq=30e3, maxFreq=600e3,  maxMixingOrder=maxMixingOrder)
 
-  S, grid = getSF(bSF, freq, nothing, "kaczmarz", numPeriodAverages=numPeriodAverages, bgCorrection=bgCorrection,
+  S, grid = getSF(bSF, freq, nothing, "Kaczmarz", numPeriodAverages=numPeriodAverages, bgCorrection=bgCorrection,
            numPeriodGrouping=numPeriodGrouping, spectralLeakageCorrection=false);
 
   u = getMeasurementsFD(b, frequencies=freq, bgCorrection=bgCorrection, frames=1:10, numAverages=10,
@@ -86,7 +86,7 @@ using MPIReco
   freq = filterFrequencies(bSF, numPeriodGrouping=numPeriodGrouping, numPeriodAverages=numPeriodAverages,
              minFreq=30e3, maxFreq=600e3,  maxMixingOrder=maxMixingOrder)
 
-  S, grid = getSF(bSF, freq, nothing, "kaczmarz", numPeriodAverages=numPeriodAverages, bgCorrection=bgCorrection,
+  S, grid = getSF(bSF, freq, nothing, "Kaczmarz", numPeriodAverages=numPeriodAverages, bgCorrection=bgCorrection,
            numPeriodGrouping=numPeriodGrouping, spectralLeakageCorrection=false);
 
   u = getMeasurementsFD(b, frequencies=freq, bgCorrection=bgCorrection, frames=1:10, numAverages=10,

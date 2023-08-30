@@ -81,9 +81,9 @@ function process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::Sin
 end
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
-  return linearOperator(nothing, shape(algo.grid), eltype(algo.S))
+  return nothing
 end
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:SparseSystemMatrixLoadingParameter, S}) where {S}
-  return linearOperator(params.sfLoad.sparseTrafo, shape(algo.grid), eltype(algo.S))
+  return createLinearOperator(params.sfLoad.sparseTrafo, eltype(algo.S); shape=tuple(shape(algo.grid)...))
 end

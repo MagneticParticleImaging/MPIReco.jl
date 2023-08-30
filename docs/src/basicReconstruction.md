@@ -70,7 +70,7 @@ The function `reconstructionSinglePatch` performs the frequency filtering and th
 ```julia
 function reconstruction(bSF::MPIFile, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, bgFrames = 1,  denoiseWeight = 0, redFactor = 0.0, thresh = nothing,
-  loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
+  loadasreal = false, solver = "Kaczmarz", sparseTrafo = nothing, saveTrafo=false,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
   deadPixels=Int[], bgCorrectionInternal=false, kargs...)
 ```
@@ -84,7 +84,7 @@ Once the system matrix is loaded, the next lower level function is called:
 function reconstruction(S, bSF::MPIFile, bMeas::MPIFile, freq::Array, grid;
   frames = nothing, bEmpty = nothing, bgFrames = 1, nAverages = 1, numAverages=nAverages,
   sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
-  weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
+  weightType=WeightingType.None, weightingLimit = 0, solver = "Kaczmarz",
   spectralCleaning=true, fgFrames=1:10, bgCorrectionInternal=false,
   noiseFreqThresh=0.0, kargs...)
 ```
@@ -97,7 +97,7 @@ low level reconstruction routine is called.
 Finally, we have arrived at the low level reconstruction routine that has the signature
 ```julia
 function reconstruction(S, u::Array; sparseTrafo = nothing,
-                        lambd=0, progress=nothing, solver = "kaczmarz",
+                        lambd=0, progress=nothing, solver = "Kaczmarz",
                         weights=nothing, kargs...)
 ```
 One can see that it requires the system matrix `S` and the measurements `u` to be

@@ -214,13 +214,13 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
   if systemMatrices == nothing
       S=AbstractMatrix[]; gridS=RegularGridPositions[];
       for i=1:length(SFs)
-        SF_S,SF_gridS = getSF(SFs[i],freq,nothing,"kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i],center=SFGridCenter[:,i])
+        SF_S,SF_gridS = getSF(SFs[i],freq,nothing,"Kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i],center=SFGridCenter[:,i])
         push!(S,SF_S)
         push!(gridS,SF_gridS)
       end
   else
     if grid == nothing
-      gridS = [getSF(SFs[i],freq,nothing,"kaczmarz", bgCorrection=bgCorrection,tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i],center=SFGridCenter[:,i])[2] for i in 1:length(SFs)]
+      gridS = [getSF(SFs[i],freq,nothing,"Kaczmarz", bgCorrection=bgCorrection,tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i],center=SFGridCenter[:,i])[2] for i in 1:length(SFs)]
     else
       gridS = grid
     end
@@ -376,7 +376,7 @@ function MultiPatchOperatorRegular(SFs::MultiMPIFile, freq; bgCorrection::Bool,
       if u > 0 # its already in memory
         patchToSMIdx[k] = u
       else     # not yet in memory  -> load it
-        S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection)
+        S_, grid = getSF(SF,freq,nothing,"Kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection)
         push!(S,S_)
         push!(SOrigIdx,idx)
         push!(SIsPlain,true) # mark this as a plain system matrix (without interpolation)
@@ -388,7 +388,7 @@ function MultiPatchOperatorRegular(SFs::MultiMPIFile, freq; bgCorrection::Bool,
       newGrid = deriveSubgrid(recoGrid, grids[k])
 
       # load the matrix on the new subgrid
-      S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection,
+      S_, grid = getSF(SF,freq,nothing,"Kaczmarz", bgCorrection=bgCorrection,
                    gridsize=shape(newGrid),
                    fov=fieldOfView(newGrid),
                    center=fieldOfViewCenter(newGrid).-fieldOfViewCenter(grids[k]),
@@ -540,4 +540,20 @@ function initkaczmarz(Op::MultiPatchOperator,λ,weights::Vector)
   end
 
   denom, rowindex
+end
+
+
+function RegularizedLeastSquares.rowProbabilities(Op::MultiPatchOperator, rowindex)
+  p = zeros(length(rowindex))
+  
+  for i=1:length(rowindex)
+    k = rowindex[i]
+    j = mod1(k, div(Op.M,Op.nPatches))
+    patch = Op.RowToPatch[k]
+    A = Op.S[Op.patchToSMIdx[patch]]
+    p[i] = rownorm²(A, j)
+  end
+  p ./= sum(p)
+
+  return p   
 end

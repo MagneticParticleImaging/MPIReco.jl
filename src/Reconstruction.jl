@@ -158,7 +158,7 @@ end
 function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, emptyMeas = bEmpty, bgFrames = 1,
   denoiseWeight = 0, redFactor = 0.0, thresh = 0.0,
-  loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing,
+  loadasreal = false, solver = "Kaczmarz", sparseTrafo = nothing,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
   deadPixels=nothing, bgCorrectionInternal=false, bgDictSize=nothing, bgFramesDict=nothing,
   numPeriodAverages=1, numPeriodGrouping=1, reco=:default, kargs...) where {T<:MPIFile}
@@ -213,7 +213,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   frames = nothing, bEmpty = nothing, emptyMeas= bEmpty, bgFrames = 1, nAverages = 1,
   numAverages=nAverages, bgDict = nothing, bgFramesPost = nothing,
   sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
-  weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
+  weightType=WeightingType.None, weightingLimit = 0, solver = "Kaczmarz",
   spectralCleaning=true, spectralLeakageCorrection=spectralCleaning,
   fgFrames=1:10, bgCorrectionInternal=false,
   noiseFreqThresh=0.0, channelWeights=ones(3), 
@@ -339,7 +339,7 @@ end
 Low level reconstruction method
 """
 function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = nothing,
-                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "kaczmarz",
+                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "Kaczmarz",
                         weights=nothing, enforceReal=true, enforcePositive=true,
                         relativeLambda=true, reg = nothing, kargs...)
 
@@ -349,14 +349,14 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
   L = size(u)[end]
   u = reshape(u, M, L)
   c = zeros(N,L)
-  #c = zeros(real(eltype(u)),N,L) Change by J.Dora
 
   norm = NoNormalization()
-  if (!isnothing(reg) || sum(abs.(λ)) > 0) && solver != "fusedlasso" && relativeLambda
+  if (!isnothing(reg) || sum(abs.(λ)) > 0) && relativeLambda
     norm = SystemMatrixBasedNormalization()
   end
+  solverType = eval(Symbol(solver)) # this probably should happen much earlier
 
-  solv = createLinearSolver(solver, S; weights=weights, λ=λ,
+  solv = createLinearSolver(solverType, S; weights=weights, λ=λ,
                             sparseTrafo=sparseTrafo, enforceReal=enforceReal,
 			                      enforcePositive=enforcePositive, normalizeReg = norm, reg = reg, kargs...)
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress

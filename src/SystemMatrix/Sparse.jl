@@ -31,7 +31,7 @@ function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
       grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
     end
 
-    basisTrafo = linearOperator(sparseTrafo,shape(grid))
+    basisTrafo = createLinearOperator(sparseTrafo, ComplexF32; shape=tuple(shape(grid)...))
 
     nFreq = rxNumFrequencies(bSF)*rxNumChannels(bSF)
     N = length(grid)

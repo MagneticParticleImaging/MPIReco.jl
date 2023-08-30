@@ -164,7 +164,7 @@ fashion
 function reconstruction(S, u::Array, bgDict::AbstractMatrix;
                         sparseTrafo = nothing, beta = 0.1, β=beta,
                         lambd=0.0, lambda=lambd, λ=lambda, progress=nothing,
-                        solver = "kaczmarz",
+                        solver = "Kaczmarz",
                         weights=nothing, enforceReal=false, enforcePositive=false,
                         relativeLambda=true, backgroundCoefficients = nothing, kargs...)
 

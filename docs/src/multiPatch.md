@@ -42,7 +42,7 @@ All those thing can be done as is shown in the following example
 bSFs = MultiMPIFile(["SF_MP01", "SF_MP02", "SF_MP03", "SF_MP04"])
 mapping = [1,2,3,4]
 freq = filterFrequencies(bSFs, SNRThresh=5, minFreq=80e3)
-S = [getSF(SF,freq,nothing,"kaczmarz", bgcorrection=false)[1] for SF in bSFs]
+S = [getSF(SF,freq,nothing,"Kaczmarz", bgcorrection=false)[1] for SF in bSFs]
 SFGridCenter = zeros(3,4)
 FFPos = zeros(3,4)
 FFPos[:,1] = [-0.008, 0.008, 0.0]
