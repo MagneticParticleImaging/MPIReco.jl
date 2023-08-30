@@ -20,7 +20,7 @@ Base.@kwdef mutable struct SinglePatchBGEstimationAlgorithm{P} <: AbstractSingle
   S::AbstractArray
   bgDict::AbstractArray
   grid::RegularGridPositions
-  freqs::Vector{Int64}
+  freqs::Vector{CartesianIndex{2}}
   output::Channel{Any}
 end
 

@@ -20,7 +20,7 @@ Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P} <: AbstractMulti
   ffOp::Union{Nothing, MultiPatchOperator}
   ffPos::Union{Nothing,AbstractArray}
   ffPosSF::Union{Nothing,AbstractArray}
-  freqs::Vector{Int64}
+  freqs::Vector{CartesianIndex{2}}
   output::Channel{Any}
 end
 

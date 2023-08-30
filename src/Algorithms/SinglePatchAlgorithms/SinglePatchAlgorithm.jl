@@ -17,7 +17,7 @@ Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P} <: AbstractSing
   sf::Union{MPIFile, Vector{MPIFile}}
   S::AbstractArray
   grid::RegularGridPositions
-  freqs::Vector{Int64}
+  freqs::Vector{CartesianIndex{2}}
   output::Channel{Any}
 end
 

@@ -7,7 +7,7 @@ Base.@kwdef struct SNRThresholdFrequencyFilterParameter <: AbstractFrequencyFilt
   maxFreq::Union{Float64, Nothing} = nothing
   recChannels::Union{UnitRange{Int64}, Nothing} = nothing
   SNRThresh::Float64=-1.0
-  sortBySNR::Bool = false
+  #sortBySNR::Bool = false
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
   maxMixingOrder::Int64 = -1
@@ -27,7 +27,7 @@ Base.@kwdef struct FreqNumThresholdFrequencyFilterParameter <: AbstractFrequency
   maxFreq::Union{Float64, Nothing} = nothing
   recChannels::Union{UnitRange{Int64}, Nothing} = nothing
   numUsedFreqs::Int64=1
-  sortBySNR::Bool = false
+  #sortBySNR::Bool = false
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
   maxMixingOrder::Int64 = -1

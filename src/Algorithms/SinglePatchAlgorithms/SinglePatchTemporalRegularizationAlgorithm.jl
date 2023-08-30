@@ -23,7 +23,7 @@ Base.@kwdef mutable struct SinglePatchTemporalRegularizationAlgorithm{P} <: Abst
   idxFG::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
   idxFG::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
   grid::RegularGridPositions
-  freqs::Vector{Int64}
+  freqs::Vector{CartesianIndex{2}}
   output::Channel{Any}
 end
 

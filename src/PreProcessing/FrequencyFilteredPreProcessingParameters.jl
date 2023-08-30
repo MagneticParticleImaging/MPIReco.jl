@@ -1,6 +1,6 @@
 export FrequencyFilteredPreProcessingParameters
 Base.@kwdef struct FrequencyFilteredPreProcessingParameters{B, T<:AbstractMPIPreProcessingParameters{B}} <: AbstractMPIPreProcessingParameters{B}
-  frequencies::Vector{Int64}
+  frequencies::Vector{CartesianIndex{2}}
   pre::T
 end
 
