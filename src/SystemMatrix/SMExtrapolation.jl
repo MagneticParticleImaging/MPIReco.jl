@@ -165,7 +165,7 @@ function fillmissing(A::Array; method::Integer=1)
 	return B
 end
 
-function extrapolateSM(bSF::MPIFile, freq::Vector{T}, ex_size; method=1, sparseTrafo=nothing, solver="Kaczmarz", kargs...) where {T<:Int}
+function extrapolateSM(bSF::MPIFile, freq::Vector{CartesianIndex{2}}, ex_size; method=1, sparseTrafo=nothing, solver="Kaczmarz", kargs...)
     SM, grid = getSF(bSF, freq, sparseTrafo, solver; kargs...)
     return extrapolateSM(SM, grid, ex_size; method=method)
 end
