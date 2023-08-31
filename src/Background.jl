@@ -20,7 +20,7 @@ Base.@kwdef struct ExternalPreProcessedBackgroundCorrectionParameters{T} <: Abst
 end
 # TODO Shorter struct names?
 Base.@kwdef struct FrequencyFilteredBackgroundCorrectionParameters{T} <: AbstractMPIBackgroundCorrectionParameters where {T<:ExternalBackgroundCorrection}
-  frequencies::Vector{Int64}
+  frequencies::Vector{CartesianIndex{2}}
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
   spectralLeakageCorrection::Bool = false
