@@ -84,7 +84,7 @@ using MPIReco
   maxMixingOrder = 12
 
   freq = filterFrequencies(bSF, numPeriodGrouping=numPeriodGrouping, numPeriodAverages=numPeriodAverages,
-             minFreq=30e3, maxFreq=600e3,  maxMixingOrder=maxMixingOrder)
+             minFreq=30e3, maxFreq=600e3, numSidebandFreqs = 12)
 
   S, grid = getSF(bSF, freq, nothing, "Kaczmarz", numPeriodAverages=numPeriodAverages, bgCorrection=bgCorrection,
            numPeriodGrouping=numPeriodGrouping, spectralLeakageCorrection=false);
