@@ -41,7 +41,7 @@ for op in [:filepath, :version, :uuid, :time, :studyName, :studyNumber, :studyUu
             :rxNumSamplingPoints, :rxTransferFunction, :rxHasTransferFunction, :rxTransferFunctionFileName, :rxInductionFactor, :rxUnit,
             :rxDataConversionFactor,
             :calibSNR, :calibFov, :calibFovCenter, #:calibSize,
-            :calibOrder, :calibPositions, :calibOffsetField,
+            :calibOrder, :calibPositions, :calibOffsetFields,
             :calibDeltaSampleSize, :calibMethod]
   @eval MPIFiles.$op(f::MultiContrastFile) = MPIFiles.$op(f.files[1])
 end
