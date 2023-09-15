@@ -3,12 +3,13 @@ export LeastSquaresParameters
 abstract type AbstractSolverParameters <: AbstractMPIRecoParameters end
 
 export LeastSquaresParameters
-Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters} <: AbstractMPIRecoParameters
+Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters, W} <: AbstractMPIRecoParameters
   solver::Type{L}
   op::O
   S::M
   reg::Vector{R} 
   solverParams::P
+  weights::W
 end
 
 # TODO place weights and more
@@ -38,7 +39,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, u::Array, params::LeastSqu
   reg = prepareRegularization(params.reg, params)
   args[:reg] = reg
   args[:sparseTrafo] = params.op
-  solv = createLinearSolver(params.solver, params.S; args...)
+  solv = createLinearSolver(params.solver, params.S; args..., weights = params.weights)
 
   for l=1:L
     d = solve(solv, u[:, l])

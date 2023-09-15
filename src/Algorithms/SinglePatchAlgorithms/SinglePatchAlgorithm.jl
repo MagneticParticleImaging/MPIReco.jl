@@ -1,5 +1,5 @@
 Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver,
-   SP<:AbstractSolverParameters, R<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
+   SP<:AbstractSolverParameters, R<:AbstractRegularization, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sfLoad::L
@@ -7,7 +7,7 @@ Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoa
   solver::Type{S}
   solverParams::SP
   reg::Vector{R} = AbstractRegularization[]
-  # weightingType::WeightingType = WeightingType.None
+  weightingParams::W = NoWeightingParamters()
 end
 
 Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
@@ -69,16 +69,18 @@ end
 
 
 function process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::SinglePatchReconstructionParameter)
-  weights = nothing # getWeights(...)
+  weights = process(algo, u, params.weightingParams)
 
   B = getLinearOperator(algo, params)
 
-  solver = LeastSquaresParameters(params.solver, B, algo.S, params.reg, params.solverParams)
+  solver = LeastSquaresParameters(params.solver, B, algo.S, params.reg, params.solverParams, weights)
 
   result = process(algo, u, solver)
 
   return gridresult(result, algo.grid, algo.sf)
 end
+
+process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::ChannelWeightingParameters) = map(x-> convert(real(eltype(algo.S)),params.channelWeights[x[2]]), algo.freqs)
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
   return nothing
