@@ -130,8 +130,9 @@ function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
   numPeriodAverages=1, numPeriodGrouping=1, kargs...) where {T<:MPIFile}
 
   freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, 
-                           numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR, numPeriodAverages=numPeriodAverages, 
+                           numUsedFreqs=numUsedFreqs, numPeriodAverages=numPeriodAverages, 
                            numPeriodGrouping=numPeriodGrouping)
+  freq = sortFrequencies(freq, bSF, numPeriodGrouping = 1, sortBySNR = sortBySNR)
 
   if varMeanThresh > 0
     bEmptyTmp = (emptyMeas == nothing) ? bMeas : emptyMeas
@@ -251,7 +252,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   p = Progress(L, 1, "Reconstructing data...")
 
   # initialize sparseTrafo
-  B = linearOperator(sparseTrafo, shape(grid), eltype(S))
+  B = isnothing(sparseTrafo) ? nothing : createLinearOperator(sparseTrafo, eltype(S), shape = Tuple(shape(grid)))
   @debug "S: $(eltype(S))"
   @debug "B: $(eltype(B))"
 

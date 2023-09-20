@@ -66,3 +66,4 @@ calibFov(b::Vector{T}) where {T<:MPIFile} = calibFov(b[1])
 function filterFrequencies(bSFs::Vector{T}; kargs...) where {T<:MPIFile}
   return intersect([filterFrequencies(bSF; kargs...) for bSF in bSFs]...)
 end
+MPIFiles.sortFrequencies(indices, fs::Vector{T}; kwargs...) where {T<:MPIFile} = sortFrequencies(indices, fs[1]; kwargs...)

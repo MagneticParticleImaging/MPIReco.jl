@@ -3,7 +3,8 @@ export reconstructionPeriodicMotion
 function reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile;
   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas), kargs...)
 
-  freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
+  freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs)
+  freq = sortFrequencies(freq, bSF, sortBySNR = sortBySNR)
 
   @debug "selecting $(length(freq)) frequencies"
 
@@ -36,7 +37,7 @@ end
 - bSFFrequencyAnalysis: System function for frequency analysis
 
 """
-function reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile, freq::Array{Int64,1};
+function reconstructionPeriodicMotion(bSF::MPIFile, bMeas::MPIFile, freq::Vector{CartesianIndex{2}};
 				bEmpty=nothing, bgFrames=nothing,
 				alpha::Float64=3.0, choosePeak::Int64=1,
 		                frames::UnitRange=1:acqNumFrames(bMeas),

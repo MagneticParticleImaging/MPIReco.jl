@@ -185,8 +185,7 @@ function normalizeSignalLevelandFormatData(ufinal, normalization, freq)
   ufinal ./= normalization
 
   ufinal = rfft(ufinal,1)
-  ufinal = permutedims(reshape(ufinal,size(ufinal)[1]*size(ufinal)[2],
-                               size(ufinal)[3],size(ufinal)[4])[freq,:,:],[1,3,2])
+  ufinal = permutedims(ufinal[freq,:,:],[1,3,2])
   return ufinal
 end
 

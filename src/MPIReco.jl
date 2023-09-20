@@ -1,6 +1,8 @@
 module MPIReco
   using RegularizedLeastSquares
   using Reexport
+  using FFTW
+  using LinearOperatorCollection
   @reexport using RegularizedLeastSquares
   @reexport using ImageUtils
   @reexport using MPIFiles
