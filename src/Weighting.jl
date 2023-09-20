@@ -8,9 +8,10 @@ struct NoWeightingParamters <: AbstractWeightingParameters end
 process(::Type{<:AbstractMPIRecoAlgorithm}, data, params::NoWeightingParamters) = nothing
 
 export ChannelWeightingParameters
-Base.@kwdef struct ChannelWeightingParameters
+Base.@kwdef struct ChannelWeightingParameters <: AbstractWeightingParameters
   channelWeights::Vector{Float64} = [1.0, 1.0, 1.0]
 end
+process(::Type{<:AbstractMPIRecoAlgorithm}, data::Vector{CartesianIndex{2}}, params::ChannelWeightingParameters) = map(x-> params.channelWeights[x[2]], data)
 
 #=
 baremodule WeightingType

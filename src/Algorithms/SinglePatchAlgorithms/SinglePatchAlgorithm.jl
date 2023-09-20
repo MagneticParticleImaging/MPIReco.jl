@@ -80,7 +80,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::Sin
   return gridresult(result, algo.grid, algo.sf)
 end
 
-process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::ChannelWeightingParameters) = map(x-> convert(real(eltype(algo.S)),params.channelWeights[x[2]]), algo.freqs)
+process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::ChannelWeightingParameters) = map(real(eltype(algo.S)), process(typeof(algo), algo.freqs, params))
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
   return nothing

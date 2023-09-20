@@ -89,28 +89,25 @@ using MPIReco
   @test axisvalues(c6) == values
   exportImage(joinpath(imgdir, "Reconstruction6.png"), arraydata(c6[1,:,:,1,1]))
   @test compareImg("Reconstruction6.png")
-  
-  # TODO implement weighting
-  # channel weighting
-  c7a = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-		      recChannels=1:2, iterations=1, λ=0.1,
-          weightType=WeightingType.Channel, channelWeights=[1.0,1.0,1.0])
+  =#
 
+  setAll!(plan, :sf, bSF)
+  setAll!(plan, :reg, [L2Regularization(0.1f0)])
+  setAll!(plan, :gridding, SystemMatrixGriddingParameter(;gridsize=calibSize(bSF), fov = calibFov(bSF)))
+  # channel weighting
+  setAll!(plan, :weightingParams, ChannelWeightingParameters(channelWeights = [1.0, 1.0, 1.0]))
+  c7a = reconstruct(build(plan), b)
   exportImage(joinpath(imgdir, "Reconstruction7a.png"), arraydata(c7a[1,:,:,1,1]))
   @test compareImg("Reconstruction7a.png")
 
-  c7b = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-		      recChannels=1:2, iterations=1, λ=0.1,
-          weightType=WeightingType.Channel, channelWeights=[1.0,0.001,1.0])
-
+  setAll!(plan, :weightingParams, ChannelWeightingParameters(channelWeights = [1.0,0.001,1.0]))
+  c7b = reconstruct(build(plan), b)
   exportImage(joinpath(imgdir, "Reconstruction7b.png"), arraydata(c7b[1,:,:,1,1]))
   @test compareImg("Reconstruction7b.png")
 
-  c7c = reconstruction(bSF, b; SNRThresh=5, frames=1, minFreq=80e3,
-		      recChannels=1:2, iterations=1, λ=0.1,
-          weightType=WeightingType.Channel, channelWeights=[0.001,1.0,1.0])
-
+  setAll!(plan, :weightingParams, ChannelWeightingParameters(channelWeights = [0.001,1.0,1.0]))
+  c7c = reconstruct(build(plan), b)
   exportImage(joinpath(imgdir, "Reconstruction7c.png"), arraydata(c7c[1,:,:,1,1]))
   @test compareImg("Reconstruction7c.png")
-=#
+  
 end
