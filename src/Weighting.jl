@@ -33,18 +33,7 @@ function getWeights(weightType, freq, S; weightingLimit=0.0, emptyMeas = nothing
   elseif weightType == WeightingType.MixingFactors
     error("This weighting mode has to be implemented")
   elseif weightType == WeightingType.Channel
-    nFreq = rxNumFrequencies(bMeas)
-    nReceivers = rxNumChannels(bMeas)
-    weights = zeros(nFreq, nReceivers)
-
-    if length(channelWeights) != nReceivers
-      @error "channelWeights has wrong length"
-    end
-
-    for d=1:nReceivers
-      weights[:,d] .= channelWeights[d]
-    end
-    return vec(weights)[freq]
+    return map(f -> channelWeights[f[2]], freq)
   elseif weightType == WeightingType.BGVariance
     if emptyMeas == nothing
       stdDevU = sqrt.(vec(getBV(bSF)))

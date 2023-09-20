@@ -14,7 +14,8 @@ generateHeaderDict(bSF::MultiMPIFile,bMeas::MPIFile) =
 function reconstructionMultiPatch(bSF, bMeas::MPIFile;
   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas), kargs...)
 
-  freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs, sortBySNR=sortBySNR)
+  freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs)
+  freq = sortFrequencies(freq, bSF, numPeriodGrouping = 1, sortBySNR = sortBySNR)
 
   @debug "selecting $(length(freq)) frequencies"
 
