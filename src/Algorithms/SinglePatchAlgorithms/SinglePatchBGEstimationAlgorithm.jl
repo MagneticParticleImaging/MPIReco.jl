@@ -88,7 +88,7 @@ function process(algo::SinglePatchBGEstimationAlgorithm, u::Array, params::Singl
   solverParams = fromKwargs(typeof(params.solverParams); toKwargs(params.solverParams, overwrite = Dict{Symbol, Any}(:normalizeReg => NoNormalization()))...)
   solverParams = ConstraintMaskedSolverParameters(;constraintMask = constraintMask, params = params.solverParams)
 
-  solver = LeastSquaresParameters(Kaczmarz, nothing, G, [reg], solverParams)
+  solver = LeastSquaresParameters(solver = Kaczmarz, S = G, reg = [reg], solverParams = solverParams)
 
   temp = process(algo, u, solver)
 

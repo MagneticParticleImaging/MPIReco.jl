@@ -4,12 +4,12 @@ abstract type AbstractSolverParameters <: AbstractMPIRecoParameters end
 
 export LeastSquaresParameters
 Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters, W} <: AbstractMPIRecoParameters
-  solver::Type{L}
-  op::O
+  solver::Type{L} = Kaczmarz
+  op::O = nothing
   S::M
   reg::Vector{R} 
   solverParams::P
-  weights::W
+  weights::W = nothing
 end
 
 # TODO place weights and more

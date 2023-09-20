@@ -73,7 +73,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::Sin
 
   B = getLinearOperator(algo, params)
 
-  solver = LeastSquaresParameters(params.solver, B, algo.S, params.reg, params.solverParams, weights)
+  solver = LeastSquaresParameters(solver = params.solver, op = B, S = algo.S, reg = params.reg, solverParams = params.solverParams, weights = weights)
 
   result = process(algo, u, solver)
 
