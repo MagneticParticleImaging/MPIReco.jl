@@ -34,8 +34,8 @@ function Base.getproperty(param::TwoStepSubstractionPreProcessingParameter, fiel
   end
 end
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, f::MPIFile, params::TwoStepSubstractionPreProcessingParameter)
-  meas = process(t, f, params.pre)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::TwoStepSubstractionPreProcessingParameter, f::MPIFile)
+  meas = process(t, params.pre, f)
   return meas - params.proj
 end
 

@@ -34,7 +34,7 @@ recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorit
 AbstractImageReconstruction.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
-  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sf, reco.sfLoad)
+  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf)
   sf, grid = prepareSF(S, sf, grid) 
   return freqs, sf, grid
 end
@@ -45,7 +45,7 @@ AbstractImageReconstruction.take!(algo::SinglePatchReconstructionAlgorithm) = Ba
 function AbstractImageReconstruction.put!(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
   consistenceCheck(algo.sf, data)
   
-  result = process(algo, data, algo.params)
+  result = process(algo, algo.params, data)
   
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
@@ -58,8 +58,8 @@ function AbstractImageReconstruction.put!(algo::SinglePatchReconstructionAlgorit
   Base.put!(algo.output, result)
 end
 
-function process(algo::SinglePatchReconstructionAlgorithm, f::MPIFile, params::AbstractMPIPreProcessingParameters)
-  result = process(typeof(algo), f, params)
+function process(algo::SinglePatchReconstructionAlgorithm, params::AbstractMPIPreProcessingParameters, f::MPIFile)
+  result = process(typeof(algo), params, f)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
     result = map(eltype(algo.S),result)
@@ -68,19 +68,19 @@ function process(algo::SinglePatchReconstructionAlgorithm, f::MPIFile, params::A
 end
 
 
-function process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::SinglePatchReconstructionParameter)
-  weights = process(algo, u, params.weightingParams)
+function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter, u::Array)
+  weights = process(algo, params.weightingParams, u)
 
   B = getLinearOperator(algo, params)
 
   solver = LeastSquaresParameters(solver = params.solver, op = B, S = algo.S, reg = params.reg, solverParams = params.solverParams, weights = weights)
 
-  result = process(algo, u, solver)
+  result = process(algo, solver, u)
 
   return gridresult(result, algo.grid, algo.sf)
 end
 
-process(algo::SinglePatchReconstructionAlgorithm, u::Array, params::ChannelWeightingParameters) = map(real(eltype(algo.S)), process(typeof(algo), algo.freqs, params))
+process(algo::SinglePatchReconstructionAlgorithm, params::ChannelWeightingParameters, u::Array) = map(real(eltype(algo.S)), process(typeof(algo), params, algo.freqs))
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
   return nothing

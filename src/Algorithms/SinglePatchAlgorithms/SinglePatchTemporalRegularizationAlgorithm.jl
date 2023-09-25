@@ -34,14 +34,14 @@ function SinglePatchTemporalRegularizationAlgorithm(params::SinglePatchParameter
   freqs, S, grid = prepareSystemMatrix(params.reco)
   filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
   filteredParams = SinglePatchParameters(filter, params.reco, params.post)
-  return SinglePatchTemporalRegularizationAlgorithm(filteredParams, params, params.reco.sf, S, process(SinglePatchTemporalRegularizationAlgorithm, freqs, params.reco.bgDict)
+  return SinglePatchTemporalRegularizationAlgorithm(filteredParams, params, params.reco.sf, S, process(SinglePatchTemporalRegularizationAlgorithm, params.reco.bgDict, freqs)
     ,params.reco.idxFG, params.reco.idxBG, grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchTemporalRegularizationAlgorithm}) = SystemMatrixBasedAlgorithm()
 AbstractImageReconstruction.parameter(algo::SinglePatchTemporalRegularizationAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchTemporalRegularizationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
-  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sf, reco.sfLoad)
+  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf)
   sf, grid = prepareSF(Kaczmarz, sf, grid)
   return freqs, sf, grid
 end
@@ -51,7 +51,7 @@ AbstractImageReconstruction.take!(algo::SinglePatchTemporalRegularizationAlgorit
 function AbstractImageReconstruction.put!(algo::SinglePatchTemporalRegularizationAlgorithm, data::MPIFile)
   consistenceCheck(algo.sf, data)
 
-  result = process(algo, data, algo.params)
+  result = process(algo, algo.params, data)
 
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
@@ -65,7 +65,7 @@ function AbstractImageReconstruction.put!(algo::SinglePatchTemporalRegularizatio
 end
 
 
-function process(algo::SinglePatchTemporalRegularizationAlgorithm, f::MPIFile, params::AbstractMPIPreProcessingParameters)
+function process(algo::SinglePatchTemporalRegularizationAlgorithm, params::AbstractMPIPreProcessingParameters, f::MPIFile)
   result = process(typeof(algo), f, params)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
@@ -75,7 +75,7 @@ function process(algo::SinglePatchTemporalRegularizationAlgorithm, f::MPIFile, p
 end
 
 
-function process(algo::SinglePatchTemporalRegularizationAlgorithm, u::Array, params::SinglePatchTemporalRegularizationReconstructionParameter)
+function process(algo::SinglePatchTemporalRegularizationAlgorithm, params::SinglePatchTemporalRegularizationReconstructionParameter, u::Array)
   weights = nothing # getWeights(...)
 
   L = size(u)[end]
@@ -101,7 +101,7 @@ function process(algo::SinglePatchTemporalRegularizationAlgorithm, u::Array, par
 
   solver = LeastSquaresParameters(solver = Kaczmarz, S = op, reg = [reg], solverParams = solverParams)
 
-  temp = process(algo, u, solver)
+  temp = process(algo, solver, u)
   temp = real.( reshape(temp[1:(NSub*J),:],NSub,J) ./ sqrt(λ) ) 
 
   cInterp = similar(temp, size(c,1), op.L)

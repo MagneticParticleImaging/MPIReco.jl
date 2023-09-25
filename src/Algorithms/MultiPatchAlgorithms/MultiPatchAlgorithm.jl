@@ -29,7 +29,7 @@ function MultiPatchReconstruction(params::MultiPatchParameters{<:AbstractMPIPreP
 end
 function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:AbstractMPIPreProcessingParameters,<:MultiPatchReconstructionParameter,<:AbstractMPIPostProcessingParameters})
   reco = params.reco
-  freqs = process(MultiPatchReconstructionAlgorithm, reco.sf, reco.freqFilter)
+  freqs = process(MultiPatchReconstructionAlgorithm, reco.freqFilter, reco.sf)
   filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
   filteredParams = MultiPatchParameters(filter, reco, params.post)
 
@@ -51,9 +51,9 @@ AbstractImageReconstruction.take!(algo::MultiPatchReconstructionAlgorithm) = Bas
 function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm, data::MPIFile)
   #consistenceCheck(algo.sf, data)
 
-  algo.ffOp = process(algo, data, algo.opParams)
+  algo.ffOp = process(algo, algo.opParams, data)
 
-  result = process(algo, data, algo.params)
+  result = process(algo, algo.params, data)
 
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
@@ -66,7 +66,7 @@ function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorith
   Base.put!(algo.output, result)
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, params::AbstractMultiPatchOperatorParameter)
+function process(algo::MultiPatchReconstructionAlgorithm, params::AbstractMultiPatchOperatorParameter, f::MPIFile)
   ffPos_ = ffPos(f)
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos_)
   idxFirstPeriod = getindex.(periodsSortedbyFFPos,1)
@@ -83,7 +83,7 @@ function process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, params::Ab
              gradient = gradient, FFPos = ffPos_, FFPosSF = ffPosSF)
 end
 
-function process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:CommonPreProcessingParameters})
+function process(t::Type{<:MultiPatchReconstructionAlgorithm}, params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:CommonPreProcessingParameters}, f::MPIFile)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgCorrection])
   result = getMeasurementsFD(f, bgCorrection = false; kwargs...)
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos(f))
@@ -94,7 +94,7 @@ function process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, param
   return uTotal
 end
 
-function process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:CommonPreProcessingParameters})
+function process(t::Type{<:MultiPatchReconstructionAlgorithm}, params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:CommonPreProcessingParameters}, f::MPIFile)
   # Foreground, ignore BGCorrection to reuse preprocessing
   fgParams = CommonPreProcessingParameters(;toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
   result = process(t, f, FrequencyFilteredPreProcessingParameters(params.frequencies, fgParams))
@@ -105,7 +105,7 @@ function process(t::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile, param
   return process(t, result, bgParams)
 end
 
-function process(::Type{<:MultiPatchReconstructionAlgorithm}, data::Array, params::FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters})
+function process(::Type{<:MultiPatchReconstructionAlgorithm}, params::FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}, data::Array)
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
   # TODO migrate with hardcoded params as in old code or reuse given preprocessing options?
   empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=1, kwargs...)
@@ -117,10 +117,10 @@ function process(::Type{<:MultiPatchReconstructionAlgorithm}, data::Array, param
   return data
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, u::Array, params::MultiPatchReconstructionParameter)
+function process(algo::MultiPatchReconstructionAlgorithm, params::MultiPatchReconstructionParameter, u::Array)
   solver = LeastSquaresParameters(solver = Kaczmarz, S = algo.ffOp, reg = [L2Regularization(params.λ)], solverParams = params.solverParams)
 
-  result = process(algo, u, solver)
+  result = process(algo, solver, u)
 
   return gridresult(result, algo.ffOp.grid, algo.sf)
 end

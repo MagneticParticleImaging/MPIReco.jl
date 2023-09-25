@@ -24,19 +24,19 @@ Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractMPIBackgroundCorrect
   loadasreal::Bool = false
 end
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, f::MPIFile, params::CommonPreProcessingParameters{NoBackgroundCorrectionParameters})
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{NoBackgroundCorrectionParameters}, f::MPIFile)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
   result = getMeasurementsFD(f; bgCorrection = false, kwargs...)
   return result
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, f::MPIFile, params::CommonPreProcessingParameters{InternalBackgroundCorrectionParameters})
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{InternalBackgroundCorrectionParameters}, f::MPIFile)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
   result = getMeasurementsFD(f; bgCorrection = true, interpolateBG = params.bgCorrection.interpolateBG, kwargs...)
   return result
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, f::MPIFile, params::CommonPreProcessingParameters{<:ExternalBackgroundCorrection})
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{<:ExternalBackgroundCorrection}, f::MPIFile)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
   result = getMeasurementsFD(f, bgCorrection = false, kwargs...)
   bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; kwargs..., bgParams = params.bgParams)
-  return process(t, result, bgParams)
+  return process(t, bgParams, result)
 end

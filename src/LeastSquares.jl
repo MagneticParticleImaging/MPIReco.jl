@@ -27,7 +27,7 @@ Base.@kwdef struct ConstraintMaskedSolverParameters{P<:AbstractSolverParameters}
   params::P
 end
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, u::Array, params::LeastSquaresParameters)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters, u::Array)
 
   N = size(params.S, 2)
   M = div(length(params.S), N)

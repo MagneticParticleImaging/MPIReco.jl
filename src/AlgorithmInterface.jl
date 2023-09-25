@@ -23,7 +23,7 @@ abstract type AbstractMPIPreProcessingParameters{T<:AbstractMPIBackgroundCorrect
 export AbstractMPIPostProcessingParameters, NoPostProcessing
 abstract type AbstractMPIPostProcessingParameters <: AbstractMPIRecoParameters end
 struct NoPostProcessing <: AbstractMPIPostProcessingParameters end # TODO remove later
-process(algo::AbstractMPIRecoAlgorithm, data, ::NoPostProcessing) = data
+process(algo::AbstractMPIRecoAlgorithm, ::NoPostProcessing, data) = data
 
 export AbstractMPIReconstructionParameters
 abstract type AbstractMPIReconstructionParameters <: AbstractMPIRecoParameters end

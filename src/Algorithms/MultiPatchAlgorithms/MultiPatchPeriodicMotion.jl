@@ -23,7 +23,7 @@ end
 
 function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:PeriodicMotionPreProcessing,<:PeriodicMotionReconstructionParameter,<:AbstractMPIPostProcessingParameters})
   reco = params.reco
-  freqs = process(MultiPatchReconstructionAlgorithm, reco.sf, reco.freqFilter)
+  freqs = process(MultiPatchReconstructionAlgorithm, reco.freqFilter, reco.sf)
   filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
   filteredParams = MultiPatchParameters(filter, reco, params.post)
 
@@ -31,7 +31,7 @@ function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:Period
 end
 
 function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {B, P<:PeriodicMotionPreProcessing{B}, PT<:Union{P, FrequencyFilteredPreProcessingParameters{B, P}}, R, T}
-  result = process(algo, data, algo.params)
+  result = process(algo, algo.params, data)
 
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
@@ -44,8 +44,8 @@ function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorith
   Base.put!(algo.output, result)
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
-      params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:PeriodicMotionPreProcessing})
+function process(algo::MultiPatchReconstructionAlgorithm, params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:PeriodicMotionPreProcessing},
+        f::MPIFile)
   ffPos_ = ffPos(f)
   motFreq = getMotionFreq(params.sf, f, params.choosePeak) ./ params.higherHarmonic
   tmot = getRepetitionsOfSameState(f, motFreq, params.frames)
@@ -70,20 +70,20 @@ function process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
   return uReco
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, f::MPIFile,
-  params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:PeriodicMotionPreProcessing})
+function process(algo::MultiPatchReconstructionAlgorithm,
+  params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:PeriodicMotionPreProcessing}, f::MPIFile)
   # Foreground
   fgParams = fromKwargs(PeriodicMotionPreProcessing; toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
-  result = process(algo, f, FrequencyFilteredPreProcessingParameters(params.frequencies, fgParams))
+  result = process(algo, FrequencyFilteredPreProcessingParameters(params.frequencies, fgParams), f)
   # Background
   bgParams = fromKwargs(FrequencyFilteredBackgroundCorrectionParameters; toKwargs(params)..., bgParams = params.bgParams, spectralLeakageCorrection=true)
   return process(algo, result, bgParams)
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, u::Array, params::PeriodicMotionReconstructionParameter)
+function process(algo::MultiPatchReconstructionAlgorithm, params::PeriodicMotionReconstructionParameter, u::Array)
   solver = LeastSquaresParameters(solver = Kaczmarz, S = algo.ffOp, reg = [L2Regularization(params.λ)], solverParams = params.solverParams)
 
-  result = process(algo, u, solver)
+  result = process(algo, solver, u)
 
   return gridresult(result, algo.ffOp.grid, algo.sf)
 end
