@@ -24,14 +24,11 @@ end
 function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:PeriodicMotionPreProcessing,<:PeriodicMotionReconstructionParameter,<:AbstractMPIPostProcessingParameters})
   reco = params.reco
   freqs = process(MultiPatchReconstructionAlgorithm, reco.freqFilter, reco.sf)
-  filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
-  filteredParams = MultiPatchParameters(filter, reco, params.post)
-
-  return MultiPatchReconstructionAlgorithm(filteredParams, params, nothing, reco.sf, nothing, nothing, nothing, freqs, Channel{Any}(Inf))
+  return MultiPatchReconstructionAlgorithm(params, nothing, reco.sf, nothing, nothing, nothing, freqs, Channel{Any}(Inf))
 end
 
-function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {B, P<:PeriodicMotionPreProcessing{B}, PT<:Union{P, FrequencyFilteredPreProcessingParameters{B, P}}, R, T}
-  result = process(algo, algo.params, data)
+function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {R, T, PT <: PeriodicMotionPreProcessing}
+  result = process(algo, algo.params, data, algo.freqs)
 
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
@@ -44,13 +41,13 @@ function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorith
   Base.put!(algo.output, result)
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:PeriodicMotionPreProcessing},
-        f::MPIFile)
+function process(algo::MultiPatchReconstructionAlgorithm, params::PeriodicMotionPreProcessing{NoBackgroundCorrectionParameters},
+        f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   ffPos_ = ffPos(f)
   motFreq = getMotionFreq(params.sf, f, params.choosePeak) ./ params.higherHarmonic
   tmot = getRepetitionsOfSameState(f, motFreq, params.frames)
 
-  uReco = getMeasurementsMotionCompFD(f, motFreq, tmot, params.frequencies, params.frames, params.alpha,
+  uReco = getMeasurementsMotionCompFD(f, motFreq, tmot, frequencies, params.frames, params.alpha,
     params.samplingPrecision, params.windowType)
 
   p = numDFPeriodsInMotionCycle(motFreq, params.frames, dfCycle(f))
@@ -62,7 +59,7 @@ function process(algo::MultiPatchReconstructionAlgorithm, params::FrequencyFilte
     resortedInd[i,:] = unflattenOffsetFieldShift(ffPos_)[i][1:p]
   end
 
-  algo.ffOp = MultiPatchOperator(algo.sf, params.frequencies,
+  algo.ffOp = MultiPatchOperator(algo.sf, frequencies,
         #indFFPos=resortedInd[:,1], unused keyword
         FFPos=ffPos_[:,resortedInd[:,1]], mapping=mapping,
         FFPosSF=ffPos_[:,resortedInd[:,1]], bgCorrection = false, tfCorrection = params.tfCorrection)
@@ -71,13 +68,13 @@ function process(algo::MultiPatchReconstructionAlgorithm, params::FrequencyFilte
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm,
-  params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:PeriodicMotionPreProcessing}, f::MPIFile)
+  params::PeriodicMotionPreProcessing{SimpleExternalBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   # Foreground
   fgParams = fromKwargs(PeriodicMotionPreProcessing; toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
-  result = process(algo, FrequencyFilteredPreProcessingParameters(params.frequencies, fgParams), f)
+  result = process(algo, fgParams, f, frequencies)
   # Background
-  bgParams = fromKwargs(FrequencyFilteredBackgroundCorrectionParameters; toKwargs(params)..., bgParams = params.bgParams, spectralLeakageCorrection=true)
-  return process(algo, result, bgParams)
+  bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; toKwargs(params)..., bgParams = params.bgParams, spectralLeakageCorrection=true)
+  return process(algo, bgParams, result, frequencies)
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::PeriodicMotionReconstructionParameter, u::Array)

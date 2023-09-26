@@ -24,19 +24,19 @@ Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractMPIBackgroundCorrect
   loadasreal::Bool = false
 end
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{NoBackgroundCorrectionParameters}, f::MPIFile)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{NoBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
-  result = getMeasurementsFD(f; bgCorrection = false, kwargs...)
+  result = getMeasurementsFD(f; bgCorrection = false, kwargs..., frequencies = frequencies)
   return result
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{InternalBackgroundCorrectionParameters}, f::MPIFile)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{InternalBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
-  result = getMeasurementsFD(f; bgCorrection = true, interpolateBG = params.bgCorrection.interpolateBG, kwargs...)
+  result = getMeasurementsFD(f; bgCorrection = true, interpolateBG = params.bgCorrection.interpolateBG, kwargs..., frequencies = frequencies)
   return result
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{<:ExternalBackgroundCorrection}, f::MPIFile)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{<:ExternalBackgroundCorrection}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
   result = getMeasurementsFD(f, bgCorrection = false, kwargs...)
-  bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; kwargs..., bgParams = params.bgParams)
-  return process(t, bgParams, result)
+  bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; kwargs..., bgParams = params.bgParams, frequencies = frequencies)
+  return process(t, bgParams, result, frequencies)
 end

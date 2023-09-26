@@ -13,7 +13,6 @@ end
 Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
   params::P
   # Could also do reconstruction progress meter here
-  origParam::Union{AbstractSinglePatchAlgorithmParameters, Nothing} = nothing
   sf::Union{MPIFile, Vector{MPIFile}}
   S::AbstractArray
   grid::RegularGridPositions
@@ -26,9 +25,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPr
 end
 function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractMPIPostProcessingParameters}
   freqs, S, grid = prepareSystemMatrix(params.reco)
-  filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
-  filteredParams = SinglePatchParameters(filter, params.reco, params.post)
-  return SinglePatchReconstructionAlgorithm(filteredParams, params, params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
+  return SinglePatchReconstructionAlgorithm(params, params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
 AbstractImageReconstruction.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.origParam
@@ -45,7 +42,7 @@ AbstractImageReconstruction.take!(algo::SinglePatchReconstructionAlgorithm) = Ba
 function AbstractImageReconstruction.put!(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
   consistenceCheck(algo.sf, data)
   
-  result = process(algo, algo.params, data)
+  result = process(algo, algo.params, data, algo.freqs)
   
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
@@ -58,8 +55,8 @@ function AbstractImageReconstruction.put!(algo::SinglePatchReconstructionAlgorit
   Base.put!(algo.output, result)
 end
 
-function process(algo::SinglePatchReconstructionAlgorithm, params::AbstractMPIPreProcessingParameters, f::MPIFile)
-  result = process(typeof(algo), params, f)
+function process(algo::SinglePatchReconstructionAlgorithm, params::AbstractMPIPreProcessingParameters, f::MPIFile, args...)
+  result = process(typeof(algo), params, f, args...)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
     result = map(eltype(algo.S),result)
@@ -108,12 +105,12 @@ function AbstractImageReconstruction.put!(algo::SinglePatchReconstructionAlgorit
   Base.put!(algo.output, result)
 end
 
-function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchParameters{<:FrequencyFilteredPreProcessingParameters}, scheduler::AbstractMultiThreadedProcessing, data::MPIFile)
+function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchParameters, scheduler::AbstractMultiThreadedProcessing, data::MPIFile)
   frames = collect(params.pre.pre.frames) 
   # TODO consider averaging and periodgrouping
   for frame in frames
-    pre = fromKwargs(CommonPreProcessingParameters; toKwargs(params.pre.pre)..., frames = [frame])
-    p = SinglePatchParameters(pre = FrequencyFilteredPreProcessingParameters(frequencies = params.pre.frequencies, pre = pre), reco = params.reco, post = params.post)
+    pre = fromKwargs(CommonPreProcessingParameters; toKwargs(params.pre)..., frames = [frame])
+    p = SinglePatchParameters(pre, reco = params.reco, post = params.post)
     put!(scheduler, algo, p, data)
   end
   result = nothing

@@ -44,14 +44,12 @@ Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterPa
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile)
   # Construct freqFilter
-  freqs = process(t, params.freqFilter, sf)
-  S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
-  return freqs, S, grid
+  frequencies = process(t, params.freqFilter, sf)
+  return frequencies, process(t, params, sf, frequencies)...
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter{<:FrequencyFilteredPreProcessingParameters}, sf::MPIFile)
-  freqs = params.freqFilter.frequencies
-  S, grid = getSF(sf, freqs, nothing; toKwargs(params)...)
-  return freqs, S, grid
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
+  S, grid = getSF(sf, frequencies, nothing; toKwargs(params)...)
+  return S, grid
 end
 
 export SparseSystemMatrixLoadingParameter
@@ -66,14 +64,12 @@ Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilter
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile)
   # Construct freqFilter
-  freqs = process(t, params.freqFilter, sf)
-  S, grid = getSF(sf, freqs, params.sparseTrafo; toKwargs(params)...)
-  return freqs, S, grid
+  frequencies = process(t, params.freqFilter, sf)
+  return frequencies, process(t, params, sf, frequencies)...
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter{<:FrequencyFilteredPreProcessingParameters}, sf::MPIFile)
-  freqs = params.freqFilter.frequencies
-  S, grid = getSF(sf, freqs, params.sparseTrafo; toKwargs(params)...)
-  return freqs, S, grid
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
+  S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params)...)
+  return S, grid
 end
 
 function converttoreal(S::AbstractArray{Complex{T}},f) where T

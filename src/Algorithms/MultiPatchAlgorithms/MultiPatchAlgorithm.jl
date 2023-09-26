@@ -14,7 +14,6 @@ end
 Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P} <: AbstractMultiPatchReconstructionAlgorithm where {P<:AbstractMultiPatchAlgorithmParameters}
   params::P
   # Could also do reconstruction progress meter here
-  origParam::Union{AbstractMultiPatchAlgorithmParameters,Nothing} = nothing
   opParams::Union{AbstractMultiPatchOperatorParameter, Nothing} = nothing
   sf::MultiMPIFile
   ffOp::Union{Nothing, MultiPatchOperator}
@@ -30,8 +29,6 @@ end
 function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:AbstractMPIPreProcessingParameters,<:MultiPatchReconstructionParameter,<:AbstractMPIPostProcessingParameters})
   reco = params.reco
   freqs = process(MultiPatchReconstructionAlgorithm, reco.freqFilter, reco.sf)
-  filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
-  filteredParams = MultiPatchParameters(filter, reco, params.post)
 
   # Prepare operator construction
   ffPos_ = positions(reco.ffPos)
@@ -41,7 +38,7 @@ function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:Abstra
     ffPosSF = [vec(ffPos(SF))[l] for l=1:L, SF in reco.sf]
   end
 
-  return MultiPatchReconstructionAlgorithm(filteredParams, params, reco.opParams, reco.sf, nothing, ffPos_, ffPosSF, freqs, Channel{Any}(Inf))
+  return MultiPatchReconstructionAlgorithm(params, reco.opParams, reco.sf, nothing, ffPos_, ffPosSF, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{MultiPatchReconstruction}) = SystemMatrixBasedAlgorithm()
 AbstractImageReconstruction.parameter(algo::MultiPatchReconstructionAlgorithm) = algo.origParam
@@ -51,22 +48,22 @@ AbstractImageReconstruction.take!(algo::MultiPatchReconstructionAlgorithm) = Bas
 function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm, data::MPIFile)
   #consistenceCheck(algo.sf, data)
 
-  algo.ffOp = process(algo, algo.opParams, data)
+  algo.ffOp = process(algo, algo.opParams, data, algo.freqs)
 
-  result = process(algo, algo.params, data)
+  result = process(algo, algo.params, data, algo.freqs)
 
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
   pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
   offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
-  dt = acqNumAverages(data) * dfCycle(data) * algo.params.pre.pre.numAverages * 1u"s"
+  dt = acqNumAverages(data) * dfCycle(data) * algo.params.pre.numAverages * 1u"s"
   im = makeAxisArray(result, pixspacing, offset, dt)
   result = ImageMeta(im, generateHeaderDict(algo.sf, data))
 
   Base.put!(algo.output, result)
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, params::AbstractMultiPatchOperatorParameter, f::MPIFile)
+function process(algo::MultiPatchReconstructionAlgorithm, params::AbstractMultiPatchOperatorParameter, f::MPIFile, frequencies::Vector{CartesianIndex{2}})
   ffPos_ = ffPos(f)
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos_)
   idxFirstPeriod = getindex.(periodsSortedbyFFPos,1)
@@ -79,13 +76,13 @@ function process(algo::MultiPatchReconstructionAlgorithm, params::AbstractMultiP
 
   ffPosSF = algo.ffPosSF
 
-  return MultiPatchOperator(algo.sf, algo.freqs; toKwargs(params)...,
+  return MultiPatchOperator(algo.sf, frequencies; toKwargs(params)...,
              gradient = gradient, FFPos = ffPos_, FFPosSF = ffPosSF)
 end
 
-function process(t::Type{<:MultiPatchReconstructionAlgorithm}, params::FrequencyFilteredPreProcessingParameters{NoBackgroundCorrectionParameters, <:CommonPreProcessingParameters}, f::MPIFile)
+function process(t::Type{<:MultiPatchReconstructionAlgorithm}, params::CommonPreProcessingParameters{NoBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgCorrection])
-  result = getMeasurementsFD(f, bgCorrection = false; kwargs...)
+  result = getMeasurementsFD(f, bgCorrection = false; kwargs..., frequencies = frequencies)
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos(f))
   uTotal = Base.similar(result,size(result,1),length(periodsSortedbyFFPos),size(result,3))
   for k=1:length(periodsSortedbyFFPos)
@@ -94,21 +91,21 @@ function process(t::Type{<:MultiPatchReconstructionAlgorithm}, params::Frequency
   return uTotal
 end
 
-function process(t::Type{<:MultiPatchReconstructionAlgorithm}, params::FrequencyFilteredPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters, <:CommonPreProcessingParameters}, f::MPIFile)
+function process(t::Type{<:MultiPatchReconstructionAlgorithm}, params::CommonPreProcessingParameters{SimpleExternalBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   # Foreground, ignore BGCorrection to reuse preprocessing
   fgParams = CommonPreProcessingParameters(;toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
-  result = process(t, f, FrequencyFilteredPreProcessingParameters(params.frequencies, fgParams))
+  result = process(t, fgParams, f, frequencies)
   # Background
   kwargs = toKwargs(params, ignore = [:neglectBGFrames, :bgCorrection],
     default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))))
-  bgParams = fromKwargs(FrequencyFilteredBackgroundCorrectionParameters; kwargs..., bgParams = params.bgParams)
-  return process(t, result, bgParams)
+  bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; kwargs..., bgParams = params.bgParams)
+  return process(t, bgParams, result, frequencies)
 end
 
-function process(::Type{<:MultiPatchReconstructionAlgorithm}, params::FrequencyFilteredBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}, data::Array)
+function process(::Type{<:MultiPatchReconstructionAlgorithm}, params::ExternalPreProcessedBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}, data::Array, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
   # TODO migrate with hardcoded params as in old code or reuse given preprocessing options?
-  empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=1, kwargs...)
+  empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=1, kwargs..., frequencies = frequencies)
   numFrames = acqNumPeriodsPerPatch(params.bgParams.emptyMeas)
   bgFrames = [1+(i-1)*numFrames:i*numFrames for i=1:acqNumPatches(params.bgParams.emptyMeas)]
   for i=1:size(data, 2)  # Is this equivalent to acqNumPatches(bMeas)?

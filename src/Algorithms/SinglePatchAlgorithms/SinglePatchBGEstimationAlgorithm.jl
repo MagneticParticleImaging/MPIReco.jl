@@ -15,7 +15,6 @@ end
 Base.@kwdef mutable struct SinglePatchBGEstimationAlgorithm{P} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
   params::P
   # Could also do reconstruction progress meter here
-  origParam::Union{AbstractSinglePatchAlgorithmParameters,Nothing} = nothing
   sf::Union{MPIFile,Vector{MPIFile}}
   S::AbstractArray
   bgDict::AbstractArray
@@ -29,9 +28,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPr
 end
 function SinglePatchBGEstimationAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:SinglePatchBGEstimationReconstructionParameter,PT<:AbstractMPIPostProcessingParameters}
   freqs, S, grid = prepareSystemMatrix(params.reco)
-  filter = fromKwargs(FrequencyFilteredPreProcessingParameters; frequencies=freqs, toKwargs(params.pre; flatten=DataType[])...)
-  filteredParams = SinglePatchParameters(filter, params.reco, params.post)
-  return SinglePatchBGEstimationAlgorithm(filteredParams, params, params.reco.sf, S, process(SinglePatchBGEstimationAlgorithm, freqs, params.reco.bgDict), grid, freqs, Channel{Any}(Inf))
+  return SinglePatchBGEstimationAlgorithm(params, params.reco.sf, S, process(SinglePatchBGEstimationAlgorithm, freqs, params.reco.bgDict), grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchBGEstimationAlgorithm}) = SystemMatrixBasedAlgorithm()
 AbstractImageReconstruction.parameter(algo::SinglePatchBGEstimationAlgorithm) = algo.origParam

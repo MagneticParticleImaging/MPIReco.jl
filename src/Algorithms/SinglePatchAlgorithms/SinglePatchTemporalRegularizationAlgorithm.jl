@@ -16,7 +16,6 @@ end
 
 Base.@kwdef mutable struct SinglePatchTemporalRegularizationAlgorithm{P} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
   params::P
-  origParam::Union{AbstractSinglePatchAlgorithmParameters,Nothing} = nothing
   sf::Union{MPIFile,Vector{MPIFile}}
   S::AbstractArray
   bgDict::AbstractArray
@@ -32,9 +31,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPr
 end
 function SinglePatchTemporalRegularizationAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:SinglePatchTemporalRegularizationReconstructionParameter,PT<:AbstractMPIPostProcessingParameters}
   freqs, S, grid = prepareSystemMatrix(params.reco)
-  filter = FrequencyFilteredPreProcessingParameters(freqs, params.pre)
-  filteredParams = SinglePatchParameters(filter, params.reco, params.post)
-  return SinglePatchTemporalRegularizationAlgorithm(filteredParams, params, params.reco.sf, S, process(SinglePatchTemporalRegularizationAlgorithm, params.reco.bgDict, freqs)
+  return SinglePatchTemporalRegularizationAlgorithm(params, params.reco.sf, S, process(SinglePatchTemporalRegularizationAlgorithm, params.reco.bgDict, freqs)
     ,params.reco.idxFG, params.reco.idxBG, grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchTemporalRegularizationAlgorithm}) = SystemMatrixBasedAlgorithm()
@@ -51,7 +48,7 @@ AbstractImageReconstruction.take!(algo::SinglePatchTemporalRegularizationAlgorit
 function AbstractImageReconstruction.put!(algo::SinglePatchTemporalRegularizationAlgorithm, data::MPIFile)
   consistenceCheck(algo.sf, data)
 
-  result = process(algo, algo.params, data)
+  result = process(algo, algo.params, data, algo.freqs)
 
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
