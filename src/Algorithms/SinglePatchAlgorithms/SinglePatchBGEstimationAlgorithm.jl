@@ -41,23 +41,6 @@ end
 
 AbstractImageReconstruction.take!(algo::SinglePatchBGEstimationAlgorithm) = Base.take!(algo.output)
 
-function AbstractImageReconstruction.put!(algo::SinglePatchBGEstimationAlgorithm, data::MPIFile)
-  consistenceCheck(algo.sf, data)
-
-  result = process(algo, algo.params, data)
-
-  # Create Image (maybe image parameter as post params?)
-  # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
-  pixspacing = (spacing(algo.grid) ./ acqGradient(data)[1] .* acqGradient(algo.sf)[1]) * 1000u"mm"
-  offset = (ffPos(data) .- 0.5 .* calibFov(algo.sf)) * 1000u"mm" .+ 0.5 .* pixspacing
-  dt = acqNumAverages(data) * dfCycle(data) * algo.params.pre.numAverages * 1u"s"
-  im = makeAxisArray(result, pixspacing, offset, dt)
-  result = ImageMeta(im, generateHeaderDict(algo.sf, data))
-
-  Base.put!(algo.output, result)
-end
-
-
 function process(algo::SinglePatchBGEstimationAlgorithm, params::AbstractMPIPreProcessingParameters, f::MPIFile)
   result = process(typeof(algo), params, f)
   if eltype(algo.S) != eltype(result)
