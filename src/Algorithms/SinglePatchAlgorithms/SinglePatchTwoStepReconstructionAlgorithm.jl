@@ -33,6 +33,11 @@ function Base.getproperty(param::TwoStepSubstractionPreProcessingParameter, fiel
     return getproperty(getfield(param, :pre), field)
   end
 end
+function toKwargs(param::TwoStepSubstractionPreProcessingParameter; kwargs...)
+  result = toKwargs(param.pre; kwargs...)
+  result[:proj] = param.proj
+  return result
+end
 
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::TwoStepSubstractionPreProcessingParameter, args...)
   meas = process(t, params.pre, args...)
@@ -56,7 +61,7 @@ end
 AbstractImageReconstruction.parameter(algo::SinglePatchTwoStepReconstructionAlgorithm) = algo.params
 AbstractImageReconstruction.take!(algo::SinglePatchTwoStepReconstructionAlgorithm) = Base.take!(algo.output)
 
-function AbstractImageReconstruction.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data::MPIFile)
+function AbstractImageReconstruction.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data)
   # First reco
   cPre = reconstruct(algo.algoHigh, data)
 
