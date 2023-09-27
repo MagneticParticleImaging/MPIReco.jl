@@ -24,7 +24,7 @@ end
 # Bit hacky: Create transparent parameter to give to inner algorithm
 Base.@kwdef mutable struct TwoStepSubstractionPreProcessingParameter{B, PR<:AbstractMPIPreProcessingParameters{B}} <: AbstractMPIPreProcessingParameters{B}
   pre::PR
-  proj::Vector{ComplexF32} = zeros(ComplexF32, 1)
+  proj::Array{ComplexF32} = zeros(ComplexF32, 0, 0)
 end
 function Base.getproperty(param::TwoStepSubstractionPreProcessingParameter, field::Symbol)
   if field == :proj || field == :pre
@@ -34,9 +34,9 @@ function Base.getproperty(param::TwoStepSubstractionPreProcessingParameter, fiel
   end
 end
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::TwoStepSubstractionPreProcessingParameter, f::MPIFile)
-  meas = process(t, params.pre, f)
-  return meas - params.proj
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::TwoStepSubstractionPreProcessingParameter, args...)
+  meas = process(t, params.pre, args...)
+  return meas .- params.proj
 end
 
 function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProcessingParameters, <:SinglePatchTwoStepReconstructionParameters, PT}) where {PT <:AbstractMPIPostProcessingParameters}
@@ -50,7 +50,7 @@ function SinglePatchTwoStepReconstructionAlgorithm(params::SinglePatchParameters
   algoLow = SinglePatchReconstruction(SinglePatchParameters(params.pre, recoLow, params.post))
   # Then construct "custom" SinglePatchAlgorithm
   paramsLow = SinglePatchParameters(TwoStepSubstractionPreProcessingParameter(;pre = algoLow.params.pre), algoLow.params.reco, algoLow.params.post)
-  algoLow = SinglePatchReconstructionAlgorithm(paramsLow, nothing, params.reco.sf, algoLow.S, algoLow.grid, algoLow.freqs, algoLow.output)
+  algoLow = SinglePatchReconstructionAlgorithm(paramsLow, params.reco.sf, algoLow.S, algoLow.grid, algoLow.freqs, algoLow.output)
   return SinglePatchTwoStepReconstructionAlgorithm(params, algoHigh, algoLow, Channel{Any}(Inf))
 end
 AbstractImageReconstruction.parameter(algo::SinglePatchTwoStepReconstructionAlgorithm) = algo.params
@@ -65,7 +65,10 @@ function AbstractImageReconstruction.put!(algo::SinglePatchTwoStepReconstruction
   cThresh = map(x-> abs(x) < thresh ? 0.0 : x, cPre.data)
 
   # Projection into raw data space
-  uProj = map(ComplexF32,algo.algoLow.S*vec(cThresh))
+  uProj = zeros(ComplexF32, size(algo.algoLow.S, 1), 1, size(cThresh)[end])
+  for frame = 1:size(uProj, 2)
+    uProj[:, 1, frame] = map(ComplexF32,algo.algoLow.S*vec(cThresh[1, :, :, :, frame]))
+  end
 
   # Prepare subtraction
   algo.algoLow.params.pre.proj = uProj
