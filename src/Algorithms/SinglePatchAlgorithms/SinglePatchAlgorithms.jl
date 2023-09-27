@@ -45,22 +45,25 @@ include("SinglePatchBGEstimationAlgorithm.jl")
 ### Multi-Threading
 consistenceCheck(sf::MPIFile, threaded::MultiThreadedInput) = consistenceCheck(sf, threaded.inputs[1]) 
 finalizeResult(algo::AbstractSinglePatchReconstructionAlgorithm, result, threadedInput::MultiThreadedInput) = finalizeResult(algo, result, threadedInput.inputs[1])
-function process(algo::T, params::SinglePatchParameters, threadInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchTwoStepReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}}
+function process(algo::T, params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters}, threadInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}}
   scheduler = threadInput.scheduler
   data = threadInput.inputs
-  frames = collect(params.pre.frames) 
-  # TODO consider averaging and periodgrouping
-  for frame in frames
-    pre = fromKwargs(CommonPreProcessingParameters; toKwargs(params.pre)..., frames = [frame])
+
+  frames = params.pre.frames 
+  averages = params.pre.numAverages
+  start = collect(1:averages:length(frames))
+  stop = map(x->min(x+averages-1, length(frames)), start)
+  blocks = zip(start, stop)
+
+  for block in blocks
+    pre = fromKwargs(CommonPreProcessingParameters; toKwargs(params.pre, flatten = DataType[])..., frames = frames[block[1]:block[2]])
     p = SinglePatchParameters(pre = pre, reco = params.reco, post = params.post)
     put!(scheduler, algo, p, data..., frequencies)
   end
   result = nothing
-  meta = nothing
-  for frame in frames
+  for block in blocks
     if isnothing(result)
       result = take!(scheduler)
-      meta = result
     else
       result = cat(result, take!(scheduler); dims = 5)
     end
