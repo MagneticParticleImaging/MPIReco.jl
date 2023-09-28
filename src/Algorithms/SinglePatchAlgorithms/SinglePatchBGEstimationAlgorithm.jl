@@ -51,7 +51,7 @@ function process(algo::SinglePatchBGEstimationAlgorithm, params::AbstractMPIPreP
 end
 
 
-function process(algo::SinglePatchBGEstimationAlgorithm, params::SinglePatchBGEstimationReconstructionParameter, u::Array)
+function process(algo::SinglePatchBGEstimationAlgorithm, params::SinglePatchBGEstimationReconstructionParameter, u)
   weights = nothing # getWeights(...)
 
   # Prepare Regularization

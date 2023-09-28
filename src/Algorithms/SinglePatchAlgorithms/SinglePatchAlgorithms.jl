@@ -45,28 +45,74 @@ include("SinglePatchBGEstimationAlgorithm.jl")
 ### Multi-Threading
 consistenceCheck(sf::MPIFile, threaded::MultiThreadedInput) = consistenceCheck(sf, threaded.inputs[1]) 
 finalizeResult(algo::AbstractSinglePatchReconstructionAlgorithm, result, threadedInput::MultiThreadedInput) = finalizeResult(algo, result, threadedInput.inputs[1])
-function process(algo::T, params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters}, threadInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}}
+
+function process(algo::T, params::SinglePatchParameters, threadedInput::MultiThreadedInput, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where {T<:AbstractSinglePatchReconstructionAlgorithm}
+  result = process(algo, params.pre, threadedInput, frequencies)
+  result = process(algo, params.reco, MultiThreadedInput(threadedInput.scheduler, (result,)))
+  result = process(algo, params.post, MultiThreadedInput(threadedInput.scheduler, (result,)))
+  return result
+end
+
+function process(algo::T, params::AbstractMPIPreProcessingParameters, threadInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}}
   scheduler = threadInput.scheduler
   data = threadInput.inputs
 
-  frames = params.pre.frames 
-  averages = params.pre.numAverages
-  start = collect(1:averages:length(frames))
-  stop = map(x->min(x+averages-1, length(frames)), start)
+  # Compute how many blocks of frames are averaged into one reco frame
+  paramFrames = params.frames
+  numFrames = length(paramFrames)
+  averages = params.numAverages
+  start = collect(1:averages:numFrames)
+  stop = map(x->min(x+averages-1, numFrames), start)
   blocks = zip(start, stop)
 
-  for block in blocks
-    pre = fromKwargs(CommonPreProcessingParameters; toKwargs(params.pre, flatten = DataType[])..., frames = frames[block[1]:block[2]])
-    p = SinglePatchParameters(pre = pre, reco = params.reco, post = params.post)
-    put!(scheduler, algo, p, data..., frequencies)
+  # Distribute frames onto nthreads tasks
+  numThreads = AbstractImageReconstruction.nthreads(scheduler)
+  threadFrames = Vector{Vector{Int64}}()
+  for block in Iterators.partition(blocks, div(length(blocks), numThreads))
+    tmp = map(x-> collect(paramFrames[x[1]:x[2]]), block)
+    push!(threadFrames, vcat(tmp...))
+  end
+
+  for frames in threadFrames
+    pre = fromKwargs(CommonPreProcessingParameters; toKwargs(params, flatten = DataType[])..., frames = frames)
+    put!(scheduler, algo, pre, data..., frequencies)
   end
   result = nothing
-  for block in blocks
+  for frames in threadFrames
     if isnothing(result)
       result = take!(scheduler)
     else
-      result = cat(result, take!(scheduler); dims = 5)
+      result = cat(result, take!(scheduler); dims = 3)
     end
   end
   return result
 end
+
+function process(algo::T, params::LeastSquaresParameters, threadInput::MultiThreadedInput) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}}
+  scheduler = threadInput.scheduler
+  data = threadInput.inputs
+  u = threadInput.inputs[1]
+  L = size(u)[end]
+
+  # Distribute frames onto nthreads tasks
+  numThreads = AbstractImageReconstruction.nthreads(scheduler)
+  threadFrames = Vector{UnitRange{Int64}}()
+  for block in Iterators.partition(1:L, ceil(Int64, L/numThreads))
+    push!(threadFrames, block)
+  end
+
+  for frames in threadFrames
+    put!(scheduler, algo, params, reshape(u, :, L)[:,frames])
+  end
+  result = nothing
+  for frames in threadFrames
+    if isnothing(result)
+      result = take!(scheduler)
+    else
+      result = cat(result, take!(scheduler); dims = 2)
+    end
+  end
+  return result
+end
+
+process(algo::T, params::NoPostProcessing, threadInput::MultiThreadedInput) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}} = process(algo, params, threadInput.inputs...)

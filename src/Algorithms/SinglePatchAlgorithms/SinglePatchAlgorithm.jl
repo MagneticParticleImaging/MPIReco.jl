@@ -49,7 +49,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::AbstractMPIPr
 end
 
 
-function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter, u::Array)
+function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter, u)
   weights = process(algo, params.weightingParams, u)
 
   B = getLinearOperator(algo, params)
@@ -61,7 +61,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchRe
   return gridresult(result, algo.grid, algo.sf)
 end
 
-process(algo::SinglePatchReconstructionAlgorithm, params::ChannelWeightingParameters, u::Array) = map(real(eltype(algo.S)), process(typeof(algo), params, algo.freqs))
+process(algo::SinglePatchReconstructionAlgorithm, params::ChannelWeightingParameters, u) = map(real(eltype(algo.S)), process(typeof(algo), params, algo.freqs))
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
   return nothing
