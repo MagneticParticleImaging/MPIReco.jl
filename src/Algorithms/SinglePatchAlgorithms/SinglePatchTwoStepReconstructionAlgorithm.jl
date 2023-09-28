@@ -33,7 +33,7 @@ function Base.getproperty(param::TwoStepSubstractionPreProcessingParameter, fiel
     return getproperty(getfield(param, :pre), field)
   end
 end
-function toKwargs(param::TwoStepSubstractionPreProcessingParameter; kwargs...)
+function AbstractImageReconstruction.toKwargs(param::TwoStepSubstractionPreProcessingParameter; kwargs...)
   result = toKwargs(param.pre; kwargs...)
   result[:proj] = param.proj
   return result
@@ -71,8 +71,9 @@ function AbstractImageReconstruction.put!(algo::SinglePatchTwoStepReconstruction
 
   # Projection into raw data space
   uProj = zeros(ComplexF32, size(algo.algoLow.S, 1), 1, size(cThresh)[end])
-  for frame = 1:size(uProj, 2)
-    uProj[:, 1, frame] = map(ComplexF32,algo.algoLow.S*vec(cThresh[1, :, :, :, frame]))
+  cMapped = map(ComplexF32, cThresh)
+  for frame = 1:size(uProj, 3)
+    uProj[:, 1, frame] = algo.algoLow.S*vec(cMapped[1, :, :, :, frame])
   end
 
   # Prepare subtraction
