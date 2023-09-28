@@ -53,7 +53,7 @@ function process(algo::T, params::SinglePatchParameters, threadedInput::MultiThr
   return result
 end
 
-function process(algo::T, params::AbstractMPIPreProcessingParameters, threadInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}}
+function process(algo::T, params::P, threadInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}, P <: AbstractMPIPreProcessingParameters}
   scheduler = threadInput.scheduler
   data = threadInput.inputs
 
@@ -74,7 +74,7 @@ function process(algo::T, params::AbstractMPIPreProcessingParameters, threadInpu
   end
 
   for frames in threadFrames
-    pre = fromKwargs(CommonPreProcessingParameters; toKwargs(params, flatten = DataType[])..., frames = frames)
+    pre = fromKwargs(P; toKwargs(params, flatten = DataType[])..., frames = frames)
     put!(scheduler, algo, pre, data..., frequencies)
   end
   result = nothing
