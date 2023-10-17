@@ -72,17 +72,17 @@ function reconstruction(S, u::Array, bgDict::AbstractMatrix;
                             sparseTrafo=sparseTrafo, enforceReal=enforceReal,
 			                enforcePositive=enforcePositive, kargs...)
 
-  progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
+  isnothing(progress) ? p = Progress(L, dt=1, desc="Reconstructing data...") : p = progress
   for l=1:L
 
     y = solve(solv, u[:,l])
     d = y[1:N,:] ./ sqrt(λ)
 
-    if backgroundCoefficients != nothing
+    if !isnothing(backgroundCoefficients)
       append!(backgroundCoefficients, vec(y[(N+1):end,:] ./ sqrt(β)))
     end
 
-    if sparseTrafo != nothing
+    if !isnothing(sparseTrafo)
       d[:] = sparseTrafo*d # backtrafo from dual space
     end
 
