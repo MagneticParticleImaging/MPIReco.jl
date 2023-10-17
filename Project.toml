@@ -18,6 +18,7 @@ ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 RegularizedLeastSquares = "1e9c538a-f78c-5de5-8ffb-0b6dbe892d23"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
 DSP = "0.6, 0.7"
@@ -31,6 +32,7 @@ MPIFiles = "0.13, 0.14"
 ProgressMeter = "1.2"
 Reexport = "1.0"
 RegularizedLeastSquares = "0.10"
+Unitful = "1.13, 1.14, 1.15, 1.16, 1.17"
 julia = "1.6"
 
 [extras]
