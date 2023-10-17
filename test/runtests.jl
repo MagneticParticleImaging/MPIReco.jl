@@ -5,6 +5,7 @@ using Scratch
 using ImageMagick
 using ImageQualityIndexes
 using LazyArtifacts
+using Unitful
 
 const datadir = joinpath(artifact"data")
 @info "The test data is located at $datadir."
