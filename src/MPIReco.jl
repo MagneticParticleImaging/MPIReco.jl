@@ -9,6 +9,7 @@ module MPIReco
   const shape = MPIFiles.shape
   @reexport using DSP
   using ProgressMeter
+  using Unitful
 
   using LinearAlgebra
   using SparseArrays
