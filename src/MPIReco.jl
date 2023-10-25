@@ -11,6 +11,7 @@ module MPIReco
   using SparseArrays
   using Distributed
   using DistributedArrays
+  using Unitful
   # using TensorDecompositions
   using IniFile
   import LinearAlgebra: ldiv!, \
