@@ -7,6 +7,9 @@ module MPIReco
   using AbstractImageReconstruction
   @reexport using DSP
   using ProgressMeter
+  using Unitful
+  using Statistics
+
   using LinearAlgebra
   using SparseArrays
   using Distributed

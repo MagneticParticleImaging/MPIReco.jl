@@ -15,6 +15,7 @@ makedocs(
         "Multi-Patch" => "multiPatch.md",
         "Compression" => "matrixCompression.md"
     ],
+    warnonly = [:missing_docs]
 )
 
 deploydocs(repo   = "github.com/MagneticParticleImaging/MPIReco.jl.git",

@@ -249,7 +249,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
                        channelWeights = channelWeights)
 
   L = -fld(-length(frames),numAverages) # number of tomograms to be reconstructed
-  p = Progress(L, 1, "Reconstructing data...")
+  p = Progress(L, dt=1, desc="Reconstructing data...")
 
   # initialize sparseTrafo
   B = isnothing(sparseTrafo) ? nothing : createLinearOperator(sparseTrafo, eltype(S), shape = Tuple(shape(grid)))
@@ -365,7 +365,7 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
 
     d = solve(solv, u[:,l])
 
-    if sparseTrafo != nothing
+    if !isnothing(sparseTrafo)
       d[:] = sparseTrafo*d #backtrafo from dual space
     end
 
