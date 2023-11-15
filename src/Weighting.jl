@@ -1,5 +1,19 @@
 export getWeights, WeightingType, setFreqToZero
 
+export AbstractWeightingParameters
+abstract type AbstractWeightingParameters <: AbstractMPIRecoParameters end
+
+export NoWeightingParamters
+struct NoWeightingParamters <: AbstractWeightingParameters end
+process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoWeightingParamters, data) = nothing
+
+export ChannelWeightingParameters
+Base.@kwdef struct ChannelWeightingParameters <: AbstractWeightingParameters
+  channelWeights::Vector{Float64} = [1.0, 1.0, 1.0]
+end
+process(::Type{<:AbstractMPIRecoAlgorithm}, params::ChannelWeightingParameters, data::Vector{CartesianIndex{2}}) = map(x-> params.channelWeights[x[2]], data)
+
+#=
 baremodule WeightingType
   None = 0
   Norm = 1
@@ -100,3 +114,4 @@ function setNoiseFreqToZero(uMeas, freq, noiseFreqThresh; emptyMeas = nothing, b
 
   uMeas[:,:] .*=  vec(freqMask)[freq]
 end
+=#

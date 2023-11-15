@@ -15,7 +15,7 @@ function defaultRecoParams()
   params[:loadasreal] = false
   params[:sparseTrafo] = nothing
   params[:redFactor] = 0.0
-  params[:solver] = "kaczmarz"
+  params[:solver] = "Kaczmarz"
   params[:emptyMeasPath] = nothing
   params[:frames] = 1
   params[:spectralCleaning] = true
@@ -43,7 +43,7 @@ function defaultRecoParamsOld()
   params[:maxload] = "100"
   params[:sparseTrafo] = "nothing"
   params[:redFactor] = "0.0"
-  params[:solver] = "kaczmarz"
+  params[:solver] = "Kaczmarz"
   params[:bEmpty] = "nothing"
 
   return params

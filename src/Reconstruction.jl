@@ -159,9 +159,9 @@ end
 function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, emptyMeas = bEmpty, bgFrames = 1,
   denoiseWeight = 0, redFactor = 0.0, thresh = 0.0,
-  loadasreal = false, solver = "kaczmarz", sparseTrafo = nothing, saveTrafo=false,
+  loadasreal = false, solver = "Kaczmarz", sparseTrafo = nothing,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
-  deadPixels=Int[], bgCorrectionInternal=false, bgDictSize=nothing, bgFramesDict=nothing,
+  deadPixels=nothing, bgCorrectionInternal=false, bgDictSize=nothing, bgFramesDict=nothing,
   numPeriodAverages=1, numPeriodGrouping=1, reco=:default, kargs...) where {T<:MPIFile}
 
   (typeof(bgFrames) <: AbstractRange && emptyMeas==nothing) && (emptyMeas = bMeas)
@@ -172,10 +172,10 @@ function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   @debug "Loading System matrix"
   S, grid = getSF(bSF, freq, sparseTrafo, solver;
             bgCorrection=bgCorrection, loadasreal=loadasreal,
-            thresh=thresh, redFactor=redFactor, saveTrafo=saveTrafo,
+            thresh=thresh, redFactor=redFactor,
             useDFFoV=useDFFoV, gridsize=gridsize, fov=fov, center=center,
             deadPixels=deadPixels,numPeriodAverages=numPeriodAverages, 
-            numPeriodGrouping=numPeriodGrouping)
+            numPeriodGrouping=numPeriodGrouping)       
 
   if denoiseWeight > 0 && sparseTrafo == nothing
     denoiseSF!(S, shape, weight=denoiseWeight)
@@ -214,7 +214,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   frames = nothing, bEmpty = nothing, emptyMeas= bEmpty, bgFrames = 1, nAverages = 1,
   numAverages=nAverages, bgDict = nothing, bgFramesPost = nothing,
   sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
-  weightType=WeightingType.None, weightingLimit = 0, solver = "kaczmarz",
+  weightType=WeightingType.None, weightingLimit = 0, solver = "Kaczmarz",
   spectralCleaning=true, spectralLeakageCorrection=spectralCleaning,
   fgFrames=1:10, bgCorrectionInternal=false,
   noiseFreqThresh=0.0, channelWeights=ones(3), 
@@ -340,9 +340,9 @@ end
 Low level reconstruction method
 """
 function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = nothing,
-                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "kaczmarz",
+                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "Kaczmarz",
                         weights=nothing, enforceReal=true, enforcePositive=true,
-                        relativeLambda=true, kargs...)
+                        relativeLambda=true, reg = nothing, kargs...)
 
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
@@ -350,23 +350,17 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
   L = size(u)[end]
   u = reshape(u, M, L)
   c = zeros(N,L)
-  #c = zeros(real(eltype(u)),N,L) Change by J.Dora
 
-  if sum(abs.(λ)) > 0 && solver != "fusedlasso" && relativeLambda
-    trace = calculateTraceOfNormalMatrix(S,weights)
-    if isa(λ,AbstractVector) 
-      λ[1:1] *= trace / N
-    else
-      λ *= trace / N
-    end
-    setlambda(S,λ)
+  norm = NoNormalization()
+  if (!isnothing(reg) || sum(abs.(λ)) > 0) && relativeLambda
+    norm = SystemMatrixBasedNormalization()
   end
+  solverType = eval(Symbol(solver)) # this probably should happen much earlier
 
-  solv = createLinearSolver(solver, S; weights=weights, λ=λ,
+  solv = createLinearSolver(solverType, S; weights=weights, λ=λ,
                             sparseTrafo=sparseTrafo, enforceReal=enforceReal,
-			                      enforcePositive=enforcePositive, kargs...)
-
-  isnothing(progress) ? p = Progress(L, dt=1, desc="Reconstructing data...") : p = progress
+			                      enforcePositive=enforcePositive, normalizeReg = norm, reg = reg, kargs...)
+  progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
   for l=1:L
 
     d = solve(solv, u[:,l])
@@ -380,7 +374,6 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
     #end
     c[:,l] = real( d ) # this one is allocating
     next!(p)
-    sleep(0.001)
   end
 
   return c
