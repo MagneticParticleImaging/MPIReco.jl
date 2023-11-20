@@ -1,15 +1,14 @@
 module MPIReco
-  using RegularizedLeastSquares
   using Reexport
-  using FFTW
-  using LinearOperatorCollection
   @reexport using RegularizedLeastSquares
   @reexport using ImageUtils
   @reexport using MPIFiles
   const shape = MPIFiles.shape
+  using AbstractImageReconstruction
   @reexport using DSP
   using ProgressMeter
   using Unitful
+  using Statistics
 
   using LinearAlgebra
   using SparseArrays
@@ -18,16 +17,26 @@ module MPIReco
   # using TensorDecompositions
   using IniFile
   import LinearAlgebra: ldiv!, \
+  # TODO sort out import for Base and AbstractImageReconstruction to avoid boiler plate
+  import Base: put!, take!
+  import AbstractImageReconstruction: process, parameter
+  using FFTW
+  using LinearOperatorCollection
 
 
+  include("AlgorithmInterface.jl")
+  include("Background.jl")
+  include("PreProcessing/PreProcessing.jl")
+  include("LeastSquares.jl")
   include("Utils.jl")
   include("MultiContrast.jl")
   include("RecoParameters.jl")
   include("SystemMatrix/SystemMatrix.jl")
   include("Weighting.jl")
-  include("Background.jl")
   include("TemporalRegularization/TemporalRegularization.jl")
   include("Reconstruction.jl")
   include("MultiPatch.jl")
   include("MotionCompensation/MotionCompensation.jl")
+  include("Algorithms/Algorithms.jl")
+  include("Serialisation.jl")
 end # module

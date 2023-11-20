@@ -4,6 +4,73 @@ export getSF, SVD, tikhonovLU, setlambda
 
 include("SystemMatrixRecovery.jl")
 include("SystemMatrixCenter.jl")
+include("SystemMatrixWrapper.jl")
+include("SMExtrapolation.jl")
+
+export AbstractSystemMatrixParameter
+abstract type AbstractSystemMatrixParameter <: AbstractMPIRecoParameters end
+
+export AbstractSystemMatrixGriddingParameter
+abstract type AbstractSystemMatrixGriddingParameter <: AbstractSystemMatrixParameter end
+export SystemMatrixGriddingParameter
+Base.@kwdef struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGriddingParameter
+  gridsize::Vector{Int64} = [1, 1, 1]
+  fov::Vector{Float64} = [0.0, 0.0, 0.0]
+  center::Vector{Float64} = [0.0,0.0,0.0]
+  deadPixels::Union{Nothing, Vector{Int64}} = nothing
+end
+export defaultGridSize
+defaultGridSize(old, new::MPIFile) = gridSizeCommon(new)
+defaultGridSize(old, new::Missing) = missing
+# Maybe implement custom defaults with optional given sf -> remove @kwdef
+#function SystemMatrixGriddingParameter(;sf::MPIFile, gridsize = nothing, fov = nothing, center = [0.0, 0.0, 0.0], deadPixels = Int64[])
+#  if isnothing(gridsize)
+#    gridsize = gridSizeCommon(sf)
+#  end
+#  if isnothing(fov)
+#    fov = calibFov(sf)
+#  end
+#  return SNRThresholdFrequencyFilterParameter(gridsize, fov, center, deadPixels)
+#end
+export AbstractSystemMatrixLoadingParameter
+abstract type AbstractSystemMatrixLoadingParameter <: AbstractSystemMatrixParameter end
+
+export DenseSystemMatixLoadingParameter
+Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
+  freqFilter::F
+  gridding::G
+  bgCorrection::Bool = false
+  loadasreal::Bool=false
+end
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile)
+  # Construct freqFilter
+  frequencies = process(t, params.freqFilter, sf)
+  return frequencies, process(t, params, sf, frequencies)...
+end
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
+  S, grid = getSF(sf, frequencies, nothing; toKwargs(params)...)
+  return S, grid
+end
+
+export SparseSystemMatrixLoadingParameter
+Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilterParameter} <: AbstractSystemMatrixLoadingParameter
+  freqFilter::F
+  sparseTrafo::Union{Nothing, String} = nothing # TODO concrete options here?
+  tresh::Float64 = 0.0
+  redFactor::Float64 = 0.1
+  bgCorrection::Bool = false
+  loadasreal::Bool=false
+  useDFFoV::Bool = false
+end
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile)
+  # Construct freqFilter
+  frequencies = process(t, params.freqFilter, sf)
+  return frequencies, process(t, params, sf, frequencies)...
+end
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
+  S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params)...)
+  return S, grid
+end
 
 function converttoreal(S::AbstractArray{Complex{T}},f) where T
   N = prod(calibSize(f))
@@ -20,20 +87,32 @@ end
 
 setlambda(S::AbstractMatrix, λ) = nothing
 
-function getSF(bSF, frequencies, sparseTrafo, solver; kargs...)
-  SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
-  if solver == "kaczmarz"
-    return transpose(SF), grid
+function getSF(bSF, frequencies, sparseTrafo, solver::AbstractString; kargs...)
+  if solver == "Kaczmarz"
+    return getSF(bSF, frequencies, sparseTrafo, Kaczmarz; kargs...)
   elseif solver == "pseudoinverse"
-    return SVD(svd(transpose(SF))...), grid
-  elseif solver == "cgnr" || solver == "lsqr" || solver == "fusedlasso"
-    return copy(transpose(SF)), grid
+    return getSF(bSF, frequencies, sparseTrafo, PseudoInverse; kargs...)
+  elseif solver == "cgnr" || solver == "fusedlasso"
+    return getSF(bSF, frequencies, sparseTrafo, CGNR; kargs...)
   elseif solver == "direct"
-    return RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
+    return getSF(bSF, frequencies, sparseTrafo, DirectSolver; kargs...)
   else
-    return SF, grid
+    return getSF(bSF, frequencies, sparseTrafo; kargs...)
   end
 end
+getSF(bSF, frequencies, sparseTrafo, solver::AbstractLinearSolver; kargs...) = getSF(bSF, frequencies, sparseTrafo, typeof(solver); kargs...)
+function getSF(bSF, frequencies, sparseTrafo, solver::Type{<:AbstractLinearSolver}; kargs...)
+  SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
+  return prepareSF(solver, SF, grid)
+end
+
+prepareSF(solver::Type{Kaczmarz}, SF, grid) = transpose(SF), grid
+prepareSF(solver::Type{PseudoInverse}, SF, grid) = SVD(svd(transpose(SF))...), grid
+prepareSF(solver::Union{Type{CGNR}}, SF, grid) = copy(transpose(SF)), grid
+prepareSF(solver::Type{DirectSolver}, SF, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
+prepareSF(solver::Type{<:RegularizedLeastSquares.AbstractLinearSolver}, SF, grid) = SF, grid
+
+
 
 getSF(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Nothing; kargs...) where {T<:MPIFile} =
    getSF(bSF, frequencies; kargs...)
@@ -58,6 +137,7 @@ end
 
 getSF(f::MPIFile; recChannels=1:numReceivers(f), kargs...) = getSF(f, filterFrequencies(f, recChannels=recChannels); kargs...)
 
+#=
 function repairDeadPixels(S, shape, deadPixels)
   shapeT = tuple(shape...)
   for k=1:size(S,2)
@@ -78,11 +158,29 @@ function repairDeadPixels(S, shape, deadPixels)
     end
   end
 end
+=#
+function getSF(bSF::MPIFile,saveto::String;recChannels=1:numReceivers(bSF),kargs...)
+  S,grid = getSF(bSF,filterFrequencies(bSF, recChannels=recChannels);bgCorrection=false,returnasmatrix=true,kargs...)
+  if !isempty(saveto)
+    @info "Saving transformed SystemMatrix..."
+    params=MPIFiles.loadDataset(bSF)
+    bG = params[:measData][acqNumFGFrames(bSF)+1:end,:,:,:]
+    params[:measData]=vcat(reshape(S,size(S,1),Int(size(S,2)/3),3,1),bG)
+    params[:acqNumFrames]=size(vcat(reshape(S,size(S,1),Int(size(S,2)/3),3,1),bG),1)
+    params[:calibFov]=grid.fov
+    params[:calibSize]=grid.shape
+    params[:calibFovCenter]=grid.center
+    # Wann ist diese Zuordnung nicht einfach fortlaufend..dieser Fall ist so nicht abgedeckt
+    params[:measIsBGFrame]=(i-> i in collect(size(S,1)+1:size(S,1)+size(bG,1))).(collect(1:size(S,1)+size(bG,1)))
+    saveasMDF(saveto, params)
+  end
+  return S,grid
+end
 
 function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer=1,
                bgcorrection=false, bgCorrection=bgcorrection, loadasreal=false,
 	             gridsize=collect(calibSize(bSF)), numPeriodAverages=1,numPeriodGrouping=1,
-	             fov=calibFov(bSF), center=[0.0,0.0,0.0], deadPixels=Int[], kargs...)
+	             fov=calibFov(bSF), center=calibFovCenter(bSF),deadPixels=nothing, kargs...)
 
   nFreq = rxNumFrequencies(bSF)
 
@@ -92,27 +190,43 @@ function getSF(bSF::MPIFile, frequencies; returnasmatrix = true, procno::Integer
                       numPeriodAverages=numPeriodAverages,
                       numPeriodGrouping=numPeriodGrouping; kargs...)
 
-  if !isempty(deadPixels)
-    repairDeadPixels(S,gridsize,deadPixels)
+  if deadPixels != nothing
+    #repairDeadPixels(S,gridsize,deadPixels)
+    @info "Repairing deadPixels..."
+    S = repairSM(S,RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF)),deadPixels)
   end
 
   if collect(gridsize) != collect(calibSize(bSF)) ||
-    center != [0.0,0.0,0.0] ||
+    center != calibFovCenter(bSF) ||
     fov != calibFov(bSF)
-    @debug "Perform SF Interpolation..."
 
-    origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
+    origin = RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF))
     target = RegularGridPositions(gridsize,fov,center)
+
+    if any(fov .> calibFov(bSF))
+      #round.(Int,(fov .- origin.fov).*(origin.shape./(2 .* origin.fov)))
+      if gridsize == collect(calibSize(bSF))
+        gridsize_new = round.(Int, fov .* origin.shape ./ (2 * origin.fov),RoundNearestTiesUp) * 2
+        @info "You selected a customized (bigger) FOV, without selecting a bigger grid. Thus, an Extrapolation to
+the new FOV is followed by an Interpolation to the old grid-size, leading to a change in gridpoint-size. If you want
+to roughly keep the original gridpoint-size, define the key-word gridsize = $gridsize_new,
+alongside to your FOV-selection."
+      end
+      S,origin = extrapolateSM(S,origin,fov)
+      # alternativ ginge direkt: extrapolateSM(SM, grid, fov)
+    end
+
+    @debug "Perform SF Interpolation..."
 
     SInterp = zeros(eltype(S),prod(gridsize),length(frequencies)*numPeriods)
     for k=1:length(frequencies)*numPeriods
-      A = MPIFiles.interpolate(reshape(S[:,k],calibSize(bSF)...), origin, target)
+      A = MPIFiles.interpolate(reshape(S[:,k],origin.shape...), origin, target)
       SInterp[:,k] = vec(A)
     end
     S = SInterp
     grid = target
   else
-    grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),[0.0,0.0,0.0])
+    grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF))
   end
 
   if loadasreal

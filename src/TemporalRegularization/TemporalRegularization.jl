@@ -18,7 +18,7 @@ end
 
 function reconstructionTempReg(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array, grid;
   frames = nothing, bEmpty = nothing, emptyMeas= bEmpty, bgFrames = 1, numAverages = 1,
-  bgDict = nothing, spectralLeakageCorrection=false, λ = 0.001, β = 0.01, solver = "kaczmarz", 
+  bgDict = nothing, spectralLeakageCorrection=false, λ = 0.001, β = 0.01, solver = "Kaczmarz", 
   bgCorrectionInternal=false, interpMeth=:linear, idxFG=nothing, idxBG=nothing, kargs...) where {T<:MPIFile}
 
   bgCorrection = emptyMeas != nothing ? true : false
@@ -86,7 +86,7 @@ Joint reconstruction of MPI signal and background. Implemented in a low-level
 fashion
 """
 function reconstructionTempReg(Op::TemporalRegularizationOperator, u::Array;
-                        β = 0.1, λ=0.001, solver = "kaczmarz", enforceReal=false, enforcePositive=false,
+                        β = 0.1, λ=0.001, solver = "Kaczmarz", enforceReal=false, enforcePositive=false,
                         relativeLambda=true, backgroundCoefficients = nothing, kargs...)
 
   MSub, NSub, Q, J, Γ = getSizes(Op)

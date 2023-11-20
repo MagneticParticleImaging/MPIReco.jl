@@ -1,10 +1,10 @@
-using HTTP
+using AbstractImageReconstruction
 using Test
-using FileIO
 using Scratch
 using ImageMagick
 using ImageQualityIndexes
 using LazyArtifacts
+using Unitful
 
 const datadir = joinpath(artifact"data")
 @info "The test data is located at $datadir."
@@ -26,6 +26,7 @@ function compareSSIM(expected, given; limit::Float64=SSIM_LIMIT, kwargs...)
   return ssim >= limit
 end
 
+getPlan(plan::String) = loadPlan(joinpath("recoPlans", "$(plan).toml"), [MPIReco, RegularizedLeastSquares, MPIFiles])
 
 function exportImage(filename, I::AbstractMatrix)
   Iabs = abs.(I)
@@ -33,14 +34,17 @@ function exportImage(filename, I::AbstractMatrix)
   save(filename, Icolored )
 end
 
-include("LoadSaveMDF.jl")
-include("Reconstruction.jl")
-#include("Cartesian.jl")
-if !Sys.iswindows()
-  include("MotionCompensation.jl")
+@testset "MPIReco" begin
+  #include("LoadSaveMDF.jl")
+  include("Reconstruction.jl") # FussedLasso causes segfault atm
+  include("Cartesian.jl")
+  if !Sys.iswindows()
+    include("MotionCompensation.jl")
+  end
+  include("MultiPatch.jl")
+  include("MultiGradient.jl")
+  include("Sparse.jl")
+  include("SMExtrapolation.jl")
+  #include("SMCenter.jl")
+  #include("SMRecovery.jl") # will be moved to SMTools
 end
-include("MultiPatch.jl")
-include("MultiGradient.jl")
-include("Sparse.jl")
-#include("SMCenter.jl")
-#include("SMRecovery.jl")

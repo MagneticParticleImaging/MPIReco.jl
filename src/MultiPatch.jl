@@ -74,6 +74,8 @@ function reconstructionMultiPatch(bSF, bMeas::MPIFile, freq;
   return imMeta
 end
 
+export AbstractMultiPatchOperatorParameter
+abstract type AbstractMultiPatchOperatorParameter <: AbstractMPIRecoParameters end
 # MultiPatchOperator is a type that acts as the MPI system matrix but exploits
 # its sparse structure.
 # Its very important to keep this type typestable
@@ -123,18 +125,17 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
     @warn "One or multiple system matrices or the measurement don't have a transfer function. No transfer function correction will be applied."
     tfCorrection = false
   end
-
-  FFOp = MultiPatchOperator(bSF, bMeas, freq, bgCorrection,
+  FFOp = MultiPatchOperator(bSF, bMeas, freq, bgCorrection;
                   FFPos = FFPos_,
                   gradient = gradient,
                   FFPosSF = FFPosSF_,
-		  tfCorrection = tfCorrection; kargs...)
+		              tfCorrection = tfCorrection, kargs...)
   return FFOp
 end
 
 
-function MultiPatchOperator(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
-  return MultiPatchOperator(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
+function MultiPatchOperator(SF::MPIFile, freq, bgCorrection::Bool; kargs...)
+  return MultiPatchOperator(MultiMPIFile([SF]), freq, bgCorrection; kargs...)
 end
 
 function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
@@ -155,43 +156,76 @@ function findNearestPatch(ffPosSF, FFPos, gradientSF, gradient)
   return idx
 end
 
-function MultiPatchOperator(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
-        mapping=zeros(0), kargs...)
+MultiPatchOperator(SFs, meas, freq, bgCorr; kwargs...) = MultiPatchOperator(SFs, freq; kwargs..., bgCorrection = bgCorr)
+function MultiPatchOperator(SFs::MultiMPIFile, freq;
+        mapping=zeros(0),fov=hcat(calibFov.(SFs)...), gridsize=hcat(calibSize.(SFs)...), center = hcat(calibFovCenter.(SFs)...), kargs...)
   if length(mapping) > 0
-    return MultiPatchOperatorExpliciteMapping(SFs,bMeas,freq,bgCorrection; mapping=mapping, kargs...)
+    return MultiPatchOperatorExpliciteMapping(SFs,freq; mapping=mapping, gridsize=gridsize, fov=fov, SFGridCenter=center, kargs...)
   else
-    return MultiPatchOperatorRegular(SFs,bMeas,freq,bgCorrection; kargs...)
+    if any(fov .> hcat(calibFov.(SFs)...))      
+        mapping=collect(1:length(SFs))
+        @warn "You try to performe a system matrix extrapolation on multi-patch data without giving an explicit mapping.
+Thus, the mapping is automatically set to $mapping."
+        return MultiPatchOperatorExpliciteMapping(SFs,freq; mapping=mapping, gridsize=gridsize, fov=fov, SFGridCenter=center, kargs...)
+    else
+      return MultiPatchOperatorRegular(SFs,freq; kargs...)
+    end
   end
 end
 
-function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
+export ExplicitMultiPatchParameter
+Base.@kwdef struct ExplicitMultiPatchParameter <: AbstractMultiPatchOperatorParameter
+  bgCorrection::Bool = false
+  tfCorrection::Bool = true
+  SFGridCenter::AbstractArray = zeros(0,0)
+  systemMatrices::Union{Nothing, AbstractArray} = nothing
+  mapping::Vector{Int64}
+  gridsize::Union{Nothing, AbstractArray} = nothing
+  fov::Union{Nothing, AbstractArray} = nothing
+  grid::Union{Nothing, RegularGridPositions} = nothing
+end
+function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrection::Bool,
                     denoiseWeight=0, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
                     gradient=zeros(0,0,0),
                     roundPatches = false,
-                    SFGridCenter = zeros(0,0),
+                    SFGridCenter = hcat(calibFovCenter.(SFs)...),
                     systemMatrices = nothing,
                     mapping=zeros(0),
-		    calibsize = nothing, calibfov = nothing,
-                    grid = nothing, 
-		    tfCorrection = true,
-		    kargs...)
+		                gridsize = hcat(calibSize.(SFs)...),
+                    fov = hcat(calibFov.(SFs)...),
+                    grid = nothing,
+		                tfCorrection = true,
+		                kargs...)
 
+                    
   @debug "Loading System matrix"
   numPatches = size(FFPos,2)
   M = length(freq)
   RowToPatch = kron(collect(1:numPatches), ones(Int,M))
 
-  if systemMatrices == nothing
-      S = [getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection)[1] for SF in SFs]
-  else
-    S = systemMatrices
-  end
-
+  gridsize = isnothing(gridsize) ? hcat(calibSize.(SFs)...) : gridsize
+  fov = isnothing(fov) ? hcat(calibFov.(SFs)...) : fov
   if length(SFGridCenter) == 0
     SFGridCenter = zeros(3,length(SFs))
     for l=1:length(SFs)
       SFGridCenter[:,l] = calibFovCenter(SFs[l])
     end
+  end
+
+  if systemMatrices == nothing
+      S=AbstractMatrix[]; gridS=RegularGridPositions[];
+      for i=1:length(SFs)
+        SF_S,SF_gridS = getSF(SFs[i],freq,nothing,"Kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i],center=SFGridCenter[:,i])
+        push!(S,SF_S)
+        push!(gridS,SF_gridS)
+      end
+  else
+    if grid == nothing
+      gridS = [getSF(SFs[i],freq,nothing,"Kaczmarz", bgCorrection=bgCorrection,tfCorrection=tfCorrection,gridsize=gridsize[:,i],fov=fov[:,i],center=SFGridCenter[:,i])[2] for i in 1:length(SFs)]
+    else
+      gridS = grid
+    end
+    S = systemMatrices
   end
 
   gradientSF = [acqGradient(SF) for SF in SFs]
@@ -212,11 +246,17 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
     diffFFPos = FFPosSF[:,idx] .- FFPos[:,k]
 
     # use the grid parameters of the SM or use given parameter
-    calibsizeTmp = (calibsize == nothing) ? calibSize(SF) : calibsize[:,idx]
-    calibfovTmp = (calibfov == nothing) ? calibFov(SF) : calibfov[:,idx]
+    calibsizeTmp = gridS[idx].shape
+    calibfovTmp = gridS[idx].fov
 
     push!(grids, RegularGridPositions(calibsizeTmp,calibfovTmp,SFGridCenter[:,idx].-diffFFPos))
   end
+
+  #if SMextrapolation != nothing
+  #  for k=1:numPatches
+  #    S[k],grids[k] = extrapolateSM(S[k],grids[k],SMextrapolation)
+  #  end
+  #end
 
   # We now know all the subgrids for each patch, if the corresponding system matrix would be taken as is
   # and if a possible focus field missmatch has been taken into account (by changing the center)
@@ -258,7 +298,14 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, bMeas, freq, bgCo
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
-function MultiPatchOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection::Bool;
+export RegularMultiPatchOperatorParameter
+Base.@kwdef struct RegularMultiPatchOperatorParameter <: AbstractMultiPatchOperatorParameter
+  bgCorrection::Bool = false
+  denoiseWeight::Float64=0.0
+  roundPatches::Bool = false
+  tfCorrection::Bool = true
+end
+function MultiPatchOperatorRegular(SFs::MultiMPIFile, freq; bgCorrection::Bool,
                     denoiseWeight=0, gradient=zeros(0,0,0),
                     roundPatches = false, FFPos=zeros(0,0), FFPosSF=zeros(0,0),
 		    tfCorrection = true,
@@ -330,7 +377,7 @@ function MultiPatchOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection:
       if u > 0 # its already in memory
         patchToSMIdx[k] = u
       else     # not yet in memory  -> load it
-        S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection)
+        S_, grid = getSF(SF,freq,nothing,"Kaczmarz", bgCorrection=bgCorrection, tfCorrection=tfCorrection)
         push!(S,S_)
         push!(SOrigIdx,idx)
         push!(SIsPlain,true) # mark this as a plain system matrix (without interpolation)
@@ -342,7 +389,7 @@ function MultiPatchOperatorRegular(SFs::MultiMPIFile, bMeas, freq, bgCorrection:
       newGrid = deriveSubgrid(recoGrid, grids[k])
 
       # load the matrix on the new subgrid
-      S_, grid = getSF(SF,freq,nothing,"kaczmarz", bgCorrection=bgCorrection,
+      S_, grid = getSF(SF,freq,nothing,"Kaczmarz", bgCorrection=bgCorrection,
                    gridsize=shape(newGrid),
                    fov=fieldOfView(newGrid),
                    center=fieldOfViewCenter(newGrid).-fieldOfViewCenter(grids[k]),
@@ -399,6 +446,17 @@ size(FFOp::MultiPatchOperator) = (FFOp.M,FFOp.N)
 length(FFOp::MultiPatchOperator) = size(FFOp,1)*size(FFOp,2)
 
 ### The following is intended to use the standard kaczmarz method ###
+function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization, op::MultiPatchOperator, b)
+  if length(op.S) == 1
+    trace = RegularizedLeastSquares.normalize(norm, op.S[1], b)
+    trace *= op.nPatches #*prod(Op.PixelSizeSF)/prod(Op.PixelSizeC)
+  else
+    trace = sum([RegularizedLeastSquares.normalize(norm, S, b)*size(S, 2) for S in op.S])
+    #trace *= prod(Op.PixelSizeSF)/prod(Op.PixelSizeC)
+    trace/=size(op, 2)
+  end
+  return trace
+end
 
 function calculateTraceOfNormalMatrix(Op::MultiPatchOperator, weights)
   if length(Op.S) == 1
@@ -483,4 +541,20 @@ function initkaczmarz(Op::MultiPatchOperator,λ,weights::Vector)
   end
 
   denom, rowindex
+end
+
+
+function RegularizedLeastSquares.rowProbabilities(Op::MultiPatchOperator, rowindex)
+  p = zeros(length(rowindex))
+  
+  for i=1:length(rowindex)
+    k = rowindex[i]
+    j = mod1(k, div(Op.M,Op.nPatches))
+    patch = Op.RowToPatch[k]
+    A = Op.S[Op.patchToSMIdx[patch]]
+    p[i] = rownorm²(A, j)
+  end
+  p ./= sum(p)
+
+  return p   
 end
