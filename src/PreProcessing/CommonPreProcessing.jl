@@ -26,17 +26,17 @@ end
 
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{NoBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
-  result = getMeasurementsFD(f; bgCorrection = false, kwargs..., frequencies = frequencies)
+  result = getMeasurementsFD(f; bgCorrection = false, frequencies = frequencies, kwargs...)
   return result
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{InternalBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
-  result = getMeasurementsFD(f; bgCorrection = true, interpolateBG = params.bgCorrection.interpolateBG, kwargs..., frequencies = frequencies)
+  result = getMeasurementsFD(f; bgCorrection = true, interpolateBG = params.bgParams.interpolateBG, frequencies = frequencies, kwargs...)
   return result
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{<:ExternalBackgroundCorrection}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
-  result = getMeasurementsFD(f; bgCorrection = false, kwargs..., frequencies = frequencies)
-  bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; kwargs..., bgParams = params.bgParams, frequencies = frequencies)
+  result = getMeasurementsFD(f; bgCorrection = false, frequencies = frequencies, kwargs...)
+  bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; bgParams = params.bgParams, frequencies = frequencies, kwargs...)
   return process(t, bgParams, result, frequencies)
 end
