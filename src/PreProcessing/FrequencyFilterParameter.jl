@@ -1,5 +1,24 @@
 export AbstractFrequencyFilterParameter
 abstract type AbstractFrequencyFilterParameter <: AbstractMPIRecoParameters end
+
+export NoFrequencyFilterParameter
+struct NoFrequencyFilterParameter <: AbstractFrequencyFilterParameter end
+
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoFrequencyFilterParameter, file::MPIFile)
+  return collect(vec(CartesianIndices((rxNumFrequencies(file), rxNumChannels(file)))))
+end
+
+export DirectSelectionFrequencyFilterParameters
+Base.@kwdef struct DirectSelectionFrequencyFilterParameters{T <: Integer, FIT <: AbstractVector{T}} <: AbstractFrequencyFilterParameter
+  freqIndices::FIT
+end
+
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters, file::MPIFile)
+  nFreq = params.freqIndices
+  nReceivers = rxNumChannels(file)
+  return collect(vec(CartesianIndices((nFreq, nReceivers))))
+end
+
 # Could possible also be nested
 export SNRThresholdFrequencyFilterParameter
 Base.@kwdef struct SNRThresholdFrequencyFilterParameter <: AbstractFrequencyFilterParameter
@@ -34,6 +53,7 @@ Base.@kwdef struct FreqNumThresholdFrequencyFilterParameter <: AbstractFrequency
   maxMixingOrder::Int64 = -1
   numSidebandFreqs::Int64 = -1
 end
+
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractFrequencyFilterParameter, file::MPIFile)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:maxFreq => rxBandwidth(file), :recChannels => 1:rxNumChannels(file))) 
   filterFrequencies(file; kwargs...)

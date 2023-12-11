@@ -31,7 +31,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessin
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{InternalBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
-  result = getMeasurementsFD(f; bgCorrection = true, interpolateBG = params.bgCorrection.interpolateBG, kwargs..., frequencies = frequencies)
+  result = getMeasurementsFD(f; bgCorrection = true, interpolateBG = params.bgParams.interpolateBG, kwargs..., frequencies = frequencies)
   return result
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{<:ExternalBackgroundCorrection}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)

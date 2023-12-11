@@ -12,13 +12,24 @@ abstract type AbstractSystemMatrixParameter <: AbstractMPIRecoParameters end
 
 export AbstractSystemMatrixGriddingParameter
 abstract type AbstractSystemMatrixGriddingParameter <: AbstractSystemMatrixParameter end
+
+export NoGridding
+struct NoGridding <: AbstractSystemMatrixGriddingParameter end
+
 export SystemMatrixGriddingParameter
-Base.@kwdef struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGriddingParameter
+Base.@kwdef struct SystemMatrixGriddingParameter{T <: Number} <: AbstractSystemMatrixGriddingParameter
   gridsize::Vector{Int64} = [1, 1, 1]
-  fov::Vector{Float64} = [0.0, 0.0, 0.0]
-  center::Vector{Float64} = [0.0,0.0,0.0]
+  fov::Vector{T} = [0.0, 0.0, 0.0]
+  center::Vector{T} = [0.0,0.0,0.0]
   deadPixels::Union{Nothing, Vector{Int64}} = nothing
 end
+
+SystemMatrixGriddingParameter(file::MPIFile) = SystemMatrixGriddingParameter(
+  gridSize = calibSize(file),
+  fov = calibFieldOfView(file),
+  center = calibFieldOfViewCenter
+)
+
 export defaultGridSize
 defaultGridSize(old, new::MPIFile) = gridSizeCommon(new)
 defaultGridSize(old, new::Missing) = missing
@@ -40,7 +51,7 @@ Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterPa
   freqFilter::F
   gridding::G
   bgCorrection::Bool = false
-  loadasreal::Bool=false
+  loadasreal::Bool = false
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile)
   # Construct freqFilter
@@ -56,7 +67,7 @@ export SparseSystemMatrixLoadingParameter
 Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilterParameter} <: AbstractSystemMatrixLoadingParameter
   freqFilter::F
   sparseTrafo::Union{Nothing, String} = nothing # TODO concrete options here?
-  tresh::Float64 = 0.0
+  thresh::Float64 = 0.0
   redFactor::Float64 = 0.1
   bgCorrection::Bool = false
   loadasreal::Bool=false
@@ -112,10 +123,9 @@ prepareSF(solver::Union{Type{CGNR}}, SF, grid) = copy(transpose(SF)), grid
 prepareSF(solver::Type{DirectSolver}, SF, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
 prepareSF(solver::Type{<:RegularizedLeastSquares.AbstractLinearSolver}, SF, grid) = SF, grid
 
-
-
-getSF(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Nothing; kargs...) where {T<:MPIFile} =
-   getSF(bSF, frequencies; kargs...)
+function getSF(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Nothing; kargs...) where {T<:MPIFile}
+  return getSF(bSF, frequencies; kargs...)
+end
 
 # TK: The following is a hack since colored and sparse trafo are currently not supported
 getSF(bSF::Vector{T}, frequencies, sparseTrafo::AbstractString; kargs...) where {T<:MPIFile} =
