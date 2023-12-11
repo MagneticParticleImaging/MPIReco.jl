@@ -5,7 +5,7 @@ export NoFrequencyFilterParameter
 struct NoFrequencyFilterParameter <: AbstractFrequencyFilterParameter end
 
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoFrequencyFilterParameter, file::MPIFile)
-  return CartesianIndices((rxNumFrequencies(file), rxNumChannels(file)))
+  return collect(vec(CartesianIndices((rxNumFrequencies(file), rxNumChannels(file)))))
 end
 
 export DirectSelectionFrequencyFilterParameters
@@ -16,7 +16,7 @@ end
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters, file::MPIFile)
   nFreq = params.freqIndices
   nReceivers = rxNumChannels(file)
-  return CartesianIndices((nFreq, nReceivers))
+  return collect(vec(CartesianIndices((nFreq, nReceivers))))
 end
 
 # Could possible also be nested
