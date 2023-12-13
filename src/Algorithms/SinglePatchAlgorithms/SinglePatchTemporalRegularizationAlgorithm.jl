@@ -3,7 +3,7 @@ Base.@kwdef struct SinglePatchTemporalRegularizationReconstructionParameter{L<:D
   SP<:AbstractSolverParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
-  sfLoad::L
+  sfLoad::Union{L, CachedProcessParameter{L}}
   # Solver
   solverParams::SP
   λ::Float32

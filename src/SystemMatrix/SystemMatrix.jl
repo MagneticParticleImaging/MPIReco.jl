@@ -49,6 +49,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLo
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
   S, grid = getSF(sf, frequencies, nothing; toKwargs(params)...)
+  @info "Loading SM"
   return S, grid
 end
 

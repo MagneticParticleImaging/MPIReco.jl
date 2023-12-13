@@ -2,7 +2,7 @@ Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoa
    SP<:AbstractSolverParameters, R<:AbstractRegularization, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
-  sfLoad::L
+  sfLoad::Union{L, CachedProcessParameter{L}}
   # Solver
   solver::Type{S}
   solverParams::SP
@@ -28,7 +28,7 @@ function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:Abst
   return SinglePatchReconstructionAlgorithm(params, params.reco.sf, S, grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
-AbstractImageReconstruction.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.origParam
+AbstractImageReconstruction.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.params
 
 function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
   freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf)
