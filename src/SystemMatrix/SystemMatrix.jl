@@ -17,10 +17,10 @@ export NoGridding
 struct NoGridding <: AbstractSystemMatrixGriddingParameter end
 
 export SystemMatrixGriddingParameter
-Base.@kwdef struct SystemMatrixGriddingParameter{T <: Number} <: AbstractSystemMatrixGriddingParameter
+Base.@kwdef struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGriddingParameter
   gridsize::Vector{Int64} = [1, 1, 1]
-  fov::Vector{T} = [0.0, 0.0, 0.0]
-  center::Vector{T} = [0.0,0.0,0.0]
+  fov::Vector{Float64} = [0.0, 0.0, 0.0]
+  center::Vector{Float64} = [0.0,0.0,0.0]
   deadPixels::Union{Nothing, Vector{Int64}} = nothing
 end
 
@@ -30,9 +30,14 @@ SystemMatrixGriddingParameter(file::MPIFile) = SystemMatrixGriddingParameter(
   center = calibFieldOfViewCenter
 )
 
-export defaultGridSize
-defaultGridSize(old, new::MPIFile) = gridSizeCommon(new)
-defaultGridSize(old, new::Missing) = missing
+export defaultParameterGridSize, defaultParameterCalibCenter, defaultParameterCalibFov
+defaultParameterGridSize(old, new::MPIFile) = gridSizeCommon(new)
+defaultParameterGridSize(old, new::Missing) = missing
+defaultParameterCalibCenter(old, new::MPIFile) = calibFovCenter(new)
+defaultParameterCalibCenter(old, new::Missing) = missing
+defaultParameterCalibFov(old, new::MPIFile) = calibFov(new)
+defaultParameterCalibFov(old, new::Missing) = missing
+
 # Maybe implement custom defaults with optional given sf -> remove @kwdef
 #function SystemMatrixGriddingParameter(;sf::MPIFile, gridsize = nothing, fov = nothing, center = [0.0, 0.0, 0.0], deadPixels = Int64[])
 #  if isnothing(gridsize)
