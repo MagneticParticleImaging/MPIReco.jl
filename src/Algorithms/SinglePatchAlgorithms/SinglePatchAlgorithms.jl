@@ -6,7 +6,7 @@ abstract type AbstractSinglePatchAlgorithmParameters <: AbstractMPIRecoParameter
 
 Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractMPIPreProcessingParameters,
      R<:AbstractSinglePatchReconstructionParameters, PT<:AbstractMPIPostProcessingParameters} <: AbstractSinglePatchAlgorithmParameters
-  pre::PR
+  pre::Union{PR, ProcessResultCache{PR}}
   reco::R
   post::PT = NoPostProcessing() 
 end
@@ -31,7 +31,7 @@ end
 function finalizeResult(algo::AbstractSinglePatchReconstructionAlgorithm, result, data::MPIFile)
   pixspacing = (spacing(algo.grid) ./ acqGradient(data)[1] .* acqGradient(algo.sf)[1])*1000u"mm"
   offset = (ffPos(data) .- 0.5 .* calibFov(algo.sf))*1000u"mm" .+ 0.5 .* pixspacing
-  dt = acqNumAverages(data)*dfCycle(data)*algo.params.pre.numAverages*1u"s"
+  dt = acqNumAverages(data)*dfCycle(data)*numAverages(algo.params.pre)*1u"s"
   im = makeAxisArray(result, pixspacing, offset, dt)
   return ImageMeta(im, generateHeaderDict(algo.sf, data))
 end

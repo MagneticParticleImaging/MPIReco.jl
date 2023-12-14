@@ -40,3 +40,6 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessin
   bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; kwargs..., bgParams = params.bgParams, frequencies = frequencies)
   return process(t, bgParams, result, frequencies)
 end
+
+numAverages(params::CommonPreProcessingParameters) = params.numAverages
+numAverages(params::ProcessResultCache{<:CommonPreProcessingParameters}) = numAverages(params.param)

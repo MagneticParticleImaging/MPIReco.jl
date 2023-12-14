@@ -39,7 +39,7 @@ end
 
 AbstractImageReconstruction.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.output)
 
-function process(algo::SinglePatchReconstructionAlgorithm, params::AbstractMPIPreProcessingParameters, f::MPIFile, args...)
+function process(algo::SinglePatchReconstructionAlgorithm, params::Union{A, ProcessResultCache{<:A}}, f::MPIFile, args...) where A <: AbstractMPIPreProcessingParameters
   result = process(typeof(algo), params, f, args...)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
