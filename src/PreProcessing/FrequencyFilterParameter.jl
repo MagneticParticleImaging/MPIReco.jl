@@ -24,7 +24,7 @@ export SNRThresholdFrequencyFilterParameter
 Base.@kwdef struct SNRThresholdFrequencyFilterParameter <: AbstractFrequencyFilterParameter
   minFreq::Float64 = 0.0
   maxFreq::Union{Float64, Nothing} = nothing
-  recChannels::Union{UnitRange{Int64}, Nothing} = nothing
+  recChannels::Union{Vector{Int64}, UnitRange{Int64}, Nothing} = nothing
   SNRThresh::Float64=-1.0
   #sortBySNR::Bool = false
   numPeriodAverages::Int64 = 1
