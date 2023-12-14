@@ -2,7 +2,7 @@ Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoa
    SP<:AbstractSolverParameters, R<:AbstractRegularization, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
-  sfLoad::Union{L, CachedProcessParameter{L}}
+  sfLoad::Union{L, ProcessResultCache{L}}
   # Solver
   solver::Type{S}
   solverParams::SP

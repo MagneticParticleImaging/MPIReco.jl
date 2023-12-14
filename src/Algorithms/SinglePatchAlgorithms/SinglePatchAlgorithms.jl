@@ -36,6 +36,9 @@ function finalizeResult(algo::AbstractSinglePatchReconstructionAlgorithm, result
   return ImageMeta(im, generateHeaderDict(algo.sf, data))
 end
 
+### Raw Data
+#consistenceCheck(algo.sf::MPIFile, u::AbstractArray{ComplexF})
+
 
 include("SinglePatchAlgorithm.jl")
 include("SinglePatchTwoStepReconstructionAlgorithm.jl")

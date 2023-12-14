@@ -4,8 +4,8 @@ Base.@kwdef struct SinglePatchTwoStepReconstructionParameters{L_H<:AbstractSyste
   Γ::Float64
   # File
   sf::MPIFile
-  sfLoadHigh::Union{L_H, CachedProcessParameter{L_H}}
-  sfLoadLow::Union{L_L, CachedProcessParameter{L_L}}
+  sfLoadHigh::Union{L_H, ProcessResultCache{L_H}}
+  sfLoadLow::Union{L_L, ProcessResultCache{L_L}}
   # Solver
   solver::Type{S}
   solverParams_high::SP_H

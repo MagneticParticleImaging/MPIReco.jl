@@ -3,7 +3,7 @@ Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystem
   SP<:AbstractSolverParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
-  sfLoad::Union{L, CachedProcessParameter{L}}
+  sfLoad::Union{L, ProcessResultCache{L}}
   # Solver
   solverParams::SP
   λ::Float32
