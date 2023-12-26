@@ -7,7 +7,7 @@ Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoa
   solver::Type{S}
   solverParams::SP
   reg::Vector{R} = AbstractRegularization[]
-  weightingParams::W = NoWeightingParamters()
+  weightingParams::W = NoWeightingParameters()
 end
 
 Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}

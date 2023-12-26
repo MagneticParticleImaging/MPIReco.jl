@@ -3,9 +3,9 @@ export getWeights, WeightingType, setFreqToZero
 export AbstractWeightingParameters
 abstract type AbstractWeightingParameters <: AbstractMPIRecoParameters end
 
-export NoWeightingParamters
-struct NoWeightingParamters <: AbstractWeightingParameters end
-process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoWeightingParamters, data) = nothing
+export NoWeightingParameters
+struct NoWeightingParameters <: AbstractWeightingParameters end
+process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoWeightingParameters, data) = nothing
 
 export ChannelWeightingParameters
 Base.@kwdef struct ChannelWeightingParameters <: AbstractWeightingParameters
