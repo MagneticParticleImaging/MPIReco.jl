@@ -159,7 +159,7 @@ end
 function reconstruction(bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array;
   bEmpty = nothing, emptyMeas = bEmpty, bgFrames = 1,
   denoiseWeight = 0, redFactor = 0.0, thresh = 0.0,
-  loadasreal = false, solver = "Kaczmarz", sparseTrafo = nothing,
+  loadasreal = false, solver = Kaczmarz, sparseTrafo = nothing,
   gridsize = gridSizeCommon(bSF), fov=calibFov(bSF), center=[0.0,0.0,0.0], useDFFoV=false,
   deadPixels=nothing, bgCorrectionInternal=false, bgDictSize=nothing, bgFramesDict=nothing,
   numPeriodAverages=1, numPeriodGrouping=1, reco=:default, kargs...) where {T<:MPIFile}
@@ -214,7 +214,8 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   frames = nothing, bEmpty = nothing, emptyMeas= bEmpty, bgFrames = 1, nAverages = 1,
   numAverages=nAverages, bgDict = nothing, bgFramesPost = nothing,
   sparseTrafo = nothing, loadasreal = false, maxload = 100, maskDFFOV=false,
-  weightType=WeightingType.None, weightingLimit = 0, solver = "Kaczmarz",
+  #weightType=WeightingType.None, weightingLimit = 0, 
+  solver = Kaczmarz,
   spectralCleaning=true, spectralLeakageCorrection=spectralCleaning,
   fgFrames=1:10, bgCorrectionInternal=false,
   noiseFreqThresh=0.0, channelWeights=ones(3), 
@@ -244,9 +245,9 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
 
   frames == nothing && (frames = 1:acqNumFrames(bMeas))
 
-  weights = getWeights(weightType, freq, S, weightingLimit=weightingLimit,
+  #=weights = getWeights(weightType, freq, S, weightingLimit=weightingLimit,
                        emptyMeas = emptyMeas, bMeas = bMeas, bgFrames=bgFrames, bSF=bSF,
-                       channelWeights = channelWeights)
+                       channelWeights = channelWeights)=#
 
   L = -fld(-length(frames),numAverages) # number of tomograms to be reconstructed
   p = Progress(L, dt=1, desc="Reconstructing data...")
@@ -286,7 +287,8 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
     end
     @debug "Reconstruction ..."
     c = reconstruction(S, u, bgDict; sparseTrafo=B, progress=p,
-		       weights=weights, solver=solver, shape=shape(grid), kargs...)
+		       #weights=weights, 
+           solver=solver, shape=shape(grid), kargs...)
 
     currentIndex = writePartToImage!(image, c, currentIndex, partframes, numAverages)
   end
@@ -340,10 +342,9 @@ end
 Low level reconstruction method
 """
 function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = nothing,
-                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = "Kaczmarz",
+                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = Kaczmarz,
                         weights=nothing, enforceReal=true, enforcePositive=true,
                         relativeLambda=true, reg = nothing, kargs...)
-
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
 
@@ -363,7 +364,7 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
   for l=1:L
 
-    d = solve(solv, u[:,l])
+    d = solve!(solv, u[:,l])
 
     if !isnothing(sparseTrafo)
       d[:] = sparseTrafo*d #backtrafo from dual space
