@@ -22,6 +22,7 @@ module MPIReco
   import AbstractImageReconstruction: process, parameter
   using FFTW
   using LinearOperatorCollection
+  using MNPDynamics
 
 
   include("AlgorithmInterface.jl")
@@ -37,6 +38,8 @@ module MPIReco
   include("Reconstruction.jl")
   include("MultiPatch.jl")
   include("MotionCompensation/MotionCompensation.jl")
+  include("ModelBased/ModelBased.jl")
+  include("TransferFunction.jl")
   include("Algorithms/Algorithms.jl")
   include("Serialisation.jl")
 end # module

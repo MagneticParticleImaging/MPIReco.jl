@@ -363,7 +363,7 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
   for l=1:L
 
-    d = solve(solv, u[:,l])
+    d = solve!(solv, u[:,l])
 
     if !isnothing(sparseTrafo)
       d[:] = sparseTrafo*d #backtrafo from dual space
