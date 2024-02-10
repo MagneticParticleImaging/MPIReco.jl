@@ -35,14 +35,14 @@ using MPIReco
     setAll!(plan, :fov, calibFov(bSF).+[0.006,0.006,0])  
     c_extr = reconstruct(build(plan), b)
     @test size(c1[1,:,:,:,1]) .+ (4,4,0) == size(c_extr[1,:,:,:,1])
-    exportImage(joinpath(imgdir, "Extrapolated1.png"), arraydata(c_extr[1,:,:,1,1]))
+    exportImage(joinpath(imgdir, "Extrapolated1.png"), Array(c_extr[1,:,:,1,1]))
     @test compareImg("Extrapolated1.png")
 
     setAll!(plan, :gridsize, calibSize(bSF))
     setAll!(plan, :fov, calibFov(bSF).+[0.006,0.006,0])  
     c_extr2 = reconstruct(build(plan), b)
     @test size(c1[1,:,:,:,1]) == size(c_extr2[1,:,:,:,1])
-    exportImage(joinpath(imgdir, "Extrapolated2.png"), arraydata(c_extr2[1,:,:,1,1]))
+    exportImage(joinpath(imgdir, "Extrapolated2.png"), Array(c_extr2[1,:,:,1,1]))
     @test compareImg("Extrapolated2.png")
 
     SFdirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]
@@ -72,7 +72,7 @@ using MPIReco
     setAll!(plan, :mapping, 1:4)
     c_extr3 = reconstruct(build(plan), b)                 
     @test size(c2[1,:,:,:,1]) .+ (6,6,0) == size(c_extr3[1,:,:,:,1])               
-    exportImage(joinpath(imgdir, "ExtrapolatedMultiPatch1.png"), arraydata(c_extr3[1,:,:,1,1]))
+    exportImage(joinpath(imgdir, "ExtrapolatedMultiPatch1.png"), Array(c_extr3[1,:,:,1,1]))
     @test compareImg("ExtrapolatedMultiPatch1.png")
 
     SM[vec([495:505;527:537]),:] .= 0.0 + 0.0im

@@ -32,14 +32,14 @@ using MPIReco
   setAll!(plan, :fov, calibFov(bSF))  
   @time c1 = reconstruct(build(plan), b)
 
-  exportImage(joinpath(imgdir, "Cartesian1.png"), arraydata(c1[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Cartesian1.png"), Array(c1[1,:,:,1,1]))
   @test compareImg("Cartesian1.png")
 
   # SP Reco
   setAll!(plan, :numPeriodGrouping, numPatches)
   #setAll!(plan, :maxMixingOrder, 12) # see above
   @time c2 = reconstruct(build(plan), b)
-  exportImage(joinpath(imgdir, "Cartesian2.png"), arraydata(c2[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Cartesian2.png"), Array(c2[1,:,:,1,1]))
   @test compareImg("Cartesian2.png")
 
   # from Postprocessed
@@ -53,7 +53,7 @@ using MPIReco
   plan.parameter.pre.numPeriodAverages = 65
   @time c3 = reconstruct(build(plan), b)
 
-  exportImage(joinpath(imgdir, "Cartesian3.png"), arraydata(c3[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Cartesian3.png"), Array(c3[1,:,:,1,1]))
   @test compareImg("Cartesian3.png")
 
   ####  Low Level ####
@@ -105,7 +105,7 @@ using MPIReco
   setAll!(plan, :numPeriodAverages, numPeriodAverages)
   @time c6 = reconstruct(build(plan), b)
 
-  exportImage(joinpath(imgdir, "Cartesian6.png"), arraydata(c6[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Cartesian6.png"), Array(c6[1,:,:,1,1]))
   @test compareImg("Cartesian6.png")
 
 end

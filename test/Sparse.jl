@@ -31,7 +31,7 @@ using MPIReco
   c1 = reconstruct(build(plan), b)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values
-  exportImage(joinpath(imgdir, "Sparse1.png"), arraydata(c1[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Sparse1.png"), Array(c1[1,:,:,1,1]))
   @test compareImg("Sparse1.png")
 
   plan = getPlan("Sparse")
@@ -53,7 +53,7 @@ using MPIReco
   c2 = reconstruct(build(plan), b)
   @test axisnames(c2) == names
   @test axisvalues(c2) == values
-  exportImage(joinpath(imgdir, "Sparse2.png"), arraydata(c2[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Sparse2.png"), Array(c2[1,:,:,1,1]))
   @test compareImg("Sparse2.png")
 
   setAll!(plan, :sparseTrafo, "FFT")
@@ -61,7 +61,7 @@ using MPIReco
   c3 = reconstruct(build(plan), b)
   @test axisnames(c3) == names
   @test axisvalues(c3) == valuesDF
-  exportImage(joinpath(imgdir, "Sparse3.png"), arraydata(c3[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Sparse3.png"), Array(c3[1,:,:,1,1]))
   @test compareImg("Sparse3.png")
 
   setAll!(plan, :SNRThresh, 3)
@@ -72,7 +72,7 @@ using MPIReco
   c4 = reconstruct(build(plan), b)
   @test axisnames(c4) == names
   @test axisvalues(c4) == values
-  exportImage(joinpath(imgdir, "Sparse4.png"), arraydata(c4[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Sparse4.png"), Array(c4[1,:,:,1,1]))
   @test compareImg("Sparse4.png")
 
   setAll!(plan, :spectralLeakageCorrection, true)
@@ -82,7 +82,7 @@ using MPIReco
   setAll!(plan, :spectralLeakageCorrection, false)
   @test axisnames(c5) == names
   @test axisvalues(c5) == valuesDF
-  exportImage(joinpath(imgdir, "Sparse5.png"), arraydata(c5[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Sparse5.png"), Array(c5[1,:,:,1,1]))
   @test compareImg("Sparse5.png")
 
   setAll!(plan, :sparseTrafo, "DST")
@@ -90,7 +90,7 @@ using MPIReco
   c6 = reconstruct(build(plan), b)
   @test axisnames(c6) == names
   @test axisvalues(c6) == values
-  exportImage(joinpath(imgdir, "Sparse6.png"), arraydata(c6[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Sparse6.png"), Array(c6[1,:,:,1,1]))
   @test compareImg("Sparse6.png")
 
   setAll!(plan, :spectralLeakageCorrection, true)
@@ -99,6 +99,6 @@ using MPIReco
   c7 = reconstruct(build(plan), b)
   @test axisnames(c7) == names
   @test axisvalues(c7) == valuesDF
-  exportImage(joinpath(imgdir, "Sparse7.png"), arraydata(c7[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Sparse7.png"), Array(c7[1,:,:,1,1]))
   @test compareImg("Sparse7.png")
 end

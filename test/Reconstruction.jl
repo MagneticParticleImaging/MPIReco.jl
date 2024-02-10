@@ -26,7 +26,7 @@ using MPIReco
   c1 = reconstruct(build(plan), b)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values
-  exportImage(joinpath(imgdir, "Reconstruction1.png"), arraydata(c1[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Reconstruction1.png"), Array(c1[1,:,:,1,1]))
   @test compareImg("Reconstruction1.png")
 
   # fused lasso
@@ -43,7 +43,7 @@ using MPIReco
   #setAll!(plan, :normalizeReg, SystemMatrixBasedNormalization())
   #@test axisnames(c2) == names
   #@test axisvalues(c2) == values
-  #exportImage(joinpath(imgdir, "Reconstruction2.png"), arraydata(c2[1,:,:,1,1]))
+  #exportImage(joinpath(imgdir, "Reconstruction2.png"), Array(c2[1,:,:,1,1]))
   #@test compareImg("Reconstruction2.png")
 
   # with interpolation
@@ -51,7 +51,7 @@ using MPIReco
   c3 = reconstruct(build(plan), b)
   @test axisnames(c3) == names
   @test axisvalues(c3) == (values[1], -27.8u"mm":0.4u"mm":11.8u"mm", -11.8u"mm":0.4u"mm":27.8u"mm", values[4:5]...)
-  exportImage(joinpath(imgdir, "Reconstruction3.png"), arraydata(c3[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Reconstruction3.png"), Array(c3[1,:,:,1,1]))
   @test compareImg("Reconstruction3.png")
 
   # with fov adpation and center shift
@@ -60,7 +60,7 @@ using MPIReco
   @test axisnames(c4) == names
   # TODO Tobi: does this make sense?
   @test axisvalues(c4) == (values[1], -27.6u"mm":0.8u"mm":11.6u"mm", -11.6u"mm":0.8u"mm":27.6u"mm", 499.5u"mm":1000.0u"mm":499.5u"mm", values[5])
-  exportImage(joinpath(imgdir, "Reconstruction4.png"), arraydata(c4[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Reconstruction4.png"), Array(c4[1,:,:,1,1]))
   @test compareImg("Reconstruction4.png")
 
   setAll!(plan, :gridding, SystemMatrixGriddingParameter(;gridsize=calibSize(bSF), fov = calibFov(bSF)))
@@ -70,9 +70,9 @@ using MPIReco
   c5 = reconstruct(build(plan), b)
   @test axisnames(c5) == names
   @test axisvalues(c5) == (1:2,values[2:end]...)
-  exportImage(joinpath(imgdir, "Reconstruction5a.png"), arraydata(c5[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Reconstruction5a.png"), Array(c5[1,:,:,1,1]))
   @test compareImg("Reconstruction5a.png")
-  exportImage(joinpath(imgdir, "Reconstruction5b.png"), arraydata(c5[2,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Reconstruction5b.png"), Array(c5[2,:,:,1,1]))
   @test compareImg("Reconstruction5b.png")
 #=
   # dict based reco
@@ -87,7 +87,7 @@ using MPIReco
   c6 = reconstruction(r)
   @test axisnames(c6) == names
   @test axisvalues(c6) == values
-  exportImage(joinpath(imgdir, "Reconstruction6.png"), arraydata(c6[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Reconstruction6.png"), Array(c6[1,:,:,1,1]))
   @test compareImg("Reconstruction6.png")
   =#
 
@@ -97,17 +97,17 @@ using MPIReco
   # channel weighting
   setAll!(plan, :weightingParams, ChannelWeightingParameters(channelWeights = [1.0, 1.0, 1.0]))
   c7a = reconstruct(build(plan), b)
-  exportImage(joinpath(imgdir, "Reconstruction7a.png"), arraydata(c7a[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Reconstruction7a.png"), Array(c7a[1,:,:,1,1]))
   @test compareImg("Reconstruction7a.png")
 
   setAll!(plan, :weightingParams, ChannelWeightingParameters(channelWeights = [1.0,0.001,1.0]))
   c7b = reconstruct(build(plan), b)
-  exportImage(joinpath(imgdir, "Reconstruction7b.png"), arraydata(c7b[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Reconstruction7b.png"), Array(c7b[1,:,:,1,1]))
   @test compareImg("Reconstruction7b.png")
 
   setAll!(plan, :weightingParams, ChannelWeightingParameters(channelWeights = [0.001,1.0,1.0]))
   c7c = reconstruct(build(plan), b)
-  exportImage(joinpath(imgdir, "Reconstruction7c.png"), arraydata(c7c[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "Reconstruction7c.png"), Array(c7c[1,:,:,1,1]))
   @test compareImg("Reconstruction7c.png")
   
 end

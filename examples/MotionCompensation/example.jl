@@ -61,7 +61,7 @@ c = reconstruction(bSF, bMeas, periodicMotionCorrection = true,
                               SNRThresh=2,minFreq=80e3,recChannels=[1,2,3]) #frequency selection
 
 figure(2)
-imshow( maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1] )
+imshow( maximum(Array(c[1,:,:,:,1]),dims=3)[:,:,1] )
 
 
 
@@ -79,7 +79,7 @@ cStatic = reconstructionMultiPatch(bSF, bStatic, bgCorrection=false,
                               λ=lambda, iterations=iterations)
 
 figure(3)
-imshow( maximum(arraydata(cStatic[1,:,:,:,1]),dims=3)[:,:,1] )
+imshow( maximum(Array(cStatic[1,:,:,:,1]),dims=3)[:,:,1] )
 
 
 

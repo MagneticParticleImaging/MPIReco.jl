@@ -27,7 +27,7 @@ using MPIReco
   c1 = reconstruct(build(plan), b)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values1
-  exportImage(joinpath(imgdir, "MultiPatch1.png"), arraydata(c1[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "MultiPatch1.png"), Array(c1[1,:,:,1,1]))
   @test compareImg("MultiPatch1.png")
 
  # TODO test description
@@ -36,7 +36,7 @@ using MPIReco
   setAll!(plan, :roundPatches, false)
   @test axisnames(c2) == names
   @test axisvalues(c2) == values1
-  exportImage(joinpath(imgdir, "MultiPatch2.png"), arraydata(c2[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "MultiPatch2.png"), Array(c2[1,:,:,1,1]))
   @test compareImg("MultiPatch2.png")
   
   # multi-patch reconstruction using multiple system matrices
@@ -46,7 +46,7 @@ using MPIReco
   c3 = reconstruct(build(plan), b)
   @test axisnames(c3) == names
   @test axisvalues(c3) == values2
-  exportImage(joinpath(imgdir, "MultiPatch3.png"), arraydata(c3[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "MultiPatch3.png"), Array(c3[1,:,:,1,1]))
   @test compareImg("MultiPatch3.png")
   
   # flexible multi-patch reconstruction
@@ -69,7 +69,7 @@ using MPIReco
   c4 = reconstruct(build(plan), b)
   @test axisnames(c4) == names
   @test axisvalues(c4) == values2
-  exportImage(joinpath(imgdir, "MultiPatch4.png"), arraydata(c4[1,:,:,1,1]))
+  exportImage(joinpath(imgdir, "MultiPatch4.png"), Array(c4[1,:,:,1,1]))
   @test compareImg("MultiPatch4.png")
   # TODO the last test shows odd results
   

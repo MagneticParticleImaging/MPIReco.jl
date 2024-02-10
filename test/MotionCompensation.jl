@@ -51,12 +51,12 @@ using MPIReco
   setAll!(plan, :λ, 0.0f0)
 
   c = reconstruct(build(plan), bMeas)
-  exportImage(joinpath(imgdir, "Motion1.png"), maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
+  exportImage(joinpath(imgdir, "Motion1.png"), maximum(Array(c[1,:,:,:,1]),dims=3)[:,:,1])
   @test compareImg("Motion1.png")
 
   setAll!(plan, :bgParams, SimpleExternalBackgroundCorrectionParameters(;emptyMeas = bBG, bgFrames = bgFrames))
   c = reconstruct(build(plan), bMeas)
-  exportImage(joinpath(imgdir, "Motion2.png"), maximum(arraydata(c[1,:,:,:,1]),dims=3)[:,:,1])
+  exportImage(joinpath(imgdir, "Motion2.png"), maximum(Array(c[1,:,:,:,1]),dims=3)[:,:,1])
   @test compareImg("Motion2.png")
 
 end
