@@ -160,7 +160,7 @@ function fillmissing(A::Array; method::Integer=1)
 	B = copy(A)
     # alternative IterativeSolvers.lsmr
 	# B[i_unknown] .= lsmr(Δ[iwork, i_unknown], rhs; maxiter=500)
-	B[lidx_unknown] .= solve(solver,convert.(Float64,rhs))
+	B[lidx_unknown] .= solve!(solver,convert.(Float64,rhs))
 
 	return B
 end

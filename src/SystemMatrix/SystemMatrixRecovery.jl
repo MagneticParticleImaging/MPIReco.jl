@@ -51,7 +51,7 @@ function smRecovery(y::Matrix{T}, samplingIdx::Array{Int64}, params::Dict) where
   sfMat = zeros(ComplexF64,prod(shape),size(y,2))
   @time Threads.@threads for k=1:size(y,2)
     t = Threads.threadid()
-    sfMat[:,k] .= solve(solver[t], y2[k])
+    sfMat[:,k] .= solve!(solver[t], y2[k])
     # undo normalization
     sfMat[:,k] *= y_norm[k]
   end

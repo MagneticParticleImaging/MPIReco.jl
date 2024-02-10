@@ -104,7 +104,7 @@ function reconstructionTempReg(Op::TemporalRegularizationOperator, u::Array;
   @info "SIZES" size(Op) size(u) size(reshape(u,:,1))
 
 
-  y = solve(solv, vec(u))
+  y = solve!(solv, vec(u))
   c = real.( reshape(y[1:(NSub*J),:],NSub,J) ./ sqrt(λ) ) 
 
   #if backgroundCoefficients != nothing

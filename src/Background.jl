@@ -190,7 +190,7 @@ function reconstruction(S, u::Array, bgDict::AbstractMatrix;
   isnothing(progress) ? p = Progress(L, dt=1, desc="Reconstructing data...") : p = progress
   for l=1:L
 
-    y = solve(solv, u[:,l])
+    y = solve!(solv, u[:,l])
     d = y[1:N,:] ./ sqrt(λ)
 
     if !isnothing(backgroundCoefficients)

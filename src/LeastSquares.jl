@@ -42,7 +42,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
   solv = createLinearSolver(params.solver, params.S; args..., weights = params.weights)
 
   for l=1:L
-    d = solve(solv, u[:, l])
+    d = solve!(solv, u[:, l])
     if !isnothing(params.op)
       d[:] = params.op*d
     end
@@ -102,7 +102,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
 
   function threadSolve(solver, frames)
     for frame in frames
-      d = solve(solver, u[:, frame])
+      d = solve!(solver, u[:, frame])
       if !isnothing(params.op)
         d[:] = params.op*d
       end
