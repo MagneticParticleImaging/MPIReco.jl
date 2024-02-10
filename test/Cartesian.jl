@@ -1,6 +1,6 @@
 using MPIReco
 
-@testset "sparse single- and multi-channel in-memory reconstruction" begin
+@testset "Cartesian reconstruction" begin
   fnSM = joinpath(datadir, "calibrations", "1.mdf")
   fnSMProc1 = joinpath(datadir, "calibrations", "1p1.mdf")
   bSF = MPIFile(fnSM)
