@@ -342,9 +342,9 @@ end
 Low level reconstruction method
 """
 function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = nothing,
-                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = Kaczmarz,
+                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver::Type{<:AbstractLinearSolver} = Kaczmarz,
                         weights=nothing, enforceReal=true, enforcePositive=true,
-                        relativeLambda=true, reg = nothing, kargs...)
+                        relativeLambda=true, reg::Vector{<:AbstractRegularization} = nothing, kargs...)
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
 
@@ -356,11 +356,24 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
   if (!isnothing(reg) || sum(abs.(λ)) > 0) && relativeLambda
     norm = SystemMatrixBasedNormalization()
   end
+  if !isnothing(reg) && sum(abs.(λ)) > 0
+    error("Lambda can not be set, if explicit regularization terms are given! Please give only one!")
+  end
+  reg = AbstractRegularization[L2Regularization(λ)]
   solverType = eval(Symbol(solver)) # this probably should happen much earlier
-
-  solv = createLinearSolver(solverType, S; weights=weights, λ=λ,
-                            sparseTrafo=sparseTrafo, enforceReal=enforceReal,
-			                      enforcePositive=enforcePositive, normalizeReg = norm, reg = reg, kargs...)
+  if enforcePositive && !enforceReal
+    @warn "enforcePositive also needs enforceReal. Overwriting setting for enforceReal!"
+    enforceReal = true
+  end
+  if enforceReal
+    append!(reg, RealRegularization())
+  end
+  if enforcePositive
+    append!(reg, PositiveRegularization())
+  end
+  
+  solv = createLinearSolver(solverType, S; weights=weights,
+                            sparseTrafo=sparseTrafo, normalizeReg = norm, reg = reg, kargs...)
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
   for l=1:L
 
