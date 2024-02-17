@@ -356,20 +356,26 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
   if (!isnothing(reg) || sum(abs.(λ)) > 0) && relativeLambda
     norm = SystemMatrixBasedNormalization()
   end
-  if !isnothing(reg) && sum(abs.(λ)) > 0
-    error("Lambda can not be set, if explicit regularization terms are given! Please give only one!")
-  end
-  reg = AbstractRegularization[L2Regularization(λ)]
   solverType = eval(Symbol(solver)) # this probably should happen much earlier
-  if enforcePositive && !enforceReal
-    @warn "enforcePositive also needs enforceReal. Overwriting setting for enforceReal!"
-    enforceReal = true
-  end
-  if enforceReal
-    append!(reg, RealRegularization())
-  end
-  if enforcePositive
-    append!(reg, PositiveRegularization())
+  if isnothing(reg)
+    reg = AbstractRegularization[L2Regularization(λ)]
+    if enforcePositive && !enforceReal
+      @warn "enforcePositive also needs enforceReal. Overwriting setting for enforceReal!"
+      enforceReal = true
+    end
+    if enforceReal
+      append!(reg, RealRegularization())
+    end
+    if enforcePositive
+      append!(reg, PositiveRegularization())
+    end
+  else
+    if sum(abs.(λ)) > 0
+      error("Only λ or an explicit regularization can be given at the same time!")
+    end
+    if ((RealRegularization() in reg) != enforceReal) || ((PositiveRegularization() in reg) != enforcePositive)
+      @warn "An explicit regularization has been given, overriding the behaviour of enforcePositive and enforceReal"
+    end
   end
   
   solv = createLinearSolver(solverType, S; weights=weights,
