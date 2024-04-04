@@ -241,10 +241,10 @@ alongside to your FOV-selection."
     end
     S = SInterp
     grid = target
-  elseif !ismissing(fov)
+  elseif !isnothing(fov)
     grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF))
   else
-    grid = RegularGridPositions(calibSize(bSF),ones(Float64, length(calibSize(bSF))),[0.0,0.0,0.0])
+    grid = RegularGridPositions(calibSize(bSF),ones(Float64, length(calibSize(bSF))),zeros(Float64, length(calibSize(bSF))))
   end
   
   if loadasreal
