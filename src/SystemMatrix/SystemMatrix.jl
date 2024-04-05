@@ -27,7 +27,7 @@ end
 SystemMatrixGriddingParameter(file::MPIFile) = SystemMatrixGriddingParameter(
   gridSize = calibSize(file),
   fov = calibFieldOfView(file),
-  center = calibFieldOfViewCenter
+  center = calibFieldOfViewCenter(file)
 )
 
 export defaultParameterGridSize, defaultParameterCalibCenter, defaultParameterCalibFov
