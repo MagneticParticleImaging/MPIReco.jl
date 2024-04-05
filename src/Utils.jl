@@ -65,7 +65,7 @@ function consistenceCheck(bSF::MPIFile, bMeas::MPIFile)
   hasTransSF = rxHasTransferFunction(bSF)
   hasTransMeas = rxHasTransferFunction(bMeas)
   if (hasTransSF == hasTransMeas) && (hasTransSF == true)
-    if (rxTransferFunctionFileName(bSF) == rxTransferFunctionFileName(bMeas))
+    if (rxTransferFunctionFileName(bSF) == rxTransferFunctionFileName(bMeas)) && !isnothing(rxTransferFunctionFileName(bSF))
       if (rxTransferFunction(bSF) != rxTransferFunction(bMeas))
         @warn("Transfer functions of system matrix and measurement have the same file name but the actual transfer function data is different!!!")
       end
