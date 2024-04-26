@@ -114,6 +114,7 @@ function getSF(bSF, frequencies, sparseTrafo, solver::AbstractString; kargs...)
   elseif solver == "direct"
     return getSF(bSF, frequencies, sparseTrafo, DirectSolver; kargs...)
   else
+    @warn "Unsupported solver $(solver) used in getSF"
     return getSF(bSF, frequencies, sparseTrafo; kargs...)
   end
 end
@@ -241,10 +242,10 @@ alongside to your FOV-selection."
     end
     S = SInterp
     grid = target
-  elseif !ismissing(fov)
+  elseif !isnothing(fov)
     grid = RegularGridPositions(calibSize(bSF),calibFov(bSF),calibFovCenter(bSF))
   else
-    grid = RegularGridPositions(calibSize(bSF),ones(Float64, length(calibSize(bSF))),[0.0,0.0,0.0])
+    grid = RegularGridPositions(calibSize(bSF),ones(Float64, length(calibSize(bSF))),zeros(Float64, length(calibSize(bSF))))
   end
   
   if loadasreal

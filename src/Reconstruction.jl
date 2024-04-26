@@ -344,7 +344,7 @@ Low level reconstruction method
 function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = nothing,
                         lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver::Type{<:AbstractLinearSolver} = Kaczmarz,
                         weights=nothing, enforceReal=true, enforcePositive=true,
-                        relativeLambda=true, reg::Vector{<:AbstractRegularization} = nothing, kargs...)
+                        relativeLambda=true, reg::Union{Vector{<:AbstractRegularization}, Nothing} = nothing, kargs...)
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
 
