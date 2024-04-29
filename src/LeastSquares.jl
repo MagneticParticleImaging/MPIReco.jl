@@ -3,13 +3,12 @@ export LeastSquaresParameters
 abstract type AbstractSolverParameters <: AbstractMPIRecoParameters end
 
 export LeastSquaresParameters
-Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters, W} <: AbstractMPIRecoParameters
+Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters} <: AbstractMPIRecoParameters
   solver::Type{L} = Kaczmarz
   op::O = nothing
   S::M
   reg::Vector{R} 
   solverParams::P
-  weights::W = nothing
 end
 
 # TODO place weights and more
@@ -35,11 +34,10 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
   u = reshape(u, M, L)
   c = zeros(N, L)
 
-  args = toKwargs(params.solverParams)
-  reg = prepareRegularization(params.reg, params)
+  reg, args = prepareRegularization(params.reg, params)
   args[:reg] = reg
-  args[:sparseTrafo] = params.op
-  solv = createLinearSolver(params.solver, params.S; args..., weights = params.weights)
+
+  solv = createLinearSolver(params.solver, params.S; args...)
 
   for l=1:L
     d = solve!(solv, u[:, l])
@@ -54,6 +52,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
 end
 
 function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) where R<:AbstractRegularization
+  args = toKwargs(regLS.solverParams)
   params = regLS.solverParams
 
   result = AbstractRegularization[]
@@ -66,11 +65,15 @@ function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) wh
     push!(result, RealRegularization())
   end
 
+  pop!(args, :enforceReal)
+  pop!(args, :enforcePositive)
+
   # Add sparsity op
   if !isnothing(regLS.op)
     result = map(r -> TransformedRegularization(r, regLS.op), result)
   end
-  return result
+
+  return result, args
 end
 #=
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters, threadInput::MultiThreadedInput)
