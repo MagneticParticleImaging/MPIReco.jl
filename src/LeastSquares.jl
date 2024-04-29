@@ -60,9 +60,15 @@ function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) wh
 
   # Add further constraints
   if params.enforceReal && params.enforcePositive
-    push!(result, PositiveRegularization())
+    if !any([item isa PositiveRegularization for item ∈ reg])
+      push!(result, PositiveRegularization())
+    end
+
+    filter!(x -> !(x isa RealRegularization), reg)
   elseif params.enforceReal
-    push!(result, RealRegularization())
+    if !any([item isa RealRegularization for item ∈ reg])
+      push!(result, RealRegularization())
+    end
   end
 
   pop!(args, :enforceReal)
