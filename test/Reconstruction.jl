@@ -110,4 +110,25 @@ using MPIReco
   exportImage(joinpath(imgdir, "Reconstruction7c.png"), Array(c7c[1,:,:,1,1]))
   @test compareImg("Reconstruction7c.png")
   
+
+  setAll!(plan, :weightingParams, ChannelWeightingParameters(channelWeights = [1.0, 0.0, 1.0]))
+  c7d = reconstruct(build(plan), b)
+  setAll!(plan, :weightingParams, NoWeightingParameters())
+  setAll!(plan, :recChannels, 1:1)
+  c7e = reconstruct(build(plan), b)
+  setAll!(plan, :recChannels, 1:2)
+  @test isapprox(arraydata(c7d), arraydata(c7e))
+
+  setAll!(plan, :weightingParams, ChannelWeightingParameters(channelWeights = [0.0, 1.0, 1.0]))
+  c7f = reconstruct(build(plan), b)
+  setAll!(plan, :weightingParams, NoWeightingParameters())
+  setAll!(plan, :recChannels, 2:2)
+  c7g = reconstruct(build(plan), b)
+  setAll!(plan, :recChannels, 1:2)
+  @test isapprox(arraydata(c7f), arraydata(c7g))
+
+  setAll!(plan, :weightingParams, WhiteningWeightingParameters(whiteningMeas = bSF))
+  c8 = reconstruct(build(plan), b)
+  exportImage(joinpath(imgdir, "Reconstruction8.png"), Array(c8[1,:,:,1,1]))
+  @test compareImg("Reconstruction8.png")
 end
