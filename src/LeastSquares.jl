@@ -38,7 +38,15 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
   reg, args = prepareRegularization(params.reg, params)
   args[:reg] = reg
 
-  solv = createLinearSolver(params.solver, params.S; args..., weights = params.weights)
+  S = params.S
+  if !isnothing(params.weights)
+    S = ProdOp(WeightingOp(params.weights), S)
+    for l = 1:L
+      u[:, l] = params.weights.*u[:, l]
+    end
+  end
+
+  solv = createLinearSolver(params.solver, S; args...)
 
   for l=1:L
     d = solve!(solv, u[:, l])
