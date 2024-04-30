@@ -11,8 +11,19 @@ export ChannelWeightingParameters
 Base.@kwdef struct ChannelWeightingParameters <: AbstractWeightingParameters
   channelWeights::Vector{Float64} = [1.0, 1.0, 1.0]
 end
-process(::Type{<:AbstractMPIRecoAlgorithm}, params::ChannelWeightingParameters, data::Vector{CartesianIndex{2}}) = map(x-> params.channelWeights[x[2]], data)
+process(::Type{<:AbstractMPIRecoAlgorithm}, params::ChannelWeightingParameters, freqs::Vector{CartesianIndex{2}}) = map(x-> params.channelWeights[x[2]], freqs)
 
+export WhiteningWeightingParameters
+Base.@kwdef struct WhiteningWeightingParameters <: AbstractWeightingParameters
+  whiteningMeas::MPIFile
+  tfCorrection::Bool = false
+end
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::WhiteningWeightingParameters, freqs::Vector{CartesianIndex{2}})
+  u_bg = getMeasurementsFD(params.whiteningMeas, false, frequencies=freqs, frames=measBGFrameIdx(params.whiteningMeas), bgCorrection = false, tfCorrection=false)
+  bg_std = std(u_bg, dims=3)
+  weights = minimum(abs.(vec(bg_std))) ./ abs.(vec(bg_std))
+  return weights
+end
 #=
 baremodule WeightingType
   None = 0
