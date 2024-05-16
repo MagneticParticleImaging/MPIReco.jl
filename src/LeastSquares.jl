@@ -35,11 +35,18 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
   u = reshape(u, M, L)
   c = zeros(N, L)
 
-  args = toKwargs(params.solverParams)
-  reg = prepareRegularization(params.reg, params)
+  reg, args = prepareRegularization(params.reg, params)
   args[:reg] = reg
-  args[:sparseTrafo] = params.op
-  solv = createLinearSolver(params.solver, params.S; args..., weights = params.weights)
+
+  S = params.S
+  if !isnothing(params.weights)
+    S = ProdOp(WeightingOp(params.weights), S)
+    for l = 1:L
+      u[:, l] = params.weights.*u[:, l]
+    end
+  end
+
+  solv = createLinearSolver(params.solver, S; args...)
 
   for l=1:L
     d = solve!(solv, u[:, l])
@@ -54,6 +61,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
 end
 
 function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) where R<:AbstractRegularization
+  args = toKwargs(regLS.solverParams)
   params = regLS.solverParams
 
   result = AbstractRegularization[]
@@ -61,16 +69,26 @@ function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) wh
 
   # Add further constraints
   if params.enforceReal && params.enforcePositive
-    push!(result, PositiveRegularization())
+    if !any([item isa PositiveRegularization for item ∈ reg])
+      push!(result, PositiveRegularization())
+    end
+
+    filter!(x -> !(x isa RealRegularization), reg)
   elseif params.enforceReal
-    push!(result, RealRegularization())
+    if !any([item isa RealRegularization for item ∈ reg])
+      push!(result, RealRegularization())
+    end
   end
+
+  pop!(args, :enforceReal)
+  pop!(args, :enforcePositive)
 
   # Add sparsity op
   if !isnothing(regLS.op)
     result = map(r -> TransformedRegularization(r, regLS.op), result)
   end
-  return result
+
+  return result, args
 end
 #=
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters, threadInput::MultiThreadedInput)

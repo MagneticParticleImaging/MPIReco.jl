@@ -79,7 +79,7 @@ abstract type AbstractMultiPatchOperatorParameter <: AbstractMPIRecoParameters e
 # MultiPatchOperator is a type that acts as the MPI system matrix but exploits
 # its sparse structure.
 # Its very important to keep this type typestable
-mutable struct MultiPatchOperator{V<:AbstractMatrix, U<:Positions}
+mutable struct MultiPatchOperator{T, V <: AbstractMatrix{T}, U<:Positions}
   S::Vector{V}
   grid::U
   N::Int
@@ -294,7 +294,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
   # now that we have all grids we can calculate the indices within the recoGrid
   xcc, xss = calculateLUT(grids, recoGrid)
 
-  return MultiPatchOperator(S, recoGrid, length(recoGrid), M*numPatches,
+  return MultiPatchOperator{eltype(first(S)), reduce(promote_type, typeof.(S)), typeof(recoGrid)}(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
@@ -411,7 +411,7 @@ function MultiPatchOperatorRegular(SFs::MultiMPIFile, freq; bgCorrection::Bool,
 
   sign = ones(Int, M, numPatches)
 
-  return MultiPatchOperator(S, recoGrid, length(recoGrid), M*numPatches,
+  return MultiPatchOperator{eltype(first(S)), reduce(promote_type, typeof.(S)), typeof(recoGrid)}(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
@@ -509,8 +509,8 @@ function kaczmarz_update_!(A,x,beta,xs,xc,j,sign)
   end
 end
 
-function initkaczmarz(Op::MultiPatchOperator,λ,weights::Vector)
-  T = typeof(real(Op.S[1][1]))
+# TODO implement for ProdOp{WeightingOp, MultiPatchOperator}
+function initkaczmarz(Op::MultiPatchOperator{T},λ) where T
   denom = T[] #zeros(T,Op.M)
   rowindex = Int64[] #zeros(Int64,Op.M)
 
@@ -518,11 +518,11 @@ function initkaczmarz(Op::MultiPatchOperator,λ,weights::Vector)
 
   if length(Op.S) == 1
     for i=1:MSub
-      s² = rownorm²(Op.S[1],i)*weights[i]^2
+      s² = rownorm²(Op.S[1],i)#*weights[i]^2
       if s²>0
         for l=1:Op.nPatches
           k = i+MSub*(l-1)
-          push!(denom,weights[i]^2/(s²+λ)) #denom[k] = weights[i]^2/(s²+λ)
+          push!(denom,1/(s²+λ)) #denom[k] = weights[i]^2/(s²+λ)
           push!(rowindex,k) #rowindex[k] = k
         end
       end
@@ -530,17 +530,17 @@ function initkaczmarz(Op::MultiPatchOperator,λ,weights::Vector)
   else
     for l=1:Op.nPatches
       for i=1:MSub
-        s² = rownorm²(Op.S[Op.patchToSMIdx[l]],i)*weights[i]^2
+        s² = rownorm²(Op.S[Op.patchToSMIdx[l]],i)#*weights[i]^2
         if s²>0
           k = i+MSub*(l-1)
-          push!(denom,weights[i]^2/(s²+λ)) #denom[k] = weights[i]^2/(s²+λ)
+          push!(denom,1/(s²+λ)) #denom[k] = weights[i]^2/(s²+λ)
           push!(rowindex,k) #rowindex[k] = k
         end
       end
     end
   end
 
-  denom, rowindex
+  Op, denom, rowindex
 end
 
 
