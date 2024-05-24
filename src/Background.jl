@@ -6,6 +6,7 @@ struct NoBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParame
 export InternalBackgroundCorrectionParameters
 Base.@kwdef struct InternalBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters
   interpolateBG::Bool = false
+  bgFrames::Union{Nothing, Vector{Int64}, UnitRange{Int64}} = nothing
 end
 
 export ExternalBackgroundCorrection
