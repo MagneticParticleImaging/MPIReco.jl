@@ -125,9 +125,8 @@ end
 
 prepareSF(solver::Type{Kaczmarz}, SF, grid) = transpose(SF), grid
 prepareSF(solver::Type{PseudoInverse}, SF, grid) = SVD(svd(transpose(SF))...), grid
-prepareSF(solver::Union{Type{CGNR}}, SF, grid) = copy(transpose(SF)), grid
+prepareSF(solver::Union{Type{<:RegularizedLeastSquares.AbstractLinearSolver}}, SF, grid) = copy(transpose(SF)), grid
 prepareSF(solver::Type{DirectSolver}, SF, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
-prepareSF(solver::Type{<:RegularizedLeastSquares.AbstractLinearSolver}, SF, grid) = SF, grid
 
 function getSF(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Nothing; kargs...) where {T<:MPIFile}
   return getSF(bSF, frequencies; kargs...)
