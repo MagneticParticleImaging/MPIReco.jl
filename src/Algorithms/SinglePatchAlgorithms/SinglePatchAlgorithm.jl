@@ -44,6 +44,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::Union{A, Proc
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
     result = map(eltype(algo.S),result)
   end
+  result = copyto!(similar(algo.S, size(result)...), result)
   return result
 end
 

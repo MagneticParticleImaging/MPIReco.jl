@@ -51,7 +51,7 @@ Base.propertynames(params::RecoPlan{ElaborateSolverParameters}) = union([:solver
 
 getSolverKwargs(::Type{SL}) where SL <: AbstractLinearSolver = intersect(union(Base.kwarg_decl.(methods(SL))...), fieldnames(ElaborateSolverParameters))
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{SL}, u::Array) where SL
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{SL}, u::AbstractArray) where SL
 
   N = size(params.S, 2)
   M = div(length(params.S), N)
@@ -79,7 +79,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
     if !isnothing(params.op)
       d[:] = params.op*d
     end
-    c[:, l] = real(d)
+    c[:, l] = Array(real(d))
   end
 
   return c
