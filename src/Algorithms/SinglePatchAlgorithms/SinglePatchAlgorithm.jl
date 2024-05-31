@@ -1,10 +1,9 @@
-Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver,
-   SP<:AbstractSolverParameters, R<:AbstractRegularization, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
+Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter, SL<:AbstractLinearSolver,
+   SP<:AbstractSolverParameters{SL}, R<:AbstractRegularization, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sfLoad::Union{L, ProcessResultCache{L}}
   # Solver
-  solver::Type{S}
   solverParams::SP
   reg::Vector{R} = AbstractRegularization[]
   weightingParams::W = NoWeightingParameters()
@@ -54,7 +53,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchRe
 
   B = getLinearOperator(algo, params)
 
-  solver = LeastSquaresParameters(solver = params.solver, op = B, S = algo.S, reg = params.reg, solverParams = params.solverParams, weights = weights)
+  solver = LeastSquaresParameters(op = B, S = algo.S, reg = params.reg, solverParams = params.solverParams, weights = weights)
 
   result = process(algo, solver, u)
 

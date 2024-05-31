@@ -115,7 +115,7 @@ function process(::Type{<:MultiPatchReconstructionAlgorithm}, params::ExternalPr
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::MultiPatchReconstructionParameter, u::Array)
-  solver = LeastSquaresParameters(solver = Kaczmarz, S = algo.ffOp, reg = [L2Regularization(params.λ)], solverParams = params.solverParams)
+  solver = LeastSquaresParameters(S = algo.ffOp, reg = [L2Regularization(params.λ)], solverParams = params.solverParams)
 
   result = process(algo, solver, u)
 

@@ -154,7 +154,7 @@ function fillmissing(A::Array; method::Integer=1)
 
 	# build solver
 	reg = L1Regularization(0.01; shape=(length(lidx_work),length(lidx_unknown))) # shape not necessary here
-	solver = createLinearSolver(ADMM,Δ[lidx_work, lidx_unknown];reg=reg, ρ=0.1, iterations=5)
+	solver = createLinearSolver(ADMM,Δ[lidx_work, lidx_unknown];reg=reg, rho=0.1, iterations=5)
 		
 	# Solving
 	B = copy(A)

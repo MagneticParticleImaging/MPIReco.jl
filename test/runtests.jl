@@ -37,9 +37,10 @@ end
 @testset "MPIReco" begin
   #include("LoadSaveMDF.jl")
   include("Reconstruction.jl") # FussedLasso causes segfault atm
+  include("Solvers.jl")
   include("Cartesian.jl")
   if !Sys.iswindows()
-    include("MotionCompensation.jl")
+   include("MotionCompensation.jl")
   end
   include("MultiPatch.jl")
   include("MultiGradient.jl")
