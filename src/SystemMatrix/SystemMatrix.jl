@@ -128,6 +128,10 @@ prepareSF(solver::Type{PseudoInverse}, SF, grid) = SVD(svd(transpose(SF))...), g
 prepareSF(solver::Union{Type{<:RegularizedLeastSquares.AbstractLinearSolver}}, SF, grid) = copy(transpose(SF)), grid
 prepareSF(solver::Type{DirectSolver}, SF, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
 
+prepareNormalSF(solver::AbstractLinearSolver, SF) = prepareNormalSF(typeof(solver), SF)
+prepareNormalSF(solver::Type{<:RegularizedLeastSquares.AbstractLinearSolver}, SF) = nothing
+prepareNormalSF(solver::Union{Type{FISTA}, Type{OptISTA}, Type{POGM}, Type{CGNR}, Type{ADMM}, Type{SplitBregman}}, SF) = LinearOperatorCollection.normalOperator(SF)
+
 function getSF(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Nothing; kargs...) where {T<:MPIFile}
   return getSF(bSF, frequencies; kargs...)
 end
