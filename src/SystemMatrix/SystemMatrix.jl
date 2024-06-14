@@ -114,6 +114,7 @@ function getSF(bSF, frequencies, sparseTrafo, solver::AbstractString; kargs...)
   elseif solver == "direct"
     return getSF(bSF, frequencies, sparseTrafo, DirectSolver; kargs...)
   else
+    @warn "Unsupported solver $(solver) used in getSF"
     return getSF(bSF, frequencies, sparseTrafo; kargs...)
   end
 end
