@@ -50,10 +50,12 @@ end
 generateHeaderDict(bSF::MPIFile, b::Vector) = generateHeaderDict(bSF,b[1])
 
 function consistenceCheck(bSF::MPIFile, bMeas::MPIFile)
-  gSF = acqGradient(bSF)[:,:,1,1]
-  gMeas = acqGradient(bMeas)[:,:,1,1]
-  if gSF != gMeas
-    @warn("The gradient strength of the system matrix ($gSF T/m) does not fit to the measurements ($gMeas T/m)!")
+  if !(isnothing(acqGradient(bSF)) || isnothing(acqGradient(bMeas))) # /acquisition/gradient is optional
+    gSF = acqGradient(bSF)[:,:,1,1]
+    gMeas = acqGradient(bMeas)[:,:,1,1]
+    if gSF != gMeas
+      @warn("The gradient strength of the system matrix ($gSF T/m) does not fit to the measurements ($gMeas T/m)!")
+    end
   end
 
   dfSF = dfStrength(bSF)

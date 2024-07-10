@@ -1,10 +1,9 @@
 export LeastSquaresParameters
 # TODO this could be moved to AbstractImageReconstruction, depends on how MRIReco.jl structures its data arrays
-abstract type AbstractSolverParameters <: AbstractMPIRecoParameters end
+abstract type AbstractSolverParameters{AbstractLinearSolver} <: AbstractMPIRecoParameters end
 
 export LeastSquaresParameters
-Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters, W} <: AbstractMPIRecoParameters
-  solver::Type{L} = Kaczmarz
+Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters{L}, W} <: AbstractMPIRecoParameters
   op::O = nothing
   S::M
   reg::Vector{R} 
@@ -15,19 +14,44 @@ end
 # TODO place weights and more
 
 export SimpleSolverParameters
-Base.@kwdef struct SimpleSolverParameters <: AbstractSolverParameters
+Base.@kwdef struct SimpleSolverParameters <: AbstractSolverParameters{Kaczmarz}
   iterations::Int64=10
   enforceReal::Bool=true
   enforcePositive::Bool=true
   normalizeReg::AbstractRegularizationNormalization = SystemMatrixBasedNormalization()
 end
 export ConstraintMaskedSolverParameters
-Base.@kwdef struct ConstraintMaskedSolverParameters{P<:AbstractSolverParameters} <: AbstractSolverParameters
+Base.@kwdef struct ConstraintMaskedSolverParameters{S, P<:AbstractSolverParameters{S}} <: AbstractSolverParameters{S}
   constraintMask::Vector{Bool}
   params::P
 end
+export ElaborateSolverParameters
+Base.@kwdef mutable struct ElaborateSolverParameters{SL} <: AbstractSolverParameters{SL}
+  solver::Type{SL}
+  iterations::Int64=10
+  enforceReal::Bool=true
+  enforcePositive::Bool=true
+  # Union of all kwargs
+  normalizeReg::AbstractRegularizationNormalization = SystemMatrixBasedNormalization()
+  randomized::Union{Nothing, Bool} = false
+  shuffleRows::Union{Nothing, Bool} = false
+  rho::Union{Nothing, Float64} = nothing
+  normalize_rho::Union{Nothing, Bool} = nothing
+  theta::Union{Nothing, Float64} = nothing
+  restart::Union{Nothing, Symbol} = nothing
+  regTrafo::Union{Nothing, Vector{Union{AbstractArray, AbstractLinearOperator}}} = nothing
+  relTol::Union{Nothing, Float64} = nothing
+  absTol::Union{Nothing, Float64} = nothing
+  tolInner::Union{Nothing, Float64} = nothing
+  iterationsCG::Union{Nothing, Int64} = nothing
+  iterationsInner::Union{Nothing, Int64} = nothing
+end
+Base.propertynames(params::ElaborateSolverParameters{SL}) where SL = union([:solver, :iterations, :enforceReal, :enforcePositive], getSolverKwargs(SL))
+Base.propertynames(params::RecoPlan{ElaborateSolverParameters}) = union([:solver, :iterations, :enforceReal, :enforcePositive], ismissing(params.solver) ? getSolverKwargs(Kaczmarz) : getSolverKwargs(params.solver))
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters, u::Array)
+getSolverKwargs(::Type{SL}) where SL <: AbstractLinearSolver = intersect(union(Base.kwarg_decl.(methods(SL))...), fieldnames(ElaborateSolverParameters))
+
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{SL}, u::Array) where SL
 
   N = size(params.S, 2)
   M = div(length(params.S), N)
@@ -45,8 +69,10 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
       u[:, l] = params.weights.*u[:, l]
     end
   end
+  SHS = prepareNormalSF(SL, S)
+  args[:AHA] = SHS
 
-  solv = createLinearSolver(params.solver, S; args...)
+  solv = createLinearSolver(SL, S; filter(entry -> !isnothing(entry.second), args)...)
 
   for l=1:L
     d = solve!(solv, u[:, l])
@@ -61,8 +87,11 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
 end
 
 function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) where R<:AbstractRegularization
-  args = toKwargs(regLS.solverParams)
   params = regLS.solverParams
+  args = toKwargs(params)
+  if haskey(args, :solver)
+    pop!(args, :solver)
+  end
 
   result = AbstractRegularization[]
   push!(result, reg...)

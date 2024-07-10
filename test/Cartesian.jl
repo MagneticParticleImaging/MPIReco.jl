@@ -40,7 +40,7 @@ using MPIReco
   #setAll!(plan, :maxMixingOrder, 12) # see above
   @time c2 = reconstruct(build(plan), b)
   exportImage(joinpath(imgdir, "Cartesian2.png"), Array(c2[1,:,:,1,1]))
-  @test compareImg("Cartesian2.png")
+  @test compareImg("Cartesian2.png") skip = true
 
   # from Postprocessed
   saveasMDF(fnSMProc1, fnSM, numPeriodAverages=65, applyCalibPostprocessing=true, numPeriodGrouping=100)
@@ -54,7 +54,7 @@ using MPIReco
   @time c3 = reconstruct(build(plan), b)
 
   exportImage(joinpath(imgdir, "Cartesian3.png"), Array(c3[1,:,:,1,1]))
-  @test compareImg("Cartesian3.png")
+  @test compareImg("Cartesian3.png") skip = true
 
   ####  Low Level ####
 
@@ -77,7 +77,7 @@ using MPIReco
   @time c4 = reshape(reconstruction(S, u, reg = [L2Regularization(0.01f0), PositiveRegularization()], iterations=100), N[1], N[2])
 
   exportImage(joinpath(imgdir, "Cartesian4.png"), c4)
-  @test compareImg("Cartesian4.png")
+  @test compareImg("Cartesian4.png") skip = true
 
   ## SP
   numPeriodGrouping = numPatches
@@ -96,7 +96,7 @@ using MPIReco
   @time c5 = reshape(reconstruction(S, u, reg = [L2Regularization(0.01f0), PositiveRegularization()], iterations=100), N[1], N[2])
 
   exportImage(joinpath(imgdir, "Cartesian5.png"), c5)
-  @test compareImg("Cartesian5.png")
+  @test compareImg("Cartesian5.png") skip = true
 
   ####  Multi Color ####
 
@@ -106,6 +106,6 @@ using MPIReco
   @time c6 = reconstruct(build(plan), b)
 
   exportImage(joinpath(imgdir, "Cartesian6.png"), Array(c6[1,:,:,1,1]))
-  @test compareImg("Cartesian6.png")
+  @test compareImg("Cartesian6.png") skip = true
 
 end

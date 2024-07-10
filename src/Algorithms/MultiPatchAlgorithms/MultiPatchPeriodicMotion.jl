@@ -78,7 +78,7 @@ function process(algo::MultiPatchReconstructionAlgorithm,
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::PeriodicMotionReconstructionParameter, u::Array)
-  solver = LeastSquaresParameters(solver = Kaczmarz, S = algo.ffOp, reg = [L2Regularization(params.λ)], solverParams = params.solverParams)
+  solver = LeastSquaresParameters(S = algo.ffOp, reg = [L2Regularization(params.λ)], solverParams = params.solverParams)
 
   result = process(algo, solver, u)
 
