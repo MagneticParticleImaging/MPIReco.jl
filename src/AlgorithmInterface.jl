@@ -42,8 +42,25 @@ struct MixedAlgorithm <: ReconstructionAlgorithmType end
 # TODO recoAlgorithmType
 # TODO undefined for certain "Algorithm" components
 #recoAlgorithmTypes(::Type{ConcreteRecoAlgorithm}) = SystemMatrixBasedAlgorithm()
-export plandir
+export planpath, plandir
 plandir() = abspath(homedir(), ".mpi", "RecoPlans")
+
+function planpath(name::AbstractString)
+  for dir in [joinpath(@__DIR__, "..", "config"),plandir()]
+    filename = joinpath(dir, string(name, ".toml"))
+    if isfile(filename)
+      return filename
+    end
+  end
+  throw(ArgumentError("Could not find a suitable MPI reconstruction plan with name $name.\nCustom plans can be stored in $(plandir())."))
+end
+
+export reconstruct
+function reconstruct(name::AbstractString, data::MPIFile; kwargs...) 
+  plan = loadPlan(MPIReco, name, [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares])
+  setAll!(plan; kwargs...)
+  return reconstruct(build(plan), data)
+end
 
 # Check if contains
 isSystemMatrixBased(::T) where T <: AbstractImageReconstructionAlgorithm = recoAlgorithmTypes(T) isa SystemMatrixBasedAlgorithm
