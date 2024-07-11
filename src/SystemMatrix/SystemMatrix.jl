@@ -92,6 +92,9 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrix
   S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params)...)
   return S, grid
 end
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, elType::Type{<:Number}, shape::NTuple{N, Int64}) where N
+  return createLinearOperator(params.sparseTrafo, elType; shape)
+end
 
 function converttoreal(S::AbstractArray{Complex{T}},f) where T
   N = prod(calibSize(f))
