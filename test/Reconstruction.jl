@@ -1,5 +1,3 @@
-using MPIReco
-
 @testset "single- and multi-channel in-memory reconstruction" begin
   bSF = MPIFile(joinpath(datadir, "calibrations", "12.mdf"))
   b = MPIFile(joinpath(datadir, "measurements", "20211226_203916_MultiPatch", "1.mdf"))
