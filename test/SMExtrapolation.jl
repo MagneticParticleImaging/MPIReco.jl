@@ -17,30 +17,28 @@ using MPIReco
     @test prod(SMsizeExtr) == size(SMextr2,1)
     
     b = MPIFile(joinpath(datadir, "measurements", "20211226_203916_MultiPatch", "1.mdf"))
-    plan = getPlan("Single")
-    setAll!(plan, :SNRThresh, 5)
-    setAll!(plan, :frames, 1:1)
-    setAll!(plan, :minFreq, 80e3),
-    setAll!(plan, :recChannels, 1:2)
-    setAll!(plan, :iterations, 1)
-    setAll!(plan, :spectralLeakageCorrection, true)
-    setAll!(plan, :sf, bSF)
-    setAll!(plan, :reg, [L2Regularization(0.0f0)])
-    setAll!(plan, :solver, Kaczmarz)
-    setAll!(plan, :gridsize, calibSize(bSF))
-    setAll!(plan, :fov, calibFov(bSF))  
-    c1 = reconstruct(build(plan), b)
+    params = Dict{Symbol, Any}()
+    params[:SNRThresh] = 5
+    params[:frames] = 1:1
+    params[:minFreq] = 80e3
+    params[:recChannels] = 1:2
+    params[:iterations] = 1
+    params[:spectralLeakageCorrection] = true
+    params[:sf] = bSF
+    params[:reg] = [L2Regularization(0.0f0)]
+    params[:solver] = Kaczmarz
+    c1 = reconstruct("SinglePatch", b; params...)
 
-    setAll!(plan, :gridsize, [36,36,1])
-    setAll!(plan, :fov, calibFov(bSF).+[0.006,0.006,0])  
-    c_extr = reconstruct(build(plan), b)
+    params[:gridsize] = [36,36,1]
+    params[:fov] = calibFov(bSF).+[0.006,0.006,0]
+    c_extr = reconstruct("SinglePatch", b; params...)
     @test size(c1[1,:,:,:,1]) .+ (4,4,0) == size(c_extr[1,:,:,:,1])
     exportImage(joinpath(imgdir, "Extrapolated1.png"), Array(c_extr[1,:,:,1,1]))
     @test compareImg("Extrapolated1.png")
 
-    setAll!(plan, :gridsize, calibSize(bSF))
-    setAll!(plan, :fov, calibFov(bSF).+[0.006,0.006,0])  
-    c_extr2 = reconstruct(build(plan), b)
+    params[:gridsize] = calibSize(bSF)
+    params[:fov] = calibFov(bSF).+[0.006,0.006,0]
+    c_extr2 = reconstruct("SinglePatch", b; params...)
     @test size(c1[1,:,:,:,1]) == size(c_extr2[1,:,:,:,1])
     exportImage(joinpath(imgdir, "Extrapolated2.png"), Array(c_extr2[1,:,:,1,1]))
     @test compareImg("Extrapolated2.png")
@@ -50,27 +48,27 @@ using MPIReco
     bdirs = ["1.mdf", "2.mdf", "3.mdf", "4.mdf"]
     b = MultiMPIFile(joinpath.(datadir, "measurements", "20211226_203916_MultiPatch", bdirs))
 
-    plan = getPlan("MultiPatch")
-    setAll!(plan, :SNRThresh, 5)
-    setAll!(plan, :frames, 1:1)
-    setAll!(plan, :minFreq, 80e3)
-    setAll!(plan, :recChannels, 1:2)
-    setAll!(plan, :iterations, 1)
-    setAll!(plan, :spectralLeakageCorrection, false)
-    setAll!(plan, :sf, bSFs)
-    setAll!(plan, :λ, 0)
-    setAll!(plan, :tfCorrection, false)  
-    c2 = reconstruct(build(plan), b)
+    params = Dict{Symbol, Any}()
+    params[:SNRThresh] = 5
+    params[:frames] = 1:1
+    params[:minFreq] = 80e3
+    params[:recChannels] = 1:2
+    params[:iterations] = 1
+    params[:spectralLeakageCorrection] = false
+    params[:sf] = bSFs
+    params[:λ] = 0
+    params[:tfCorrection] = false
+    c2 = reconstruct("MultiPatch", b; params...)
 
 
     calibsize=hcat((calibSize.(bSFs)...)).+[6, 6, 0]*ones(Int,4)'
     fov=hcat((calibFov.(bSFs)...)).+[0.006,0.006,0]*ones(Int,4)'         
-    setAll!(plan, :opParams, RecoPlan(ExplicitMultiPatchParameter))
-    setAll!(plan, :tfCorrection, false)
-    setAll!(plan, :gridsize, calibsize)
-    setAll!(plan, :fov, fov)
-    setAll!(plan, :mapping, 1:4)
-    c_extr3 = reconstruct(build(plan), b)                 
+    params[:opParams] = RecoPlan(ExplicitMultiPatchParameter)
+    params[:tfCorrection] = false
+    params[:gridsize] = calibsize
+    params[:fov] = fov
+    params[:mapping] = 1:4
+    c_extr3 = reconstruct("MultiPatch", b; params...)                 
     @test size(c2[1,:,:,:,1]) .+ (6,6,0) == size(c_extr3[1,:,:,:,1])               
     exportImage(joinpath(imgdir, "ExtrapolatedMultiPatch1.png"), Array(c_extr3[1,:,:,1,1]))
     @test compareImg("ExtrapolatedMultiPatch1.png")

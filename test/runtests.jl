@@ -26,8 +26,6 @@ function compareSSIM(expected, given; limit::Float64=SSIM_LIMIT, kwargs...)
   return ssim >= limit
 end
 
-getPlan(plan::String) = loadPlan(joinpath("recoPlans", "$(plan).toml"), [MPIReco, RegularizedLeastSquares, MPIFiles])
-
 function exportImage(filename, I::AbstractMatrix)
   Iabs = abs.(I)
   Icolored = colorview(Gray, Iabs./maximum(Iabs))
