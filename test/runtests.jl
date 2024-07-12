@@ -1,5 +1,6 @@
 using MPIReco
 using AbstractImageReconstruction
+using JLArrays
 using Test
 using Scratch
 using ImageMagick
