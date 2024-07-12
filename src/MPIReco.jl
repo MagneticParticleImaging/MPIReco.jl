@@ -16,10 +16,10 @@ module MPIReco
   using DistributedArrays
   # using TensorDecompositions
   using IniFile
-  import LinearAlgebra: ldiv!, \
+  import LinearAlgebra: ldiv!, \, mul!
   # TODO sort out import for Base and AbstractImageReconstruction to avoid boiler plate
   import Base: put!, take!
-  import AbstractImageReconstruction: process, parameter
+  import AbstractImageReconstruction: process, parameter, reconstruct
   using FFTW
   using LinearOperatorCollection
 

@@ -14,26 +14,26 @@ using MPIReco
 	     -19.375u"mm":1.25u"mm":19.375u"mm", values1[4:5]...)
 
   # basic multi-patch reconstruction
-  plan = getPlan("MultiPatch")
-  setAll!(plan, :SNRThresh, 5)
-  setAll!(plan, :frames, [1])
-  setAll!(plan, :minFreq, 80e3)
-  setAll!(plan, :recChannels, 1:2)
-  setAll!(plan, :iterations, 1)
-  setAll!(plan, :spectralLeakageCorrection, false)
-  setAll!(plan, :sf, bSF)
-  setAll!(plan, :λ, 0)
-  setAll!(plan, :tfCorrection, false)
-  c1 = reconstruct(build(plan), b)
+  params = Dict{Symbol, Any}()
+  params[:SNRThresh] = 5
+  params[:frames] = [1]
+  params[:minFreq] = 80e3
+  params[:recChannels] = 1:2
+  params[:iterations] = 1
+  params[:spectralLeakageCorrection] = false
+  params[:sf] = bSF
+  params[:λ] = 0
+  params[:tfCorrection] = false
+  c1 = reconstruct("MultiPatch", b; params...)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values1
   exportImage(joinpath(imgdir, "MultiPatch1.png"), Array(c1[1,:,:,1,1]))
   @test compareImg("MultiPatch1.png")
 
  # TODO test description
-  setAll!(plan, :roundPatches, true)
-  c2 = reconstruct(build(plan), b)
-  setAll!(plan, :roundPatches, false)
+  params[:roundPatches] = true
+  c2 = reconstruct("MultiPatch", b; params...)
+  params[:roundPatches] = false
   @test axisnames(c2) == names
   @test axisvalues(c2) == values1
   exportImage(joinpath(imgdir, "MultiPatch2.png"), Array(c2[1,:,:,1,1]))
@@ -42,8 +42,8 @@ using MPIReco
   # multi-patch reconstruction using multiple system matrices
   dirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]
   bSFs = MultiMPIFile(joinpath.(datadir, "calibrations", dirs))
-  setAll!(plan, :sf, bSFs)
-  c3 = reconstruct(build(plan), b)
+  params[:sf] = bSFs
+  c3 = reconstruct("MultiPatch", b; params...)
   @test axisnames(c3) == names
   @test axisvalues(c3) == values2
   exportImage(joinpath(imgdir, "MultiPatch3.png"), Array(c3[1,:,:,1,1]))
@@ -57,16 +57,16 @@ using MPIReco
   S = [getSF(SF,freq,nothing,Kaczmarz, bgcorrection=false)[1] for SF in bSFs]
   SFGridCenter = zeros(3,4)
   opParams = ExplicitMultiPatchParameter(;tfCorrection = false, systemMatrices = S, SFGridCenter = SFGridCenter, mapping = mapping)
-  setAll!(plan, :opParams, opParams)
+  params[:opParams] = opParams
   FFPos = zeros(3,4)
   FFPos[:,1] = [-0.008, 0.008, 0.0]
   FFPos[:,2] = [-0.008, -0.008, 0.0]
   FFPos[:,3] = [0.008, 0.008, 0.0]
   FFPos[:,4] = [0.008, -0.008, 0.0]
   ffPos = CustomFocusFieldPositions(FFPos)
-  setAll!(plan, :ffPos, ffPos)
-  setAll!(plan, :ffPosSF, ffPos)
-  c4 = reconstruct(build(plan), b)
+  params[:ffPos] = ffPos
+  params[:ffPosSF] = ffPos
+  c4 = reconstruct("MultiPatch", b; params...)
   @test axisnames(c4) == names
   @test axisvalues(c4) == values2
   exportImage(joinpath(imgdir, "MultiPatch4.png"), Array(c4[1,:,:,1,1]))

@@ -52,11 +52,12 @@ export AbstractSystemMatrixLoadingParameter
 abstract type AbstractSystemMatrixLoadingParameter <: AbstractSystemMatrixParameter end
 
 export DenseSystemMatixLoadingParameter
-Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
+Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, matT <: AbstractArray, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
   freqFilter::F
   gridding::G
   bgCorrection::Bool = false
   loadasreal::Bool = false
+  arrayType::Type{matT} = Array
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile)
   # Construct freqFilter
@@ -66,6 +67,9 @@ end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
   S, grid = getSF(sf, frequencies, nothing; toKwargs(params)...)
   @info "Loading SM"
+  if !isa(S, params.arrayType)
+    S = params.arrayType(S)
+  end
   return S, grid
 end
 
@@ -87,6 +91,9 @@ end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
   S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params)...)
   return S, grid
+end
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, elType::Type{<:Number}, shape::NTuple{N, Int64}) where N
+  return createLinearOperator(params.sparseTrafo, elType; shape)
 end
 
 function converttoreal(S::AbstractArray{Complex{T}},f) where T

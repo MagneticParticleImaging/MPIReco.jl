@@ -28,15 +28,17 @@ end
 export ElaborateSolverParameters
 Base.@kwdef mutable struct ElaborateSolverParameters{SL} <: AbstractSolverParameters{SL}
   solver::Type{SL}
-  iterations::Int64=10
-  enforceReal::Bool=true
-  enforcePositive::Bool=true
+  iterations::Int64 = 10
+  enforceReal::Bool = true
+  enforcePositive::Bool = true
+  kwargWarning::Bool = true
   # Union of all kwargs
   normalizeReg::AbstractRegularizationNormalization = SystemMatrixBasedNormalization()
-  randomized::Union{Nothing, Bool} = false
+  randomized::Union{Nothing, Bool, Symbol} = nothing
+  seed::Union{Nothing, Int64} = nothing
   shuffleRows::Union{Nothing, Bool} = false
   rho::Union{Nothing, Float64} = nothing
-  normalize_rho::Union{Nothing, Bool} = nothing
+  vary_rho::Union{Nothing, Symbol} = nothing
   theta::Union{Nothing, Float64} = nothing
   restart::Union{Nothing, Symbol} = nothing
   regTrafo::Union{Nothing, Vector{Union{AbstractArray, AbstractLinearOperator}}} = nothing
@@ -51,7 +53,7 @@ Base.propertynames(params::RecoPlan{ElaborateSolverParameters}) = union([:solver
 
 getSolverKwargs(::Type{SL}) where SL <: AbstractLinearSolver = intersect(union(Base.kwarg_decl.(methods(SL))...), fieldnames(ElaborateSolverParameters))
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{SL}, u::Array) where SL
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{SL}, u::AbstractArray) where SL
 
   N = size(params.S, 2)
   M = div(length(params.S), N)
@@ -79,7 +81,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
     if !isnothing(params.op)
       d[:] = params.op*d
     end
-    c[:, l] = real(d)
+    c[:, l] = Array(real(d))
   end
 
   return c

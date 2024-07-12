@@ -44,6 +44,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::Union{A, Proc
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
     result = map(eltype(algo.S),result)
   end
+  result = copyto!(similar(algo.S, size(result)...), result)
   return result
 end
 
@@ -67,5 +68,5 @@ function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::Sin
 end
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:SparseSystemMatrixLoadingParameter, S}) where {S}
-  return createLinearOperator(params.sfLoad.sparseTrafo, eltype(algo.S); shape=tuple(shape(algo.grid)...))
+  return process(algo, params.sfLoad, eltype(algo.S), tuple(shape(algo.grid)...))
 end

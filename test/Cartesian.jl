@@ -14,7 +14,7 @@ using MPIReco
   numPeriodGrouping = 1
   maxMixingOrder = -1
 
-  plan = getPlan("Single")
+  plan = loadPlan(MPIReco, "SinglePatch", [MPIReco, RegularizedLeastSquares, MPIFiles, AbstractImageReconstruction])
   setAll!(plan, :sf, bSF)
   setAll!(plan, :frames, 1:10)
   setAll!(plan, :numAverages, 10)
@@ -49,8 +49,8 @@ using MPIReco
   setAll!(plan, :sf, bSFProc1)
   setAll!(plan, :numPeriodGrouping, 1)
   setAll!(plan, :numPeriodAverages, 1)
-  plan.parameter.pre.numPeriodGrouping = 100 # SM is preprocessed, only need to do it for meas data
-  plan.parameter.pre.numPeriodAverages = 65
+  setAll!(plan.parameter.pre, :numPeriodGrouping, 100) # SM is preprocessed, only need to do it for meas data
+  setAll!(plan.parameter.pre, :numPeriodAverages, 65)
   @time c3 = reconstruct(build(plan), b)
 
   exportImage(joinpath(imgdir, "Cartesian3.png"), Array(c3[1,:,:,1,1]))
