@@ -67,7 +67,6 @@ end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
   S, grid = getSF(sf, frequencies, nothing; toKwargs(params)...)
   @info "Loading SM"
-  S = adapt(params.arrayType, S)
   return S, grid
 end
 
@@ -90,8 +89,8 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrix
   S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params)...)
   return S, grid
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, elType::Type{<:Number}, shape::NTuple{N, Int64}) where N
-  return createLinearOperator(params.sparseTrafo, elType; shape)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
+  return createLinearOperator(params.sparseTrafo, elType; shape, S = typeof(arrayType{elType}(undef, 0)))
 end
 
 function converttoreal(S::AbstractArray{Complex{T}},f) where T
@@ -123,15 +122,30 @@ function getSF(bSF, frequencies, sparseTrafo, solver::AbstractString; kargs...)
   end
 end
 getSF(bSF, frequencies, sparseTrafo, solver::AbstractLinearSolver; kargs...) = getSF(bSF, frequencies, sparseTrafo, typeof(solver); kargs...)
-function getSF(bSF, frequencies, sparseTrafo, solver::Type{<:AbstractLinearSolver}; kargs...)
+function getSF(bSF, frequencies, sparseTrafo, solver::Type{<:AbstractLinearSolver}; arrayType = Array, kargs...)
   SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
-  return prepareSF(solver, SF, grid)
+  return prepareSF(solver, SF, grid, arrayType)
 end
 
+
+function AbstractImageReconstruction.process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractSystemMatrixLoadingParameter, solver::Type{<:AbstractLinearSolver}, sf, grid, arrayType)
+  return prepareSF(solver, sf, grid, arrayType)
+end
+function prepareSF(solver::Type{<:AbstractLinearSolver}, SF, grid, arrayType)
+  SF, grid = prepareSF(solver, SF, grid)
+  # adapt(Array, Sparse-CPU) results in dense array
+  return arrayType != Array ? adapt(arrayType, SF) : SF, grid
+end
 prepareSF(solver::Type{Kaczmarz}, SF, grid) = transpose(SF), grid
 prepareSF(solver::Type{PseudoInverse}, SF, grid) = SVD(svd(transpose(SF))...), grid
-prepareSF(solver::Union{Type{<:RegularizedLeastSquares.AbstractLinearSolver}}, SF, grid) = copy(transpose(SF)), grid
 prepareSF(solver::Type{DirectSolver}, SF, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
+prepareSF(solver::Type{Kaczmarz}, SF::AbstractSparseArray, grid) = transpose(SF), grid
+prepareSF(solver::Type{PseudoInverse}, SF::AbstractSparseArray, grid) = SVD(svd(transpose(SF))...), grid
+prepareSF(solver::Type{DirectSolver}, SF::AbstractSparseArray, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
+
+prepareSF(solver, SF , grid) = copy(transpose(SF)), grid
+prepareSF(solver, SF::AbstractSparseArray, grid) = sparse(transpose(SF)), grid
+
 
 prepareNormalSF(solver::AbstractLinearSolver, SF) = prepareNormalSF(typeof(solver), SF)
 prepareNormalSF(solver::Type{<:RegularizedLeastSquares.AbstractLinearSolver}, SF) = nothing

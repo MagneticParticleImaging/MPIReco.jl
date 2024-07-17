@@ -1,9 +1,10 @@
 export SinglePatchTemporalRegularizationAlgorithm, SinglePatchTemporalRegularizationReconstructionParameter
 Base.@kwdef struct SinglePatchTemporalRegularizationReconstructionParameter{L<:DenseSystemMatixLoadingParameter,
-  SP<:AbstractSolverParameters} <: AbstractSinglePatchReconstructionParameters
+  SP<:AbstractSolverParameters, matT <: AbstractArray} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sfLoad::Union{L, ProcessResultCache{L}}
+  arrayType::Type{matT} = Array
   # Solver
   solverParams::SP
   λ::Float32
@@ -14,10 +15,11 @@ Base.@kwdef struct SinglePatchTemporalRegularizationReconstructionParameter{L<:D
   bgDict::BGDictParameter
 end
 
-Base.@kwdef mutable struct SinglePatchTemporalRegularizationAlgorithm{P} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
+Base.@kwdef mutable struct SinglePatchTemporalRegularizationAlgorithm{P, matT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
   params::P
   sf::Union{MPIFile,Vector{MPIFile}}
   S::AbstractArray
+  arrayType::Type{matT}
   bgDict::AbstractArray
   idxFG::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
   idxFG::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
@@ -30,8 +32,8 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPr
   return SinglePatchTemporalRegularizationAlgorithm(params)
 end
 function SinglePatchTemporalRegularizationAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:SinglePatchTemporalRegularizationReconstructionParameter,PT<:AbstractMPIPostProcessingParameters}
-  freqs, S, grid = prepareSystemMatrix(params.reco)
-  return SinglePatchTemporalRegularizationAlgorithm(params, params.reco.sf, S, process(SinglePatchTemporalRegularizationAlgorithm, params.reco.bgDict, freqs)
+  freqs, S, grid, arrayType = prepareSystemMatrix(params.reco)
+  return SinglePatchTemporalRegularizationAlgorithm(params, params.reco.sf, S, arrayType, process(SinglePatchTemporalRegularizationAlgorithm, params.reco.bgDict, freqs)
     ,params.reco.idxFG, params.reco.idxBG, grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchTemporalRegularizationAlgorithm}) = SystemMatrixBasedAlgorithm()
@@ -39,8 +41,8 @@ AbstractImageReconstruction.parameter(algo::SinglePatchTemporalRegularizationAlg
 
 function prepareSystemMatrix(reco::SinglePatchTemporalRegularizationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
   freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf)
-  sf, grid = prepareSF(Kaczmarz, sf, grid)
-  return freqs, sf, grid
+  sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, Kaczmarz, sf, grid, reco.arrayType)
+  return freqs, sf, grid, reco.arrayType
 end
 
 AbstractImageReconstruction.take!(algo::SinglePatchTemporalRegularizationAlgorithm) = Base.take!(algo.output)
@@ -51,6 +53,7 @@ function process(algo::SinglePatchTemporalRegularizationAlgorithm, params::Abstr
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
     result = map(eltype(algo.S), result)
   end
+  result = adapt(algo.arrayType, result)
   return result
 end
 
