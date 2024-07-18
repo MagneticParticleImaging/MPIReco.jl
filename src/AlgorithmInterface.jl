@@ -55,12 +55,21 @@ function planpath(name::AbstractString)
   throw(ArgumentError("Could not find a suitable MPI reconstruction plan with name $name.\nCustom plans can be stored in $(plandir())."))
 end
 
+const recoPlans = LRU{UInt64, RecoPlan}(maxsize = 3)
+
 export reconstruct
-function reconstruct(name::AbstractString, data::MPIFile; kwargs...) 
-  plan = loadPlan(MPIReco, name, [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares])
+function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = true; kwargs...) 
+  planfile = AbstractImageReconstruction.planpath(MPIReco, name)
+  key = hash(planfile, hash(mtime(planfile)))
+  plan = get!(recoPlans, key) do
+    loadPlan(planfile, [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares])
+  end
   setAll!(plan; kwargs...)
   return reconstruct(build(plan), data)
 end
+
+export emptyRecoCache!
+emptyRecoCache!() = Base.empty!(recoPlans)
 
 # Check if contains
 isSystemMatrixBased(::T) where T <: AbstractImageReconstructionAlgorithm = recoAlgorithmTypes(T) isa SystemMatrixBasedAlgorithm
