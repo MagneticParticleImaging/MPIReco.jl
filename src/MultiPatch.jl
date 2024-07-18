@@ -79,20 +79,43 @@ abstract type AbstractMultiPatchOperatorParameter <: AbstractMPIRecoParameters e
 # MultiPatchOperator is a type that acts as the MPI system matrix but exploits
 # its sparse structure.
 # Its very important to keep this type typestable
-mutable struct MultiPatchOperator{T, V <: AbstractMatrix{T}, U<:Positions}
+export AbstractMultiPatchOperator, MultiPatchOperator, DenseMultiPatchOperator
+abstract type AbstractMultiPatchOperator{T, V} <: AbstractArray{T, 2} end
+mutable struct MultiPatchOperator{T, V <: AbstractMatrix{T}, U<:Positions, I <: Integer, vecI <: AbstractVector{I}, matI <: AbstractMatrix{I}} <: AbstractMultiPatchOperator{T, V}
   S::Vector{V}
   grid::U
-  N::Int
-  M::Int
-  RowToPatch::Vector{Int}
-  xcc::Vector{Vector{Int}}
-  xss::Vector{Vector{Int}}
-  sign::Matrix{Int}
-  nPatches::Int
-  patchToSMIdx::Vector{Int}
+  N::I
+  M::I
+  RowToPatch::vecI
+  xcc::Vector{vecI}
+  xss::Vector{vecI}
+  sign::matI
+  nPatches::I
+  patchToSMIdx::vecI
+end
+
+mutable struct DenseMultiPatchOperator{T, V <: AbstractArray{T, 3}, U<:Positions, I <: Integer, vecI <: AbstractVector{I}, matI <: AbstractMatrix{I}} <: AbstractMultiPatchOperator{T, V}
+  S::V
+  grid::U
+  N::I
+  M::I
+  RowToPatch::vecI
+  xcc::matI
+  xss::matI
+  sign::matI
+  nPatches::I
+  patchToSMIdx::vecI
+end
+
+function Base.convert(::Type{DenseMultiPatchOperator}, op::MultiPatchOperator)
+  S = stack(op.S)
+  xcc = stack(op.xcc)
+  xss = stack(op.xss)
+  return DenseMultiPatchOperator(S, op.grid, op.N, op.M, op.RowToPatch, xcc, xss, op.sign, op.nPatches, op.patchToSMIdx)
 end
 
 eltype(FFOp::MultiPatchOperator) = eltype(FFOp.S[1])
+eltype(FFOp::DenseMultiPatchOperator) = eltype(FFOp.S)
 
 function MultiPatchOperatorHighLevel(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
   return MultiPatchOperatorHighLevel(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
@@ -294,7 +317,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
   # now that we have all grids we can calculate the indices within the recoGrid
   xcc, xss = calculateLUT(grids, recoGrid)
 
-  return MultiPatchOperator{eltype(first(S)), reduce(promote_type, typeof.(S)), typeof(recoGrid)}(S, recoGrid, length(recoGrid), M*numPatches,
+  return MultiPatchOperator{eltype(first(S)), reduce(promote_type, typeof.(S)), typeof(recoGrid), eltype(patchToSMIdx), typeof(patchToSMIdx), typeof(sign)}(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
@@ -411,7 +434,7 @@ function MultiPatchOperatorRegular(SFs::MultiMPIFile, freq; bgCorrection::Bool,
 
   sign = ones(Int, M, numPatches)
 
-  return MultiPatchOperator{eltype(first(S)), reduce(promote_type, typeof.(S)), typeof(recoGrid)}(S, recoGrid, length(recoGrid), M*numPatches,
+  return MultiPatchOperator{eltype(first(S)), reduce(promote_type, typeof.(S)), typeof(recoGrid), eltype(patchToSMIdx), typeof(patchToSMIdx), typeof(sign)}(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
@@ -442,8 +465,27 @@ function size(FFOp::MultiPatchOperator,i::Int)
 end
 
 size(FFOp::MultiPatchOperator) = (FFOp.M,FFOp.N)
+size(FFTOp::DenseMultiPatchOperator) = (FFTOp.M,FFTOp.N)
 
 length(FFOp::MultiPatchOperator) = size(FFOp,1)*size(FFOp,2)
+function getindex(op::MultiPatchOperator, i, j)
+  p = op.RowToPatch[i]
+  xs = op.xss[p]
+  row = mod1(i,div(op.M,op.nPatches))
+  A = op.S[op.patchToSMIdx[p]]
+  sign = op.sign[j,op.patchToSMIdx[p]]
+  # TODO or zero
+  return sign*A[row,xs[j]]
+end
+
+function LinearAlgebra.mul!(b::AbstractVector{T}, op::MultiPatchOperator{T}, x::AbstractVector{T}) where T
+  b[:] .= zero(T)
+  for i in 1:size(op, 1)
+    b[i] = dot_with_matrix_row(op, x, i)
+  end
+  return b
+end
+
 
 ### The following is intended to use the standard kaczmarz method ###
 function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization, op::MultiPatchOperator, b)
@@ -455,6 +497,12 @@ function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization,
     #trace *= prod(Op.PixelSizeSF)/prod(Op.PixelSizeC)
     trace/=size(op, 2)
   end
+  return trace
+end
+
+function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization, op::DenseMultiPatchOperator, b)
+  trace = sum([RegularizedLeastSquares.normalize(norm, view(S, :, :, i), b)*size(S, 2) for (i, S) in axes(op.S, 3)])
+  trace/=size(op, 2)
   return trace
 end
 
