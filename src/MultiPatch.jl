@@ -468,14 +468,19 @@ size(FFOp::MultiPatchOperator) = (FFOp.M,FFOp.N)
 size(FFTOp::DenseMultiPatchOperator) = (FFTOp.M,FFTOp.N)
 
 length(FFOp::MultiPatchOperator) = size(FFOp,1)*size(FFOp,2)
-function getindex(op::MultiPatchOperator, i, j)
+function getindex(op::MultiPatchOperator, i::I, j::I) where I <: Integer
   p = op.RowToPatch[i]
   xs = op.xss[p]
+  xc = op.xcc[p]
   row = mod1(i,div(op.M,op.nPatches))
   A = op.S[op.patchToSMIdx[p]]
-  sign = op.sign[j,op.patchToSMIdx[p]]
-  # TODO or zero
-  return sign*A[row,xs[j]]
+  sign = op.sign[row,op.patchToSMIdx[p]]
+  index = findfirst(isequal(j), xc)
+  if !isnothing(index)
+    return sign*A[row,xs[index]]
+  else
+    return zero(eltype(op))
+  end
 end
 
 function LinearAlgebra.mul!(b::AbstractVector{T}, op::MultiPatchOperator{T}, x::AbstractVector{T}) where T
