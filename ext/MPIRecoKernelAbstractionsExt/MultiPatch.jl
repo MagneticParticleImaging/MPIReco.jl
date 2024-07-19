@@ -57,10 +57,42 @@ end
   end
 end
 
-function LinearAlgebra.mul!(b::AbstractVector{T}, op::DenseMultiPatchOperator{T, V}, x::AbstractVector{T}) where {T, V}
+function LinearAlgebra.mul!(b::AbstractVector{T}, op::DenseMultiPatchOperator{T, V}, x::AbstractVector{T}) where {T, V <: AbstractGPUArray}
   backend = get_backend(b)
   kernel = dense_mul!(backend, 256)
   kernel(b, x, op.S, op.xcc, op.xss, op.sign, div(op.M, op.nPatches), op.RowToPatch, op.patchToSMIdx; ndrange = (256, size(op, 1)))
   synchronize(backend)
   return b
+end
+
+@kernel cpu = false function dense_mul_adj!(res, @Const(t), @Const(S), @Const(xcc), @Const(xss), @Const(signs), @Const(M), @Const(RowToPatch), @Const(patchToSMIdx))
+  # Each group/block handles a single column of the adjoint(operator)
+  # i.e. a row of the operator
+  localIdx = @index(Local, Linear)
+  groupIdx = @index(Group, Linear) # k
+  patch = RowToPatch[groupIdx] # p
+  patch_row = mod1(operator_row, M) # j
+  smIdx = patchToSMIdx[patch]
+  sign = eltype(b)(signs[patch_row, smIdx])
+  grid_stride = prod(@groupsize())
+  N = size(xss, 1)
+  
+  
+  # Each thread within the block will add the same value of t
+  val = t[groupIdx]
+ 
+  # Since we go along the columns during a matrix-vector product,
+  # we have a race condition with other threads writing to the same result.
+  for i = localIdx:grid_stride:N
+    Atomix.@atomic res[xcc[i, patch]] += sign * S[patch_row, xss[i, patch], smIdx] * val
+  end
+end
+
+function LinearAlgebra.mul!(res::AbstractVector{T}, adj::Adjoint{T, OP}, t::AbstractVector{T}) where {T, V <: AbstractGPUArray, OP <: DenseMultiPatchOperator{T, V}}
+  backend = get_backend(res)
+  op = adj.parent
+  kernel = dense_mul_adj!(backend, 256)
+  kernel(res, t, op.S, op.xcc, op.xss, op.sign, div(op.M, op.nPatches), op.RowToPatch, op.patchToSMIdx; ndrange = (256, size(op, 1)))
+  synchronize(backend)
+  return res
 end
