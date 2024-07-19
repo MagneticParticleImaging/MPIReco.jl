@@ -479,7 +479,6 @@ function getindex(op::MultiPatchOperator, i, j)
 end
 
 function LinearAlgebra.mul!(b::AbstractVector{T}, op::MultiPatchOperator{T}, x::AbstractVector{T}) where T
-  b[:] .= zero(T)
   for i in 1:size(op, 1)
     b[i] = dot_with_matrix_row(op, x, i)
   end

@@ -18,13 +18,13 @@ function Adapt.adapt_structure(::Type{arrT}, op::MultiPatchOperator) where {arrT
   end
 end
 
-@kernel function dense_mul!(b, @Const(x), @Const(S), @Const(xcc), @Const(xss), @Const(signs), @Const(M), @Const(RowToPatch), @Const(patchToSMIdx))
+@kernel cpu = false inbounds = true function dense_mul!(b, @Const(x), @Const(S), @Const(xcc), @Const(xss), @Const(signs), @Const(M), @Const(RowToPatch), @Const(patchToSMIdx))
   # Each group/block handles a single row of the operator
   operator_row = @index(Group, Linear) # k
   patch = RowToPatch[operator_row] # p
   patch_row = mod1(operator_row, M) # j
   smIdx = patchToSMIdx[patch]
-  sign = signs[patch_row, smIdx]
+  sign = eltype(b)(signs[patch_row, smIdx])
   grid_stride = prod(@groupsize())
   N = size(xss, 1)
   
@@ -32,14 +32,12 @@ end
   # Each thread performs a single element-wise multiplication and reduction in its shared spot.
   # Afterwards we reduce over the shared memory.
   localIdx = @index(Local, Linear)
-  shared = @localmem eltype(b) prod(@groupsize())
+  shared = @localmem eltype(b) grid_stride
   shared[localIdx] = zero(eltype(b))
 
   # First we iterate over the sparse indices
-  i = localIdx
-  while i <= N
+  @unroll for i = localIdx:grid_stride:N
     shared[localIdx] = shared[localIdx] + sign * S[patch_row, xss[i, patch], smIdx] * x[xcc[i, patch]]
-    i += grid_stride
   end
   @synchronize
 
@@ -60,7 +58,6 @@ end
 end
 
 function LinearAlgebra.mul!(b::AbstractVector{T}, op::DenseMultiPatchOperator{T, V}, x::AbstractVector{T}) where {T, V}
-  b[:] .= zero(T)
   backend = get_backend(b)
   kernel = dense_mul!(backend, 256)
   kernel(b, x, op.S, op.xcc, op.xss, op.sign, div(op.M, op.nPatches), op.RowToPatch, op.patchToSMIdx; ndrange = (256, size(op, 1)))
