@@ -22,8 +22,9 @@ using MPIReco
   params[:iterations] = 1
   params[:spectralLeakageCorrection] = false
   params[:sf] = bSF
-  params[:reg] = L2Regularization(0.0f0)
+  params[:reg] = [L2Regularization(0.0f0)]
   params[:tfCorrection] = false
+  params[:solver] = Kaczmarz
   c1 = reconstruct("MultiPatch", b; params...)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values1
