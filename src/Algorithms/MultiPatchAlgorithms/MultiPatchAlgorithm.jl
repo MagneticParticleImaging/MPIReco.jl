@@ -1,5 +1,6 @@
 export MultiPatchReconstructionAlgorithm, MultiPatchReconstructionParameter
-Base.@kwdef struct MultiPatchReconstructionParameter{F<:AbstractFrequencyFilterParameter,O<:AbstractMultiPatchOperatorParameter, S<:AbstractSolverParameters, FF<:AbstractFocusFieldPositions, FFSF<:AbstractFocusFieldPositions} <: AbstractMultiPatchReconstructionParameters
+Base.@kwdef struct MultiPatchReconstructionParameter{matT <: AbstractArray,F<:AbstractFrequencyFilterParameter,O<:AbstractMultiPatchOperatorParameter, S<:AbstractSolverParameters, FF<:AbstractFocusFieldPositions, FFSF<:AbstractFocusFieldPositions, R <: AbstractRegularization} <: AbstractMultiPatchReconstructionParameters
+  arrayType::Type{matT} = Array
   # File
   sf::MultiMPIFile
   freqFilter::F
@@ -7,16 +8,17 @@ Base.@kwdef struct MultiPatchReconstructionParameter{F<:AbstractFrequencyFilterP
   ffPos::FF = DefaultFocusFieldPositions()
   ffPosSF::FFSF = DefaultFocusFieldPositions()
   solverParams::S
-  λ::Float32
+  reg::Vector{R} = AbstractRegularization[]
   # weightingType::WeightingType = WeightingType.None
 end
 
-Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P} <: AbstractMultiPatchReconstructionAlgorithm where {P<:AbstractMultiPatchAlgorithmParameters}
+Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P, matT <: AbstractArray} <: AbstractMultiPatchReconstructionAlgorithm where {P<:AbstractMultiPatchAlgorithmParameters}
   params::P
   # Could also do reconstruction progress meter here
   opParams::Union{AbstractMultiPatchOperatorParameter, Nothing} = nothing
   sf::MultiMPIFile
-  ffOp::Union{Nothing, MultiPatchOperator}
+  arrayType::Type{matT}
+  ffOp::Union{Nothing, AbstractMultiPatchOperator}
   ffPos::Union{Nothing,AbstractArray}
   ffPosSF::Union{Nothing,AbstractArray}
   freqs::Vector{CartesianIndex{2}}
@@ -38,7 +40,7 @@ function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:Abstra
     ffPosSF = [vec(ffPos(SF))[l] for l=1:L, SF in reco.sf]
   end
 
-  return MultiPatchReconstructionAlgorithm(params, reco.opParams, reco.sf, nothing, ffPos_, ffPosSF, freqs, Channel{Any}(Inf))
+  return MultiPatchReconstructionAlgorithm(params, reco.opParams, reco.sf, reco.arrayType, nothing, ffPos_, ffPosSF, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{MultiPatchReconstruction}) = SystemMatrixBasedAlgorithm()
 AbstractImageReconstruction.parameter(algo::MultiPatchReconstructionAlgorithm) = algo.origParam
@@ -76,8 +78,14 @@ function process(algo::MultiPatchReconstructionAlgorithm, params::AbstractMultiP
 
   ffPosSF = algo.ffPosSF
 
-  return MultiPatchOperator(algo.sf, frequencies; toKwargs(params)...,
-             gradient = gradient, FFPos = ffPos_, FFPosSF = ffPosSF)
+  operator = MultiPatchOperator(algo.sf, frequencies; toKwargs(params)..., gradient = gradient, FFPos = ffPos_, FFPosSF = ffPosSF)
+  return adapt(algo.arrayType, operator)
+end
+
+function process(algo::MultiPatchReconstructionAlgorithm, params::Union{A, ProcessResultCache{<:A}}, f::MPIFile, args...) where A <: AbstractMPIPreProcessingParameters
+  result = process(typeof(algo), params, f, args...)
+  result = adapt(algo.arrayType, result)
+  return result
 end
 
 function process(t::Type{<:MultiPatchReconstructionAlgorithm}, params::CommonPreProcessingParameters{NoBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
@@ -114,8 +122,8 @@ function process(::Type{<:MultiPatchReconstructionAlgorithm}, params::ExternalPr
   return data
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, params::MultiPatchReconstructionParameter, u::Array)
-  solver = LeastSquaresParameters(S = algo.ffOp, reg = [L2Regularization(params.λ)], solverParams = params.solverParams)
+function process(algo::MultiPatchReconstructionAlgorithm, params::MultiPatchReconstructionParameter, u::AbstractArray)
+  solver = LeastSquaresParameters(S = algo.ffOp, reg = params.reg, solverParams = params.solverParams)
 
   result = process(algo, solver, u)
 

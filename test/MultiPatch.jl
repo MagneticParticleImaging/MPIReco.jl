@@ -22,7 +22,7 @@ using MPIReco
   params[:iterations] = 1
   params[:spectralLeakageCorrection] = false
   params[:sf] = bSF
-  params[:λ] = 0
+  params[:reg] = L2Regularization(0.0f0)
   params[:tfCorrection] = false
   c1 = reconstruct("MultiPatch", b; params...)
   @test axisnames(c1) == names
