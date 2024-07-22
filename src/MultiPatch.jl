@@ -84,8 +84,8 @@ abstract type AbstractMultiPatchOperator{T, V} <: AbstractArray{T, 2} end
 mutable struct MultiPatchOperator{T, V <: AbstractMatrix{T}, U<:Positions, I <: Integer, vecI <: AbstractVector{I}, matI <: AbstractMatrix{I}} <: AbstractMultiPatchOperator{T, V}
   S::Vector{V}
   grid::U
-  N::I
-  M::I
+  N::Int64
+  M::Int64
   RowToPatch::vecI
   xcc::Vector{vecI}
   xss::Vector{vecI}
@@ -97,8 +97,8 @@ end
 mutable struct DenseMultiPatchOperator{T, V <: AbstractArray{T, 3}, U<:Positions, I <: Integer, vecI <: AbstractVector{I}, matI <: AbstractMatrix{I}} <: AbstractMultiPatchOperator{T, V}
   S::V
   grid::U
-  N::I
-  M::I
+  N::Int64
+  M::Int64
   RowToPatch::vecI
   xcc::matI
   xss::matI
@@ -106,6 +106,11 @@ mutable struct DenseMultiPatchOperator{T, V <: AbstractArray{T, 3}, U<:Positions
   nPatches::I
   patchToSMIdx::vecI
 end
+
+Adapt.adapt_structure(::Type{Array}, op::AbstractMultiPatchOperator) = op
+LinearOperators.storage_type(op::MultiPatchOperator) = LinearOperators.storage_type(first(op.S))
+LinearOperators.storage_type(op::DenseMultiPatchOperator) = typeof(similar(op.S, 0))
+
 
 function Base.convert(::Type{DenseMultiPatchOperator}, op::MultiPatchOperator)
   S = stack(op.S)
@@ -505,7 +510,7 @@ function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization,
 end
 
 function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization, op::DenseMultiPatchOperator, b)
-  trace = sum([RegularizedLeastSquares.normalize(norm, view(S, :, :, i), b)*size(S, 2) for (i, S) in axes(op.S, 3)])
+  trace = sum([RegularizedLeastSquares.normalize(norm, view(op.S, :, :, i), b)*size(op.S, 2) for i in axes(op.S, 3)])
   trace/=size(op, 2)
   return trace
 end

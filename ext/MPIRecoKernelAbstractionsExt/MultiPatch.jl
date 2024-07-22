@@ -12,7 +12,7 @@ function Adapt.adapt_structure(::Type{arrT}, op::MultiPatchOperator) where {arrT
     sign = Int32.(adapt(arrT, op.sign))
     RowToPatch = Int32.(adapt(arrT, op.RowToPatch))
     patchToSMIdx = Int32.(adapt(arrT, op.patchToSMIdx))
-    return DenseMultiPatchOperator(S, op.grid, Int32(op.N), Int32(op.M), RowToPatch, xcc, xss, sign, Int32(op.nPatches), patchToSMIdx)
+    return DenseMultiPatchOperator(S, op.grid, op.N, op.M, RowToPatch, xcc, xss, sign, Int32(op.nPatches), patchToSMIdx)
   else
     throw(ArgumentError("Cannot adapt MultiPatchOperator to $arrT, since it cannot be represented as a DenseMultiPatchOperator"))
   end
@@ -26,7 +26,7 @@ end
   smIdx = patchToSMIdx[patch]
   sign = eltype(b)(signs[patch_row, smIdx])
   grid_stride = prod(@groupsize())
-  N = size(xss, 1)
+  N = Int32(size(xss, 1))
   
   # We want to use a grid-stride loop to perform the sparse matrix-vector product.
   # Each thread performs a single element-wise multiplication and reduction in its shared spot.
@@ -60,12 +60,12 @@ end
 function LinearAlgebra.mul!(b::AbstractVector{T}, op::DenseMultiPatchOperator{T, V}, x::AbstractVector{T}) where {T, V <: AbstractGPUArray}
   backend = get_backend(b)
   kernel = dense_mul!(backend, 256)
-  kernel(b, x, op.S, op.xcc, op.xss, op.sign, div(op.M, op.nPatches), op.RowToPatch, op.patchToSMIdx; ndrange = (256, size(op, 1)))
+  kernel(b, x, op.S, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = (256, size(op, 1)))
   synchronize(backend)
   return b
 end
 
-@kernel function dense_mul_adj!(res, @Const(t), @Const(S), @Const(xcc), @Const(xss), @Const(signs), @Const(M), @Const(RowToPatch), @Const(patchToSMIdx))
+@kernel inbounds = true function dense_mul_adj!(res, @Const(t), @Const(S), @Const(xcc), @Const(xss), @Const(signs), @Const(M), @Const(RowToPatch), @Const(patchToSMIdx))
   # Each group/block handles a single column of the adjoint(operator)
   # i.e. a row of the operator
   localIdx = @index(Local, Linear)
@@ -75,7 +75,7 @@ end
   smIdx = patchToSMIdx[patch]
   sign = eltype(res)(signs[patch_row, smIdx])
   grid_stride = prod(@groupsize())
-  N = size(xss, 1)
+  N = Int32(size(xss, 1))
   
   
   # Each thread within the block will add the same value of t
@@ -94,9 +94,10 @@ end
 function LinearAlgebra.mul!(res::AbstractVector{T}, adj::Adjoint{T, OP}, t::AbstractVector{T}) where {T <: Complex, V <: AbstractArray, OP <: DenseMultiPatchOperator{T, V}}
   backend = get_backend(res)
   op = adj.parent
+  res .= zero(T) # We need to zero the result, because we are using += in the kernel
   kernel = dense_mul_adj!(backend, 256)
   # We have to reinterpret the result as a real array, because atomic operations on Complex numbers are not supported
-  kernel(reinterpret(reshape, real(eltype(res)), res), t, op.S, op.xcc, op.xss, op.sign, div(op.M, op.nPatches), op.RowToPatch, op.patchToSMIdx; ndrange = (256, size(op, 1)))
+  kernel(reinterpret(reshape, real(eltype(res)), res), t, op.S, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = (256, size(op, 1)))
   synchronize(backend)
   return res
 end
