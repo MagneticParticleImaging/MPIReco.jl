@@ -84,7 +84,7 @@ end
   # Since we go along the columns during a matrix-vector product,
   # we have a race condition with other threads writing to the same result.
   for i = localIdx:grid_stride:N
-    Atomix.@atomic res[xcc[i, patch]] += sign * S[patch_row, xss[i, patch], smIdx] * val
+    Atomix.@atomic res[xcc[i, patch]] += adjoint(sign * S[patch_row, xss[i, patch], smIdx]) * val
   end
 end
 
