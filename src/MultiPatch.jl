@@ -495,6 +495,26 @@ function LinearAlgebra.mul!(b::AbstractVector{T}, op::MultiPatchOperator{T}, x::
   return b
 end
 
+function LinearAlgebra.mul!(res::AbstractVector{T}, adj::Adjoint{T, OP}, t::AbstractVector{T}) where {T, V <: AbstractArray, OP <: MultiPatchOperator{T, V}}
+  op = adj.parent
+  res .= zero(T)
+
+  for i in 1:size(op, 1)
+    val = t[i]
+
+    p = op.RowToPatch[i]
+    xs = op.xss[p]
+    xc = op.xcc[p]
+    row = mod1(i,div(op.M,op.nPatches))
+    A = op.S[op.patchToSMIdx[p]]
+    sign = op.sign[row,op.patchToSMIdx[p]]
+  
+    for j in 1:length(xs)
+      res[xc[j]] += adjoint(sign*A[row,xs[j]]) * val
+    end
+  end
+  return res
+end
 
 ### The following is intended to use the standard kaczmarz method ###
 function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization, op::MultiPatchOperator, b)
