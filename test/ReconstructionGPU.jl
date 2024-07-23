@@ -88,7 +88,7 @@ for arrayType in arrayTypes
     params[:minFreq] = 80e3
     params[:recChannels] = 1:2
     params[:iterations] = 50
-    params[:spectralLeakageCorrection] = true
+    params[:spectralLeakageCorrection] = false
     params[:sf] = bSFs
     params[:reg] = [L2Regularization(0.0f0)]
     params[:tfCorrection] = false
@@ -102,6 +102,25 @@ for arrayType in arrayTypes
     c1 = reconstruct("MultiPatch", b; params...)
     c2 = reconstruct("MultiPatch", b; params..., arrayType = arrayType)
     @test isapprox(arraydata(c1), arraydata(c2), rtol = 0.02)
+
+    # Test Kaczmarz since it uses specific functions and not just mul!
+    bSF = MultiMPIFile([joinpath(datadir, "calibrations", "12.mdf")])
+    dirs = ["1.mdf", "2.mdf", "3.mdf", "4.mdf"]
+    b = MultiMPIFile(joinpath.(datadir, "measurements", "20211226_203916_MultiPatch", dirs))  
+    params = Dict{Symbol, Any}()
+    params[:SNRThresh] = 5
+    params[:frames] = [1]
+    params[:minFreq] = 80e3
+    params[:recChannels] = 1:2
+    params[:iterations] = 1
+    params[:spectralLeakageCorrection] = false
+    params[:sf] = bSF
+    params[:reg] = [L2Regularization(0.0f0)]
+    params[:tfCorrection] = false
+    params[:solver] = Kaczmarz
+    c3 = reconstruct("MultiPatch", b; params...)
+    c4 = reconstruct("MultiPatch", b; params..., arrayType = arrayType)
+    @test isapprox(arraydata(c3), arraydata(c4))
   end
 
 end

@@ -586,52 +586,13 @@ function kaczmarz_update_!(A,x,beta,xs,xc,j,sign)
   end
 end
 
-# TODO implement for ProdOp{WeightingOp, MultiPatchOperator}
-function initkaczmarz(Op::MultiPatchOperator{T},λ) where T
-  denom = T[] #zeros(T,Op.M)
-  rowindex = Int64[] #zeros(Int64,Op.M)
+function RegularizedLeastSquares.rownorm²(op::MultiPatchOperator, row::Int64)
+  p = op.RowToPatch[row]
+  xs = op.xss[p]
 
-  MSub = div(Op.M,Op.nPatches)
+  j = mod1(row,div(op.M,op.nPatches))
+  A = op.S[op.patchToSMIdx[p]]
+  sign = op.sign[j,op.patchToSMIdx[p]]
 
-  if length(Op.S) == 1
-    for i=1:MSub
-      s² = rownorm²(Op.S[1],i)#*weights[i]^2
-      if s²>0
-        for l=1:Op.nPatches
-          k = i+MSub*(l-1)
-          push!(denom,1/(s²+λ)) #denom[k] = weights[i]^2/(s²+λ)
-          push!(rowindex,k) #rowindex[k] = k
-        end
-      end
-    end
-  else
-    for l=1:Op.nPatches
-      for i=1:MSub
-        s² = rownorm²(Op.S[Op.patchToSMIdx[l]],i)#*weights[i]^2
-        if s²>0
-          k = i+MSub*(l-1)
-          push!(denom,1/(s²+λ)) #denom[k] = weights[i]^2/(s²+λ)
-          push!(rowindex,k) #rowindex[k] = k
-        end
-      end
-    end
-  end
-
-  Op, denom, rowindex
-end
-
-
-function RegularizedLeastSquares.rowProbabilities(Op::MultiPatchOperator, rowindex)
-  p = zeros(length(rowindex))
-  
-  for i=1:length(rowindex)
-    k = rowindex[i]
-    j = mod1(k, div(Op.M,Op.nPatches))
-    patch = Op.RowToPatch[k]
-    A = Op.S[Op.patchToSMIdx[patch]]
-    p[i] = rownorm²(A, j)
-  end
-  p ./= sum(p)
-
-  return p   
+  return mapreduce(x -> abs2(sign*A[j,x]), +, xs)
 end

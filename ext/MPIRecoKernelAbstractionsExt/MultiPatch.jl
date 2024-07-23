@@ -84,14 +84,14 @@ end
   # Since we go along the columns during a matrix-vector product,
   # we have a race condition with other threads writing to the same result.
   for i = localIdx:grid_stride:N
-    tmp = sign * adjoint(S[patch_row, xss[i, patch], smIdx]) * val
+    tmp = sign * conj(S[patch_row, xss[i, patch], smIdx]) * val
     # @atomic is not supported for ComplexF32 numbers
     Atomix.@atomic res[1, xcc[i, patch]] += tmp.re
     Atomix.@atomic res[2, xcc[i, patch]] += tmp.im
   end
 end
 
-function LinearAlgebra.mul!(res::AbstractVector{T}, adj::Adjoint{T, OP}, t::AbstractVector{T}) where {T <: Complex, V <: AbstractArray, OP <: DenseMultiPatchOperator{T, V}}
+function LinearAlgebra.mul!(res::AbstractVector{T}, adj::Adjoint{T, OP}, t::AbstractVector{T}) where {T <: Complex, V <: AbstractGPUArray, OP <: DenseMultiPatchOperator{T, V}}
   backend = get_backend(res)
   op = adj.parent
   res .= zero(T) # We need to zero the result, because we are using += in the kernel
@@ -100,4 +100,44 @@ function LinearAlgebra.mul!(res::AbstractVector{T}, adj::Adjoint{T, OP}, t::Abst
   kernel(reinterpret(reshape, real(eltype(res)), res), t, op.S, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = (256, size(op, 1)))
   synchronize(backend)
   return res
+end
+
+# Kaczmarz specific functions
+function RegularizedLeastSquares.dot_with_matrix_row(op::DenseMultiPatchOperator{T, V}, x::AbstractArray{T}, k::Int) where {T, V <: AbstractGPUArray}
+  patch = @allowscalar op.RowToPatch[k]
+  patch_row = mod1(k, div(op.M,op.nPatches))
+  smIdx = @allowscalar op.patchToSMIdx[patch]
+  sign = @allowscalar op.sign[patch_row, smIdx]
+  S = op.S
+  # Inplace reduce-broadcast: https://github.com/JuliaLang/julia/pull/31020
+  return sum(Broadcast.instantiate(Base.broadcasted(view(op.xss, :, patch), view(op.xcc, :, patch)) do xs, xc
+    @inbounds sign * S[patch_row, xs, smIdx] * x[xc]
+  end))
+end
+
+function RegularizedLeastSquares.rownorm²(op::DenseMultiPatchOperator{T, V}, row::Int64) where {T, V <: AbstractGPUArray}
+  patch = @allowscalar op.RowToPatch[row]
+  patch_row = mod1(row, div(op.M,op.nPatches))
+  smIdx = @allowscalar op.patchToSMIdx[patch]
+  sign = @allowscalar op.sign[patch_row, smIdx]
+  S = op.S
+  return mapreduce(xs -> abs2(sign * S[patch_row, xs, smIdx]), +, view(op.xss, :, patch))
+end
+
+@kernel cpu = false function kaczmarz_update_kernel!(x, @Const(S), @Const(row), @Const(beta), @Const(xcc), @Const(xss), @Const(signs), @Const(M), @Const(RowToPatch), @Const(patchToSMIdx))
+  # Each thread handles one element of the kaczmarz update
+  idx = @index(Global, Linear)
+  patch = RowToPatch[row]
+  patch_row = mod1(row, M)
+  smIdx = patchToSMIdx[patch]
+  sign = eltype(x)(signs[patch_row, smIdx])
+  x[xcc[idx, patch]] += beta * conj(sign * S[patch_row, xss[idx, patch], smIdx])
+end
+
+function RegularizedLeastSquares.kaczmarz_update!(op::DenseMultiPatchOperator{T, V}, x::vecT, row, beta) where {T, vecT <: AbstractGPUVector{T}, V <: AbstractGPUArray{T}}
+  backend = get_backend(x)
+  kernel = kaczmarz_update_kernel!(backend, 256)
+  kernel(x, op.S, row, beta, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = size(op.xss, 1))
+  synchronize(backend)
+  return x
 end
