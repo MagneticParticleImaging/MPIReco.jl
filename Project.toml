@@ -4,6 +4,7 @@ authors = ["Tobias Knopp <tobias@knoppweb.de>"]
 version = "0.6.0"
 
 [deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 DistributedArrays = "aaf54ef3-cdf8-58ed-94cc-d582ad619b94"
@@ -25,13 +26,17 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [compat]
 AbstractImageReconstruction = "0.3"
+Adapt = "3, 4"
+Atomix = "0.1"
 DSP = "0.6, 0.7"
 Distributed = "1"
 DistributedArrays = "0.6"
 FFTW = "1.3"
+GPUArrays = "8, 9, 10"
 ImageUtils = "0.2"
 IniFile = "0.5"
 JLArrays = "0.1"
+KernelAbstractions = "0.8, 0.9"
 LinearAlgebra = "1"
 LinearOperators = "2.3"
 LinearOperatorCollection = "2"
@@ -56,5 +61,13 @@ ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
 ImageQualityIndexes = "2996bd0c-7a13-11e9-2da2-2f5ce47296a9"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
+[weakdeps]
+Atomix = "a9b6321e-bd34-4604-b9c9-b65b8de01458"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
+
 [targets]
 test = ["Test", "HTTP", "FileIO", "LazyArtifacts", "Scratch", "ImageMagick", "ImageQualityIndexes", "Unitful", "JLArrays"]
+
+[extensions]
+MPIRecoKernelAbstractionsExt = ["Atomix","KernelAbstractions", "GPUArrays"]

@@ -26,7 +26,7 @@ _module = "MPIReco"
         _module = "MPIReco"
 
         [parameter.reco.solverParams]
-        _type = "RecoPlan{SimpleSolverParameters}"
+        _type = "RecoPlan{ElaborateSolverParameters}"
         _module = "MPIReco"
 
     [parameter.pre]

@@ -15,7 +15,7 @@ using MPIReco
   params[:recChannels] = 1:2
   params[:iterations] = 3
   params[:sf] = bSFs
-  params[:λ] = 0.003
+  params[:reg] = [L2Regularization(0.003)]
   params[:tfCorrection] = false
   params[:roundPatches] = false
 
