@@ -53,6 +53,7 @@ using MPIReco
   # flexible multi-patch reconstruction
   dirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]
   bSFs = MultiMPIFile(joinpath.(datadir, "calibrations", dirs))
+  params[:sf] = bSFs
   mapping = [1,2,3,4]
   freq = filterFrequencies(bSFs, SNRThresh=5, minFreq=80e3)
   S = [getSF(SF,freq,nothing,Kaczmarz, bgcorrection=false)[1] for SF in bSFs]
