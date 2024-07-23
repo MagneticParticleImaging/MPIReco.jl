@@ -22,8 +22,9 @@ using MPIReco
   params[:iterations] = 1
   params[:spectralLeakageCorrection] = false
   params[:sf] = bSF
-  params[:λ] = 0
+  params[:reg] = [L2Regularization(0.0f0)]
   params[:tfCorrection] = false
+  params[:solver] = Kaczmarz
   c1 = reconstruct("MultiPatch", b; params...)
   @test axisnames(c1) == names
   @test axisvalues(c1) == values1
@@ -52,6 +53,7 @@ using MPIReco
   # flexible multi-patch reconstruction
   dirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]
   bSFs = MultiMPIFile(joinpath.(datadir, "calibrations", dirs))
+  params[:sf] = bSFs
   mapping = [1,2,3,4]
   freq = filterFrequencies(bSFs, SNRThresh=5, minFreq=80e3)
   S = [getSF(SF,freq,nothing,Kaczmarz, bgcorrection=false)[1] for SF in bSFs]

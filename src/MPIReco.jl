@@ -1,11 +1,13 @@
 module MPIReco
   using Reexport
   @reexport using RegularizedLeastSquares
+  using RegularizedLeastSquares.LinearOperators
   @reexport using ImageUtils
   @reexport using MPIFiles
   const shape = MPIFiles.shape
   using AbstractImageReconstruction
   using LRUCache
+  using Adapt
   @reexport using DSP
   using ProgressMeter
   using Unitful

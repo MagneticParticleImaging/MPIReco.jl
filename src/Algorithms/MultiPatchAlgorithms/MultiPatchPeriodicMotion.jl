@@ -24,7 +24,7 @@ end
 function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:PeriodicMotionPreProcessing,<:PeriodicMotionReconstructionParameter,<:AbstractMPIPostProcessingParameters})
   reco = params.reco
   freqs = process(MultiPatchReconstructionAlgorithm, reco.freqFilter, reco.sf)
-  return MultiPatchReconstructionAlgorithm(params, nothing, reco.sf, nothing, nothing, nothing, freqs, Channel{Any}(Inf))
+  return MultiPatchReconstructionAlgorithm(params, nothing, reco.sf, Array, nothing, nothing, nothing, freqs, Channel{Any}(Inf))
 end
 
 function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {R, T, PT <: PeriodicMotionPreProcessing}

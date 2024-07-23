@@ -27,7 +27,7 @@ Base.@kwdef struct ConstraintMaskedSolverParameters{S, P<:AbstractSolverParamete
 end
 export ElaborateSolverParameters
 Base.@kwdef mutable struct ElaborateSolverParameters{SL} <: AbstractSolverParameters{SL}
-  solver::Type{SL}
+  solver::Type{SL} = Kaczmarz
   iterations::Int64 = 10
   enforceReal::Bool = true
   enforcePositive::Bool = true

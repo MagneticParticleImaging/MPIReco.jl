@@ -56,7 +56,7 @@ using MPIReco
     params[:iterations] = 1
     params[:spectralLeakageCorrection] = false
     params[:sf] = bSFs
-    params[:λ] = 0
+    params[:reg] = [L2Regularization(0.0f0)]
     params[:tfCorrection] = false
     c2 = reconstruct("MultiPatch", b; params...)
 
