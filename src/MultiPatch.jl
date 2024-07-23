@@ -222,7 +222,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
 		                gridsize = hcat(calibSize.(SFs)...),
                     fov = hcat(calibFov.(SFs)...),
                     grid = nothing,
-		                tfCorrection = true,
+		                tfCorrection = rxHasTransferFunction(SFs),
 		                kargs...)
 
                     
