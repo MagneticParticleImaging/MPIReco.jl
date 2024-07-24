@@ -46,7 +46,7 @@ export planpath, plandir
 plandir() = abspath(homedir(), ".mpi", "RecoPlans")
 
 function planpath(name::AbstractString)
-  for dir in [joinpath(@__DIR__, "..", "config"),plandir()]
+  for dir in [plandir(), joinpath(@__DIR__, "..", "config")]
     filename = joinpath(dir, string(name, ".toml"))
     if isfile(filename)
       return filename
@@ -58,17 +58,51 @@ end
 const recoPlans = LRU{UInt64, RecoPlan}(maxsize = 3)
 
 export reconstruct
-function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = true; kwargs...) 
-  planfile = AbstractImageReconstruction.planpath(MPIReco, name)
-  key = hash(planfile, hash(mtime(planfile)))
-  plan = get!(recoPlans, key) do
-    loadPlan(planfile, [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares])
-  end
+"""
+    reconstruct(name::AbstractString, data::MPIFile, cache::Bool = true; kwargs...)
+
+Perform a reconstruction with the `RecoPlan` specified by `name` and given `data`. If `cache` is `true` the reconstruction plan is cached and reused if the plan file has not changed.
+Additional keyword arguments can be passed to the reconstruction plan.
+
+`RecoPlans` can be stored in the directory `$(plandir())` or in the MPIReco package config folder. The first plan found is used. The cache considers the last modification time of the plan file.
+If a keyword argument changes the structure of the plan the cache is bypassed.
+
+The cache can be emptied with `emptyRecoCache!()`.
+
+# Examples
+```julia
+julia> mdf = MPIFile("data.mdf");
+
+julia> reconstruct("SinglePatch", mdf; solver = Kaczmarz, reg = [L2Regularization(0.3f0)], iterations = 10, frames = 1:10, ...)
+```
+"""
+function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = true; kwargs...)
+  plan = loadRecoPlan(name, cache; kwargs...)
   setAll!(plan; kwargs...)
   return reconstruct(build(plan), data)
 end
+function loadRecoPlan(name::AbstractString, cache::Bool = true; kwargs...)
+  planfile = AbstractImageReconstruction.planpath(MPIReco, name)
+
+  # If the user disables caching or changes the plan structure we bypass the cache
+  kwargValues = values(values(kwargs))
+  if !cache || any(val -> isa(val, RecoPlan) || isa(val, AbstractImageReconstructionParameters), kwargValues)
+    return loadRecoPlan(planfile)
+  end
+
+  key = hash(planfile, hash(mtime(planfile)))
+  return get!(recoPlans, key) do
+    loadRecoPlan(planfile)
+  end
+end
+loadRecoPlan(planfile::AbstractString) = loadPlan(planfile, [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares])
 
 export emptyRecoCache!
+"""
+    emptyRecoCache!()
+
+Empty the cache of `RecoPlans`. This is useful if the cache is too large.
+"""
 emptyRecoCache!() = Base.empty!(recoPlans)
 
 # Check if contains
