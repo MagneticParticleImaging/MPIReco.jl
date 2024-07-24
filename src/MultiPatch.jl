@@ -161,6 +161,10 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
   return FFOp
 end
 
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractMultiPatchOperatorParameter, bSF::MultiMPIFile, freq, gradient, FFPos, FFPosSF)
+  @info "Loading Multi Patch operator"
+  return MultiPatchOperator(bSF, freq; toKwargs(params)..., FFPos = FFPos, FFPosSF = FFPosSF, gradient = gradient)
+end 
 
 function MultiPatchOperator(SF::MPIFile, freq, bgCorrection::Bool; kargs...)
   return MultiPatchOperator(MultiMPIFile([SF]), freq, bgCorrection; kargs...)
