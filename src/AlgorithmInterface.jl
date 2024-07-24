@@ -81,7 +81,7 @@ function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = true; kw
   setAll!(plan; kwargs...)
   return reconstruct(build(plan), data)
 end
-function loadRecoPlan(name::AbstractString, cache::Bool = true; kwargs...)
+function loadRecoPlan(name::AbstractString, cache::Bool; kwargs...)
   planfile = AbstractImageReconstruction.planpath(MPIReco, name)
 
   # If the user disables caching or changes the plan structure we bypass the cache

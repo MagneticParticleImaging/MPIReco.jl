@@ -32,8 +32,7 @@ recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorit
 AbstractImageReconstruction.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.params
 
 function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
-  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf)
-  sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, S, sf, grid, reco.arrayType)
+  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf, S, reco.arrayType)
   return freqs, sf, grid, reco.arrayType
 end
 
