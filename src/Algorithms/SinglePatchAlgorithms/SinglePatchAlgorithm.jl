@@ -67,7 +67,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::Union{W, Proc
   if !isnothing(result)
     result = map(real(eltype(algo.S)), result)
   end
-  return nothing
+  return result
 end
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}

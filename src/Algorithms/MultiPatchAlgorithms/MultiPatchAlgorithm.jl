@@ -1,5 +1,5 @@
 export MultiPatchReconstructionAlgorithm, MultiPatchReconstructionParameter
-Base.@kwdef struct MultiPatchReconstructionParameter{matT <: AbstractArray,F<:AbstractFrequencyFilterParameter,O<:AbstractMultiPatchOperatorParameter, S<:AbstractSolverParameters, FF<:AbstractFocusFieldPositions, FFSF<:AbstractFocusFieldPositions, R <: AbstractRegularization} <: AbstractMultiPatchReconstructionParameters
+Base.@kwdef struct MultiPatchReconstructionParameter{matT <: AbstractArray,F<:AbstractFrequencyFilterParameter,O<:AbstractMultiPatchOperatorParameter, S<:AbstractSolverParameters, FF<:AbstractFocusFieldPositions, FFSF<:AbstractFocusFieldPositions, R <: AbstractRegularization, W<:AbstractWeightingParameters} <: AbstractMultiPatchReconstructionParameters
   arrayType::Type{matT} = Array
   # File
   sf::MultiMPIFile
@@ -9,7 +9,7 @@ Base.@kwdef struct MultiPatchReconstructionParameter{matT <: AbstractArray,F<:Ab
   ffPosSF::FFSF = DefaultFocusFieldPositions()
   solverParams::S
   reg::Vector{R} = AbstractRegularization[]
-  # weightingType::WeightingType = WeightingType.None
+  weightingParams::Union{W, ProcessResultCache{W}} = NoWeightingParameters()
 end
 
 Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P, matT <: AbstractArray} <: AbstractMultiPatchReconstructionAlgorithm where {P<:AbstractMultiPatchAlgorithmParameters}
@@ -121,9 +121,19 @@ function process(::Type{<:MultiPatchReconstructionAlgorithm}, params::ExternalPr
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::MultiPatchReconstructionParameter, u::AbstractArray)
-  solver = LeastSquaresParameters(S = algo.ffOp, reg = params.reg, solverParams = params.solverParams)
+  weights = adapt(algo.arrayType, process(algo, params.weightingParams, u))
+
+  solver = LeastSquaresParameters(S = algo.ffOp, reg = params.reg, solverParams = params.solverParams, weights = weights)
 
   result = process(algo, solver, u)
 
   return gridresult(result, algo.ffOp.grid, algo.sf)
+end
+
+function process(algo::MultiPatchReconstructionAlgorithm, params::Union{W, ProcessResultCache{W}}, u) where {W <: AbstractWeightingParameters}
+  result = process(typeof(algo), params, algo.freqs, algo.ffOp)
+  if !isnothing(result)
+    result = map(real(eltype(algo.ffOp)), result)
+  end
+  return result
 end
