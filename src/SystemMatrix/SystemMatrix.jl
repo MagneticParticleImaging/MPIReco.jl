@@ -123,7 +123,9 @@ end
 getSF(bSF, frequencies, sparseTrafo, solver::AbstractLinearSolver; kargs...) = getSF(bSF, frequencies, sparseTrafo, typeof(solver); kargs...)
 function getSF(bSF, frequencies, sparseTrafo, solver::Type{<:AbstractLinearSolver}; arrayType = Array, kargs...)
   SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
-  return prepareSF(solver, SF, grid, arrayType)
+  SF, grid = prepareSF(solver, SF, grid)
+  SF = adaptSF(arrayType, SF)
+  return SF, grid
 end
 
 function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::Union{L, ProcessResultCache{L}}, sf::MPIFile, solverT, arrayType = Array) where L <: AbstractSystemMatrixLoadingParameter
