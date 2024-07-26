@@ -111,6 +111,13 @@ Adapt.adapt_structure(::Type{Array}, op::AbstractMultiPatchOperator) = op
 LinearOperators.storage_type(op::MultiPatchOperator) = LinearOperators.storage_type(first(op.S))
 LinearOperators.storage_type(op::DenseMultiPatchOperator) = typeof(similar(op.S, 0))
 
+function Base.hash(op::AbstractMultiPatchOperator, h::UInt64)
+  h = hash(typeof(op), h)
+  for field in fieldnames(typeof(op))
+    h = hash(getfield(op, field), h)
+  end
+  return h
+end
 
 function Base.convert(::Type{DenseMultiPatchOperator}, op::MultiPatchOperator)
   S = stack(op.S)

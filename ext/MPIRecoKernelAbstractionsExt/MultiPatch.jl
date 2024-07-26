@@ -141,3 +141,18 @@ function RegularizedLeastSquares.kaczmarz_update!(op::DenseMultiPatchOperator{T,
   synchronize(backend)
   return x
 end
+
+function Base.hash(op::DenseMultiPatchOperator{T, V}, h::UInt64) where {T, V <: AbstractGPUArray{T}}
+  @warn "Hashing of GPU DenseMultiPatchOperator is inefficient"
+  h = hash(typeof(op), h)
+  h = @allowscalar hash(op.S, h)
+  h = hash(op.grid, h)
+  h = hash(op.N, h)
+  h = hash(op.M, h)
+  h = @allowscalar hash(op.RowToPatch, h)
+  h = @allowscalar hash(op.xcc, h)
+  h = @allowscalar hash(op.xss, h)
+  h = @allowscalar hash(op.sign, h)
+  h = hash(op.nPatches, h)
+  h = @allowscalar hash(op.patchToSMIdx, h)
+end
