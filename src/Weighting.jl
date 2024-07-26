@@ -5,24 +5,42 @@ abstract type AbstractWeightingParameters <: AbstractMPIRecoParameters end
 
 export NoWeightingParameters
 struct NoWeightingParameters <: AbstractWeightingParameters end
-process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoWeightingParameters, data) = nothing
+process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoWeightingParameters, args...) = nothing
 
 export ChannelWeightingParameters
 Base.@kwdef struct ChannelWeightingParameters <: AbstractWeightingParameters
   channelWeights::Vector{Float64} = [1.0, 1.0, 1.0]
 end
-process(::Type{<:AbstractMPIRecoAlgorithm}, params::ChannelWeightingParameters, freqs::Vector{CartesianIndex{2}}) = map(x-> params.channelWeights[x[2]], freqs)
+process(::Type{<:AbstractMPIRecoAlgorithm}, params::ChannelWeightingParameters, freqs::Vector{CartesianIndex{2}}, args...) = map(x-> params.channelWeights[x[2]], freqs)
 
 export WhiteningWeightingParameters
 Base.@kwdef struct WhiteningWeightingParameters <: AbstractWeightingParameters
   whiteningMeas::MPIFile
   tfCorrection::Bool = false
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::WhiteningWeightingParameters, freqs::Vector{CartesianIndex{2}})
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::WhiteningWeightingParameters, freqs::Vector{CartesianIndex{2}}, args...)
   u_bg = getMeasurementsFD(params.whiteningMeas, false, frequencies=freqs, frames=measBGFrameIdx(params.whiteningMeas), bgCorrection = false, tfCorrection=false)
   bg_std = std(u_bg, dims=3)
   weights = minimum(abs.(vec(bg_std))) ./ abs.(vec(bg_std))
   return weights
+end
+
+export RowNormWeightingParameters
+Base.@kwdef struct RowNormWeightingParameters <: AbstractWeightingParameters
+  # NOP
+end
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::RowNormWeightingParameters, freqs, op, args...)
+  weights = map(r -> 1/sqrt(rownorm²(op, r)), 1:size(op, 1))
+  return weights
+end
+
+export CompositeWeightingParameters
+Base.@kwdef struct CompositeWeightingParameters{WS} <: AbstractWeightingParameters where WS <: AbstractWeightingParameters
+  weightingParameters::Vector{WS}
+end
+function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::CompositeWeightingParameters, args...)
+  weights = map(p -> process(algoT, p, args...), params.weightingParameters)
+  return reduce(.*, weights)
 end
 #=
 baremodule WeightingType
