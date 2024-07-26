@@ -4,7 +4,7 @@ Base.@kwdef struct MultiPatchReconstructionParameter{matT <: AbstractArray,F<:Ab
   # File
   sf::MultiMPIFile
   freqFilter::F
-  opParams::O
+  opParams::Union{O, ProcessResultCache{O}}
   ffPos::FF = DefaultFocusFieldPositions()
   ffPosSF::FFSF = DefaultFocusFieldPositions()
   solverParams::S
@@ -15,7 +15,7 @@ end
 Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P, matT <: AbstractArray} <: AbstractMultiPatchReconstructionAlgorithm where {P<:AbstractMultiPatchAlgorithmParameters}
   params::P
   # Could also do reconstruction progress meter here
-  opParams::Union{AbstractMultiPatchOperatorParameter, Nothing} = nothing
+  opParams::Union{AbstractMultiPatchOperatorParameter, ProcessResultCache{<:AbstractMultiPatchOperatorParameter},Nothing} = nothing
   sf::MultiMPIFile
   arrayType::Type{matT}
   ffOp::Union{Nothing, AbstractMultiPatchOperator}
@@ -65,7 +65,7 @@ function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorith
   Base.put!(algo.output, result)
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, params::AbstractMultiPatchOperatorParameter, f::MPIFile, frequencies::Vector{CartesianIndex{2}})
+function process(algo::MultiPatchReconstructionAlgorithm, params::Union{OP, ProcessResultCache{OP}}, f::MPIFile, frequencies::Vector{CartesianIndex{2}}) where OP <: AbstractMultiPatchOperatorParameter
   ffPos_ = ffPos(f)
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos_)
   idxFirstPeriod = getindex.(periodsSortedbyFFPos,1)
@@ -75,11 +75,9 @@ function process(algo::MultiPatchReconstructionAlgorithm, params::AbstractMultiP
   if !isnothing(algo.ffPos)
     ffPos_[:] = algo.ffPos
   end
-
-  ffPosSF = algo.ffPosSF
-
-  operator = MultiPatchOperator(algo.sf, frequencies; toKwargs(params)..., gradient = gradient, FFPos = ffPos_, FFPosSF = ffPosSF)
-  return adapt(algo.arrayType, operator)
+  
+  result = process(typeof(algo), params, algo.sf, frequencies, gradient, ffPos_, algo.ffPosSF)
+  return adapt(algo.arrayType, result)
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::Union{A, ProcessResultCache{<:A}}, f::MPIFile, args...) where A <: AbstractMPIPreProcessingParameters

@@ -7,7 +7,7 @@ Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoa
   # Solver
   solverParams::SP
   reg::Vector{R} = AbstractRegularization[]
-  weightingParams::W = NoWeightingParameters()
+  weightingParams::Union{W, ProcessResultCache{W}} = NoWeightingParameters()
 end
 
 Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P, matT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
@@ -32,8 +32,7 @@ recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorit
 AbstractImageReconstruction.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.params
 
 function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
-  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf)
-  sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, S, sf, grid, reco.arrayType)
+  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf, S, reco.arrayType)
   return freqs, sf, grid, reco.arrayType
 end
 
@@ -63,7 +62,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchRe
   return gridresult(result, algo.grid, algo.sf)
 end
 
-process(algo::SinglePatchReconstructionAlgorithm, params::Union{ChannelWeightingParameters, WhiteningWeightingParameters}, u) = map(real(eltype(algo.S)), process(typeof(algo), params, algo.freqs))
+process(algo::SinglePatchReconstructionAlgorithm, params::Union{W, ProcessResultCache{W}}, u) where {W <: Union{ChannelWeightingParameters, WhiteningWeightingParameters}} = map(real(eltype(algo.S)), process(typeof(algo), params, algo.freqs))
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
   return nothing

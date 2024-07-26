@@ -6,6 +6,7 @@ module MPIReco
   @reexport using MPIFiles
   const shape = MPIFiles.shape
   using AbstractImageReconstruction
+  using LRUCache
   using Adapt
   @reexport using DSP
   using ProgressMeter

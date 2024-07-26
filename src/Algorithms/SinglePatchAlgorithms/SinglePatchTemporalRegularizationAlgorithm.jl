@@ -40,8 +40,7 @@ recoAlgorithmTypes(::Type{SinglePatchTemporalRegularizationAlgorithm}) = SystemM
 AbstractImageReconstruction.parameter(algo::SinglePatchTemporalRegularizationAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchTemporalRegularizationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
-  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf)
-  sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, Kaczmarz, sf, grid, reco.arrayType)
+  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf, Kaczmarz, reco.arrayType)
   return freqs, sf, grid, reco.arrayType
 end
 

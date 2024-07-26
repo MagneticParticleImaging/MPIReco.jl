@@ -52,12 +52,11 @@ export AbstractSystemMatrixLoadingParameter
 abstract type AbstractSystemMatrixLoadingParameter <: AbstractSystemMatrixParameter end
 
 export DenseSystemMatixLoadingParameter
-Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, matT <: AbstractArray, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
+Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
   freqFilter::F
   gridding::G
   bgCorrection::Bool = false
   loadasreal::Bool = false
-  arrayType::Type{matT} = Array
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile)
   # Construct freqFilter
@@ -124,18 +123,24 @@ end
 getSF(bSF, frequencies, sparseTrafo, solver::AbstractLinearSolver; kargs...) = getSF(bSF, frequencies, sparseTrafo, typeof(solver); kargs...)
 function getSF(bSF, frequencies, sparseTrafo, solver::Type{<:AbstractLinearSolver}; arrayType = Array, kargs...)
   SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
-  return prepareSF(solver, SF, grid, arrayType)
-end
-
-
-function AbstractImageReconstruction.process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractSystemMatrixLoadingParameter, solver::Type{<:AbstractLinearSolver}, sf, grid, arrayType)
-  return prepareSF(solver, sf, grid, arrayType)
-end
-function prepareSF(solver::Type{<:AbstractLinearSolver}, SF, grid, arrayType)
   SF, grid = prepareSF(solver, SF, grid)
-  # adapt(Array, Sparse-CPU) results in dense array
-  return arrayType != Array ? adapt(arrayType, SF) : SF, grid
+  SF = adaptSF(arrayType, SF)
+  return SF, grid
 end
+
+function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::Union{L, ProcessResultCache{L}}, sf::MPIFile, solverT, arrayType = Array) where L <: AbstractSystemMatrixLoadingParameter
+  freqs, sf, grid = process(type, params, sf) # Cachable process
+  sf, grid = prepareSF(solverT, sf, grid)
+  sf = adaptSF(arrayType, sf)
+  return freqs, sf, grid
+end
+
+
+# Assumption SF is a (wrapped) CPU-array
+# adapt(Array, Sparse-CPU) results in dense array, so we only want to adapt if necessary
+adaptSF(arrayType, SF) = adapt(arrayType, SF)
+adaptSF(arrayType::Type{<:Array}, SF) = SF
+
 prepareSF(solver::Type{Kaczmarz}, SF, grid) = transpose(SF), grid
 prepareSF(solver::Type{PseudoInverse}, SF, grid) = SVD(svd(transpose(SF))...), grid
 prepareSF(solver::Type{DirectSolver}, SF, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid

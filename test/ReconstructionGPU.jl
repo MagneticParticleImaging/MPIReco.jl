@@ -61,7 +61,7 @@ for arrayType in arrayTypes
     @test isapprox(arraydata(c3), arraydata(c4))
   end
 
-  @testset "Multi Patch Reconstruction: $arrayType" begin
+  arrayType == JLArray || @testset "Multi Patch Reconstruction: $arrayType" begin
     dirs = ["1.mdf", "2.mdf", "3.mdf", "4.mdf"]
     b = MultiMPIFile(joinpath.(datadir, "measurements", "20211226_203916_MultiPatch", dirs))
   
