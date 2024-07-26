@@ -62,7 +62,13 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchRe
   return gridresult(result, algo.grid, algo.sf)
 end
 
-process(algo::SinglePatchReconstructionAlgorithm, params::Union{W, ProcessResultCache{W}}, u) where {W <: Union{ChannelWeightingParameters, WhiteningWeightingParameters}} = map(real(eltype(algo.S)), process(typeof(algo), params, algo.freqs))
+function process(algo::SinglePatchReconstructionAlgorithm, params::Union{W, ProcessResultCache{W}}, u) where {W <: AbstractWeightingParameters} 
+  result = process(typeof(algo), params, algo.freqs, algo.sf)
+  if !isnothing(result)
+    result = map(real(eltype(algo.S)), result)
+  end
+  return nothing
+end
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
   return nothing
