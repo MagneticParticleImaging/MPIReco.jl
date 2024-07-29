@@ -1,10 +1,10 @@
 export SinglePatchTemporalRegularizationAlgorithm, SinglePatchTemporalRegularizationReconstructionParameter
 Base.@kwdef struct SinglePatchTemporalRegularizationReconstructionParameter{L<:DenseSystemMatixLoadingParameter,
-  SP<:AbstractSolverParameters, matT <: AbstractArray} <: AbstractSinglePatchReconstructionParameters
+  SP<:AbstractSolverParameters, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sfLoad::Union{L, ProcessResultCache{L}}
-  arrayType::Type{matT} = Array
+  arrayType::Type{arrT} = Array
   # Solver
   solverParams::SP
   λ::Float32
@@ -15,11 +15,11 @@ Base.@kwdef struct SinglePatchTemporalRegularizationReconstructionParameter{L<:D
   bgDict::BGDictParameter
 end
 
-Base.@kwdef mutable struct SinglePatchTemporalRegularizationAlgorithm{P, matT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
+Base.@kwdef mutable struct SinglePatchTemporalRegularizationAlgorithm{P, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
   params::P
   sf::Union{MPIFile,Vector{MPIFile}}
   S::AbstractArray
-  arrayType::Type{matT}
+  arrayType::Type{arrT}
   bgDict::AbstractArray
   idxFG::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
   idxFG::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing

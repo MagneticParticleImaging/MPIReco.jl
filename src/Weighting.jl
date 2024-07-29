@@ -2,6 +2,20 @@ export getWeights, WeightingType, setFreqToZero
 
 export AbstractWeightingParameters
 abstract type AbstractWeightingParameters <: AbstractMPIRecoParameters end
+function process(type::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractWeightingParameters, freqs, op = nothing, u = nothing, arrayType = Array)
+  result = process(type, params, freqs, op, u)
+  if !isnothing(result)
+    result = map(real(eltype(algo.S)), result)
+  end
+  return adapt(arrayType, result)
+end
+
+abstract type WeightingType end
+struct MeasurementBasedWeighting <: WeightingType end
+struct SystemMatrixBasedWeighting <: WeightingType end
+
+WeightingType(::AbstractWeightingParameters) = SystemMatrixBasedWeighting()
+WeightingType(cache::ProcessResultCache) = WeightingType(cache.param)
 
 export NoWeightingParameters
 struct NoWeightingParameters <: AbstractWeightingParameters end
