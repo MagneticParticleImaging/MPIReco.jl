@@ -5,10 +5,10 @@ function Adapt.adapt_structure(::Type{arrT}, op::MultiPatchOperator) where {arrT
 
   # Ideally we create a DenseMultiPatchOperator on the GPU
   if validSMs && validXCC && validXSS
-    S = adapt(arrT, stack(op.S))
+    S = stack(adapt.(arrT, op.S))
     # We want to use Int32 for better GPU performance
-    xcc = Int32.(adapt(arrT, stack(op.xcc)))
-    xss = Int32.(adapt(arrT, stack(op.xss)))
+    xcc = Int32.(stack(adapt.(arrT, op.xcc)))
+    xss = Int32.(stack(adapt.(arrT, op.xss)))
     sign = Int32.(adapt(arrT, op.sign))
     RowToPatch = Int32.(adapt(arrT, op.RowToPatch))
     patchToSMIdx = Int32.(adapt(arrT, op.patchToSMIdx))
