@@ -1,21 +1,22 @@
 Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter, SL<:AbstractLinearSolver,
-   matT <: AbstractArray, SP<:AbstractSolverParameters{SL}, R<:AbstractRegularization, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
+   arrT <: AbstractArray, SP<:AbstractSolverParameters{SL}, R<:AbstractRegularization, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sfLoad::Union{L, ProcessResultCache{L}}
-  arrayType::Type{matT} = Array
+  arrayType::Type{arrT} = Array
   # Solver
   solverParams::SP
   reg::Vector{R} = AbstractRegularization[]
   weightingParams::Union{W, ProcessResultCache{W}} = NoWeightingParameters()
 end
 
-Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P, matT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
+Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P, SM, arrT <: AbstractArray, vecT <: arrT} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
   params::P
   # Could also do reconstruction progress meter here
   sf::Union{MPIFile, Vector{MPIFile}}
-  S::AbstractArray
-  arrayType::Type{matT}
+  S::SM
+  weights::Union{Nothing, vecT} = nothing
+  arrayType::Type{arrT}
   grid::RegularGridPositions
   freqs::Vector{CartesianIndex{2}}
   output::Channel{Any}
@@ -26,7 +27,8 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPr
 end
 function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractMPIPostProcessingParameters}
   freqs, S, grid, arrayType = prepareSystemMatrix(params.reco)
-  return SinglePatchReconstructionAlgorithm(params, params.reco.sf, S, arrayType, grid, freqs, Channel{Any}(Inf))
+  weights = prepareWeights(params.reco, freqs, S)
+  return SinglePatchReconstructionAlgorithm{typeof(params), typeof(S), arrayType, typeof(arrayType{real(eltype(S))}(undef, 0))}(params, params.reco.sf, S, weights, arrayType, grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
 AbstractImageReconstruction.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.params
@@ -36,6 +38,9 @@ function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) wher
   return freqs, sf, grid, reco.arrayType
 end
 
+function prepareWeights(reco::SinglePatchReconstructionParameter{L,S,arrT,SP,R,W}, freqs, sf) where {L, S, arrT, SP, R, W<:AbstractWeightingParameters}
+  return process(AbstractMPIRecoAlgorithm, reco.weightingParams, freqs, sf, nothing, reco.arrayType)
+end
 
 AbstractImageReconstruction.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.output)
 
@@ -51,7 +56,7 @@ end
 
 
 function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter, u)
-  weights = adapt(algo.arrayType, process(algo, params.weightingParams, u))
+  weights = process(algo, params.weightingParams, u, WeightingType(params.weightingParams))
 
   B = getLinearOperator(algo, params)
 
@@ -62,7 +67,14 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchRe
   return gridresult(result, algo.grid, algo.sf)
 end
 
-process(algo::SinglePatchReconstructionAlgorithm, params::Union{W, ProcessResultCache{W}}, u) where {W <: Union{ChannelWeightingParameters, WhiteningWeightingParameters}} = map(real(eltype(algo.S)), process(typeof(algo), params, algo.freqs))
+function process(algo::SinglePatchReconstructionAlgorithm, params::Union{W, ProcessResultCache{W}}, u, ::MeasurementBasedWeighting) where W<:AbstractWeightingParameters
+  return process(typeof(algo), params, algo.freqs, algo.S, u, algo.arrayType)
+end
+
+
+function process(algo::SinglePatchReconstructionAlgorithm, params::Union{W, ProcessResultCache{W}}, u, ::SystemMatrixBasedWeighting) where W<:AbstractWeightingParameters
+  return algo.weights
+end
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
   return nothing

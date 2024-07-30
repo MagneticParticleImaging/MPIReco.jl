@@ -128,4 +128,12 @@
   c8 = reconstruct("SinglePatch", b; params...)
   exportImage(joinpath(imgdir, "Reconstruction8.png"), Array(c8[1,:,:,1,1]))
   @test compareImg("Reconstruction8.png")
+
+  c9a = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = NoWeightingParameters())
+  c9b = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = RowNormWeightingParameters())
+  @test isapprox(arraydata(c9a), arraydata(c9b))
+
+  c10a = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = WhiteningWeightingParameters(whiteningMeas = bSF))
+  c10b = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = CompositeWeightingParameters([WhiteningWeightingParameters(whiteningMeas = bSF), RowNormWeightingParameters()]))
+  @test isapprox(arraydata(c9a), arraydata(c9b))
 end

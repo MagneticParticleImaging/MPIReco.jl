@@ -103,6 +103,10 @@ for arrayType in arrayTypes
     c2 = reconstruct("MultiPatch", b; params..., arrayType = arrayType)
     @test isapprox(arraydata(c1), arraydata(c2), rtol = 0.02)
 
+    c3 = reconstruct("MultiPatch", b; params..., weightingParams = RowNormWeightingParameters())
+    c4 = reconstruct("MultiPatch", b; params..., weightingParams = RowNormWeightingParameters(), arrayType = arrayType)
+    @test isapprox(arraydata(c3), arraydata(c4), rtol = 0.02)
+
     # Test Kaczmarz since it uses specific functions and not just mul!
     bSF = MultiMPIFile([joinpath(datadir, "calibrations", "12.mdf")])
     dirs = ["1.mdf", "2.mdf", "3.mdf", "4.mdf"]
@@ -118,9 +122,9 @@ for arrayType in arrayTypes
     params[:reg] = [L2Regularization(0.0f0)]
     params[:tfCorrection] = false
     params[:solver] = Kaczmarz
-    c3 = reconstruct("MultiPatch", b; params...)
-    c4 = reconstruct("MultiPatch", b; params..., arrayType = arrayType)
-    @test isapprox(arraydata(c3), arraydata(c4))
+    c5 = reconstruct("MultiPatch", b; params...)
+    c6 = reconstruct("MultiPatch", b; params..., arrayType = arrayType)
+    @test isapprox(arraydata(c5), arraydata(c6))
   end
 
 end

@@ -1,10 +1,10 @@
 export SinglePatchBGEstimationAlgorithm, SinglePatchBGEstimationReconstructionParameter
 Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystemMatixLoadingParameter,
-  SP<:AbstractSolverParameters, matT <: AbstractArray} <: AbstractSinglePatchReconstructionParameters
+  SP<:AbstractSolverParameters, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
   sfLoad::Union{L, ProcessResultCache{L}}
-  arrayType::Type{matT} = Array
+  arrayType::Type{arrT} = Array
   # Solver
   solverParams::SP
   λ::Float32
@@ -13,12 +13,13 @@ Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystem
   bgDict::BGDictParameter
 end
 
-Base.@kwdef mutable struct SinglePatchBGEstimationAlgorithm{P, matT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
+Base.@kwdef mutable struct SinglePatchBGEstimationAlgorithm{P, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
   params::P
   # Could also do reconstruction progress meter here
   sf::Union{MPIFile,Vector{MPIFile}}
   S::AbstractArray
-  arrayType::Type{matT}
+  #weights::Union{Nothing, vecT} = nothing
+  arrayType::Type{arrT}
   bgDict::AbstractArray
   grid::RegularGridPositions
   freqs::Vector{CartesianIndex{2}}
@@ -30,7 +31,7 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPr
 end
 function SinglePatchBGEstimationAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:SinglePatchBGEstimationReconstructionParameter,PT<:AbstractMPIPostProcessingParameters}
   freqs, S, grid, arrayType = prepareSystemMatrix(params.reco)
-  return SinglePatchBGEstimationAlgorithm(params, params.reco.sf, S, arrayType, process(SinglePatchBGEstimationAlgorithm, freqs, params.reco.bgDict), grid, freqs, Channel{Any}(Inf))
+  return SinglePatchBGEstimationAlgorithm(params, params.reco.sf, S, nothing, arrayType, process(SinglePatchBGEstimationAlgorithm, freqs, params.reco.bgDict), grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchBGEstimationAlgorithm}) = SystemMatrixBasedAlgorithm()
 AbstractImageReconstruction.parameter(algo::SinglePatchBGEstimationAlgorithm) = algo.origParam

@@ -5,10 +5,10 @@ function Adapt.adapt_structure(::Type{arrT}, op::MultiPatchOperator) where {arrT
 
   # Ideally we create a DenseMultiPatchOperator on the GPU
   if validSMs && validXCC && validXSS
-    S = adapt(arrT, stack(op.S))
+    S = stack(adapt.(arrT, op.S))
     # We want to use Int32 for better GPU performance
-    xcc = Int32.(adapt(arrT, stack(op.xcc)))
-    xss = Int32.(adapt(arrT, stack(op.xss)))
+    xcc = Int32.(stack(adapt.(arrT, op.xcc)))
+    xss = Int32.(stack(adapt.(arrT, op.xss)))
     sign = Int32.(adapt(arrT, op.sign))
     RowToPatch = Int32.(adapt(arrT, op.RowToPatch))
     patchToSMIdx = Int32.(adapt(arrT, op.patchToSMIdx))
@@ -140,4 +140,78 @@ function RegularizedLeastSquares.kaczmarz_update!(op::DenseMultiPatchOperator{T,
   kernel(x, op.S, row, beta, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = size(op.xss, 1))
   synchronize(backend)
   return x
+end
+
+function RegularizedLeastSquares.normalize(::SystemMatrixBasedNormalization, op::OP, x) where {T, V <: AbstractGPUArray{T}, OP <: DenseMultiPatchOperator{T, V}}
+  weights = one(real(eltype(op)))
+  energy = normalize_dense_op(op, weights)
+  return norm(energy)^2/size(op, 2)
+end
+
+function RegularizedLeastSquares.normalize(::SystemMatrixBasedNormalization, prod::ProdOp{T, <:WeightingOp, OP}, x) where {T, V <: AbstractGPUArray{T}, OP <: DenseMultiPatchOperator{T, V}}
+  op = prod.B
+  weights = prod.A.weights
+  energy = normalize_dense_op(op, weights)
+  return norm(energy)^2/size(prod, 2)
+end
+
+function normalize_dense_op(op::DenseMultiPatchOperator{T, V}, weights) where {T, V <: AbstractGPUArray{T}}
+  backend = get_backend(op.S)
+  kernel = normalize_kernel!(backend, 256)
+  energy = KernelAbstractions.zeros(backend, real(eltype(op)), size(op, 1))
+  kernel(energy, weights, op.S, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = (256, size(op, 1)))
+  synchronize(backend)
+  return energy
+end
+
+# The normalization kernels are structured the same as the mul!-kernel. The multiplication with x is replaced by abs2 for the rownorm²
+@kernel cpu = false inbounds = true function normalize_kernel!(energy, weights, @Const(S), @Const(xss), @Const(signs), @Const(M), @Const(RowToPatch), @Const(patchToSMIdx))
+  # Each group/block handles a single row of the operator
+  operator_row = @index(Group, Linear) # k
+  patch = RowToPatch[operator_row] # p
+  patch_row = mod1(operator_row, M) # j
+  smIdx = patchToSMIdx[patch]
+  sign = eltype(energy)(signs[patch_row, smIdx])
+  grid_stride = prod(@groupsize())
+  N = Int32(size(xss, 1))
+  
+  localIdx = @index(Local, Linear)
+  shared = @localmem eltype(energy) grid_stride
+  shared[localIdx] = zero(eltype(energy))
+
+  @unroll for i = localIdx:grid_stride:N
+    shared[localIdx] = shared[localIdx] + abs2(sign * S[patch_row, xss[i, patch], smIdx])
+  end
+  @synchronize
+
+  @private s = div(min(grid_stride, N), Int32(2))
+  while s > Int32(0)
+    if localIdx <= s
+      shared[localIdx] = shared[localIdx] + shared[localIdx + s]
+    end
+    s >>= 1
+    @synchronize
+  end
+
+  if localIdx == 1
+    energy[operator_row] = sqrt(get_kernel_weights(weights, operator_row)^2 * shared[localIdx])
+  end
+end
+
+@inline get_kernel_weights(weights::AbstractArray, operator_row) = weights[operator_row]
+@inline get_kernel_weights(weights::Number, operator_row) = weights
+
+function Base.hash(op::DenseMultiPatchOperator{T, V}, h::UInt64) where {T, V <: AbstractGPUArray{T}}
+  @warn "Hashing of GPU DenseMultiPatchOperator is inefficient"
+  h = hash(typeof(op), h)
+  h = @allowscalar hash(op.S, h)
+  h = hash(op.grid, h)
+  h = hash(op.N, h)
+  h = hash(op.M, h)
+  h = @allowscalar hash(op.RowToPatch, h)
+  h = @allowscalar hash(op.xcc, h)
+  h = @allowscalar hash(op.xss, h)
+  h = @allowscalar hash(op.sign, h)
+  h = hash(op.nPatches, h)
+  h = @allowscalar hash(op.patchToSMIdx, h)
 end
