@@ -1,7 +1,7 @@
 name = "MPIReco"
 uuid = "e4246700-6248-511e-8146-a1d1f47669d2"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.6.0"
+version = "0.7.0"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
