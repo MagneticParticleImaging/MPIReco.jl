@@ -2,6 +2,7 @@ export AbstractFrequencyFilterParameter
 abstract type AbstractFrequencyFilterParameter <: AbstractMPIRecoParameters end
 
 export NoFrequencyFilterParameter
+# TODO This requires numPeriodAverages and numPeriodGrouping and should use a freq. loading function from MPIFiles
 struct NoFrequencyFilterParameter <: AbstractFrequencyFilterParameter end
 
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoFrequencyFilterParameter, file::MPIFile)
@@ -9,14 +10,17 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoFrequencyFilterPa
 end
 
 export DirectSelectionFrequencyFilterParameters
-Base.@kwdef struct DirectSelectionFrequencyFilterParameters{T <: Integer, FIT <: AbstractVector{T}} <: AbstractFrequencyFilterParameter
-  freqIndices::FIT
+Base.@kwdef struct DirectSelectionFrequencyFilterParameters{T <: Union{Integer, CartesianIndex{2}}, FIT <: AbstractVector{T}} <: AbstractFrequencyFilterParameter
+  freqIndices::Union{Nothing, FIT} = nothing
 end
-
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters, file::MPIFile)
+DirectSelectionFrequencyFilterParameters() = DirectSelectionFrequencyFilterParameters{CartesianIndex{2}, Vector{CartesianIndex{2}}}(nothing)
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters{T}, file::MPIFile) where T <: Integer
   nFreq = params.freqIndices
   nReceivers = rxNumChannels(file)
-  return collect(vec(CartesianIndices((nFreq, nReceivers))))
+  return vec([CartesianIndex{2}(i, j) for i in nFreq, j in nReceivers])
+end
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters{T}, file::MPIFile) where T <: CartesianIndex{2}
+  return params.freqIndices
 end
 
 # Could possible also be nested
@@ -64,4 +68,12 @@ end
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractFrequencyFilterParameter, file::MPIFile)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:maxFreq => rxBandwidth(file), :recChannels => 1:rxNumChannels(file))) 
   filterFrequencies(file; kwargs...)
+end
+
+export CompositeFrequencyFilterParameters
+Base.@kwdef struct CompositeFrequencyFilterParameters{FS} <: AbstractFrequencyFilterParameter where FS <: AbstractFrequencyFilterParameter
+  filters::Vector{FS}
+end
+function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::CompositeFrequencyFilterParameters, file::MPIFile)
+  return reduce(intersect, filter(!isnothing, map(p -> process(algoT, p, file), params.filters)))
 end

@@ -136,4 +136,45 @@
   c10a = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = WhiteningWeightingParameters(whiteningMeas = bSF))
   c10b = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = CompositeWeightingParameters([WhiteningWeightingParameters(whiteningMeas = bSF), RowNormWeightingParameters()]))
   @test isapprox(arraydata(c9a), arraydata(c9b))
+
+  # Frequency Filtering
+  params = Dict{Symbol, Any}()
+  params[:SNRThresh] = 5
+  params[:frames] = 1:1
+  params[:minFreq] = 80e3
+  params[:recChannels] = 1:2
+  params[:iterations] = 1
+  params[:spectralLeakageCorrection] = true
+  params[:sf] = bSF
+  params[:reg] = [L2Regularization(0.0f0)]
+  params[:solver] = Kaczmarz
+
+  freqs = filterFrequencies(bSF; minFreq = params[:minFreq], recChannels = params[:recChannels], SNRThresh = params[:SNRThresh])
+  c11a = reconstruct("SinglePatch", b; params...)
+  c11b = reconstruct("SinglePatch", b; params..., freqFilter = DirectSelectionFrequencyFilterParameters(freqIndices = freqs))
+  @test isapprox(arraydata(c11a), arraydata(c11b))
+
+  freq_components = map(f -> f[1], freqs)
+  custom_freqs = vec([CartesianIndex{2}(i, j) for i in freq_components, j in rxNumChannels(bSF)])
+  c11c = reconstruct("SinglePatch", b; params..., freqFilter = DirectSelectionFrequencyFilterParameters(freqIndices = custom_freqs))
+  c11d = reconstruct("SinglePatch", b; params..., freqFilter = DirectSelectionFrequencyFilterParameters(freqIndices = freq_components))
+  @test isapprox(arraydata(c11c), arraydata(c11d))
+
+  # No given freqs should be same as normal SNR thresh
+  freqFilter = CompositeFrequencyFilterParameters([
+    DirectSelectionFrequencyFilterParameters(),
+    SNRThresholdFrequencyFilterParameter(minFreq = params[:minFreq], SNRThresh = params[:SNRThresh], recChannels = params[:recChannels])
+  ])
+  c11e = reconstruct("SinglePatch", b; params..., freqFilter = freqFilter)
+  @test isapprox(arraydata(c11a), arraydata(c11e))
+
+  # Custom freqs should remove one channel
+  custom_freqs = filter(f -> f[2] == 2, freqs)
+  freqFilter = CompositeFrequencyFilterParameters([
+    DirectSelectionFrequencyFilterParameters(freqIndices = custom_freqs),
+    SNRThresholdFrequencyFilterParameter(minFreq = params[:minFreq], SNRThresh = params[:SNRThresh], recChannels = params[:recChannels])
+  ])
+  c11f = reconstruct("SinglePatch", b; params..., freqFilter = freqFilter)
+  c11g = reconstruct("SinglePatch", b; params..., recChannels = 2:2)
+  @test isapprox(arraydata(c11f), arraydata(c11g))
 end
