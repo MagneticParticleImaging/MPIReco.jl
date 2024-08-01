@@ -160,4 +160,21 @@
   c11d = reconstruct("SinglePatch", b; params..., freqFilter = DirectSelectionFrequencyFilterParameters(freqIndices = freq_components))
   @test isapprox(arraydata(c11c), arraydata(c11d))
 
+  # No given freqs should be same as normal SNR thresh
+  freqFilter = CompositeFrequencyFilterParameters([
+    DirectSelectionFrequencyFilterParameters(),
+    SNRThresholdFrequencyFilterParameter(minFreq = params[:minFreq], SNRThresh = params[:SNRThresh], recChannels = params[:recChannels])
+  ])
+  c11e = reconstruct("SinglePatch", b; params..., freqFilter = freqFilter)
+  @test isapprox(arraydata(c11a), arraydata(c11e))
+
+  # Custom freqs should remove one channel
+  custom_freqs = filter(f -> f[2] == 2, freqs)
+  freqFilter = CompositeFrequencyFilterParameters([
+    DirectSelectionFrequencyFilterParameters(freqIndices = custom_freqs),
+    SNRThresholdFrequencyFilterParameter(minFreq = params[:minFreq], SNRThresh = params[:SNRThresh], recChannels = params[:recChannels])
+  ])
+  c11f = reconstruct("SinglePatch", b; params..., freqFilter = freqFilter)
+  c11g = reconstruct("SinglePatch", b; params..., recChannels = 2:2)
+  @test isapprox(arraydata(c11f), arraydata(c11g))
 end

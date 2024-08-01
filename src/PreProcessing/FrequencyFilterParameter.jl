@@ -2,6 +2,7 @@ export AbstractFrequencyFilterParameter
 abstract type AbstractFrequencyFilterParameter <: AbstractMPIRecoParameters end
 
 export NoFrequencyFilterParameter
+# TODO This requires numPeriodAverages and numPeriodGrouping and should use a freq. loading function from MPIFiles
 struct NoFrequencyFilterParameter <: AbstractFrequencyFilterParameter end
 
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoFrequencyFilterParameter, file::MPIFile)
@@ -10,8 +11,9 @@ end
 
 export DirectSelectionFrequencyFilterParameters
 Base.@kwdef struct DirectSelectionFrequencyFilterParameters{T <: Union{Integer, CartesianIndex{2}}, FIT <: AbstractVector{T}} <: AbstractFrequencyFilterParameter
-  freqIndices::FIT
+  freqIndices::Union{Nothing, FIT} = nothing
 end
+DirectSelectionFrequencyFilterParameters() = DirectSelectionFrequencyFilterParameters{CartesianIndex{2}, Vector{CartesianIndex{2}}}(nothing)
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters{T}, file::MPIFile) where T <: Integer
   nFreq = params.freqIndices
   nReceivers = rxNumChannels(file)
@@ -66,4 +68,12 @@ end
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractFrequencyFilterParameter, file::MPIFile)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:maxFreq => rxBandwidth(file), :recChannels => 1:rxNumChannels(file))) 
   filterFrequencies(file; kwargs...)
+end
+
+export CompositeFrequencyFilterParameters
+Base.@kwdef struct CompositeFrequencyFilterParameters{FS} <: AbstractFrequencyFilterParameter where FS <: AbstractFrequencyFilterParameter
+  filters::Vector{FS}
+end
+function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::CompositeFrequencyFilterParameters, file::MPIFile)
+  return reduce(intersect, filter(!isnothing, map(p -> process(algoT, p, file), params.filters)))
 end
