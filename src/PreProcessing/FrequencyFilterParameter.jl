@@ -18,7 +18,7 @@ struct DirectSelectionFrequencyFilterParameters{T <: Union{Integer, CartesianInd
       v = Vector{el}
     else
       el = eltype(freqIndices)
-      v = typeof(v)
+      v = typeof(freqIndices)
     end
     new{el, v}(freqIndices)
   end
