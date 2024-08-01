@@ -9,14 +9,16 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoFrequencyFilterPa
 end
 
 export DirectSelectionFrequencyFilterParameters
-Base.@kwdef struct DirectSelectionFrequencyFilterParameters{T <: Integer, FIT <: AbstractVector{T}} <: AbstractFrequencyFilterParameter
+Base.@kwdef struct DirectSelectionFrequencyFilterParameters{T <: Union{Integer, CartesianIndex{2}}, FIT <: AbstractVector{T}} <: AbstractFrequencyFilterParameter
   freqIndices::FIT
 end
-
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters, file::MPIFile)
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters{T}, file::MPIFile) where T <: Integer
   nFreq = params.freqIndices
   nReceivers = rxNumChannels(file)
-  return collect(vec(CartesianIndices((nFreq, nReceivers))))
+  return vec([CartesianIndex{2}(i, j) for i in nFreq, j in nReceivers])
+end
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters{T}, file::MPIFile) where T <: CartesianIndex{2}
+  return params.freqIndices
 end
 
 # Could possible also be nested
