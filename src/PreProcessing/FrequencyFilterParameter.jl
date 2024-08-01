@@ -10,10 +10,19 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoFrequencyFilterPa
 end
 
 export DirectSelectionFrequencyFilterParameters
-Base.@kwdef struct DirectSelectionFrequencyFilterParameters{T <: Union{Integer, CartesianIndex{2}}, FIT <: AbstractVector{T}} <: AbstractFrequencyFilterParameter
-  freqIndices::Union{Nothing, FIT} = nothing
+struct DirectSelectionFrequencyFilterParameters{T <: Union{Integer, CartesianIndex{2}}, FIT <: AbstractVector{T}} <: AbstractFrequencyFilterParameter
+  freqIndices::Union{Nothing, FIT}
+  function DirectSelectionFrequencyFilterParameters(;freqIndices::FIT = nothing) where FIT
+    if isnothing(freqIndices)
+      el = CartesianIndex{2}
+      v = Vector{el}
+    else
+      el = eltype(freqIndices)
+      v = typeof(v)
+    end
+    new{el, v}(freqIndices)
+  end
 end
-DirectSelectionFrequencyFilterParameters() = DirectSelectionFrequencyFilterParameters{CartesianIndex{2}, Vector{CartesianIndex{2}}}(nothing)
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters{T}, file::MPIFile) where T <: Integer
   nFreq = params.freqIndices
   nReceivers = rxNumChannels(file)
@@ -71,8 +80,8 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractFrequencyFi
 end
 
 export CompositeFrequencyFilterParameters
-Base.@kwdef struct CompositeFrequencyFilterParameters{FS} <: AbstractFrequencyFilterParameter where FS <: AbstractFrequencyFilterParameter
-  filters::Vector{FS}
+Base.@kwdef struct CompositeFrequencyFilterParameters <: AbstractFrequencyFilterParameter
+  filters::Vector{AbstractFrequencyFilterParameter}
 end
 function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::CompositeFrequencyFilterParameters, file::MPIFile)
   return reduce(intersect, filter(!isnothing, map(p -> process(algoT, p, file), params.filters)))

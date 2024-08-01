@@ -49,8 +49,8 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::RowNormWeightingPar
 end
 
 export CompositeWeightingParameters
-Base.@kwdef struct CompositeWeightingParameters{WS} <: AbstractWeightingParameters where WS <: AbstractWeightingParameters
-  weightingParameters::Vector{WS}
+Base.@kwdef struct CompositeWeightingParameters <: AbstractWeightingParameters
+  weightingParameters::Vector{AbstractWeightingParameters}
 end
 function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::CompositeWeightingParameters, args...)
   weights = map(p -> process(algoT, p, args...), params.weightingParameters)
