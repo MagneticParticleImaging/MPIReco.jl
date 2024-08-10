@@ -131,7 +131,8 @@ function iterate(solver::Kaczmarz{matT, Nothing}, state::HandsFreeKaczmarzState{
 
   usedIndices = filterFrequencies(solver, state)
 
-  for (i, row) in enumerate(usedIndices) 
+  for i in usedIndices
+    row = solver.rowindex[i]
     RegularizedLeastSquares.iterate_row_index(solver, state, solver.A, row, i, iteration)
   end
 
@@ -168,7 +169,7 @@ end
 function filterFrequencies(::Kaczmarz, state::HF) where {T, Tc, HF <: HandsFreeKaczmarzState{T, Tc}}
   iteration = state.iteration
   threshl = [j > state.SNRbounds[2] ? T(j) : T(state.SNRbounds[2]) for j in (state.SNRbounds[1]) / (1 + (0.28 * iteration - 0.28)^2)][1]
-  indexl = sort(findall(x -> x > threshl, state.freqSNRs)) # potentially drop sorting
+  indexl = sort(findall(x -> x > threshl, state.freqSNRs))
   return indexl
 end
 
