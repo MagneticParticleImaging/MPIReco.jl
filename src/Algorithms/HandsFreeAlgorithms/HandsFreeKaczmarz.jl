@@ -126,7 +126,6 @@ function RegularizedLeastSquares.init!(solver::Kaczmarz, state::HandsFreeKaczmar
 end
 
 function iterate(solver::Kaczmarz{matT, Nothing}, state::HandsFreeKaczmarzState{T, Tc, vecTc, vecT} = solver.state) where {matT, T, Tc, vecTc, vecT}
-  if RegularizedLeastSquares.done(solver,state) return nothing end
   iteration = state.iteration
 
   usedIndices = filterFrequencies(solver, state)
@@ -154,6 +153,7 @@ function iterate(solver::Kaczmarz{matT, Nothing}, state::HandsFreeKaczmarzState{
       state.curvatures[iteration] = ( (dcdr - dcdr_old) / (state.resid[iteration]-state.resid[iteration-1]) ) / ((1 + dcdr^2)^(3/2))
   end
 
+  if RegularizedLeastSquares.done(solver,state) return nothing end
   state.iteration += 1
   return state.x, state
 end
