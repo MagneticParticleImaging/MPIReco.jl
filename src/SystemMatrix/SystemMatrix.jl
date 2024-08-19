@@ -306,3 +306,30 @@ function getSF(bSF::MPIFile, mx::Int, my::Int, mz::Int, recChan::Int; bgcorrecti
 end
 
 include("Sparse.jl")
+
+"""
+Calculates a noise level from empty measurement `bEmpty`.
+
+    NoiseLevel = getNoiseLevel(bEmpty,bgframes,channels)
+"""
+function getNoiseLevel(bEmpty, bgframes, channels)
+  tmp = getMeasurementsFD(bEmpty, true; frames=bgframes)[:, channels, :, :]
+  if length(channels) > 1
+    numfreq, numchannels, numpatches, numframes = size(tmp)
+    measBG = reshape(permutedims(tmp, [1, 3, 2, 4]), (numfreq * numpatches, numchannels, numframes))
+  else
+    numchannels = 1
+    numfreq, numpatches, numframes = size(tmp)
+    measBG = reshape(tmp, (numfreq * numpatches, numchannels, numframes))
+  end
+  noise = zeros(numfreq * numpatches, numchannels)
+  for r = 1:numchannels
+    for k = 1:numfreq*numpatches
+      tmp = view(measBG, k, r, :)
+      #maxBG = mapreduce(abs, max, tmp) # maximum(abs.(measBG[k, r, :]))
+      meanBG = mean(tmp)
+      noise[k, r] = mean(abs.((tmp .- meanBG)))#./maxBG))
+    end
+  end
+  return mean(noise)
+end

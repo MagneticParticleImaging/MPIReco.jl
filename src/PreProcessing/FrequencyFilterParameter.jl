@@ -86,3 +86,22 @@ end
 function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::CompositeFrequencyFilterParameters, file::MPIFile)
   return reduce(intersect, filter(!isnothing, map(p -> process(algoT, p, file), params.filters)))
 end
+
+export NoiseLevelFrequencyFilterParameter
+Base.@kwdef struct NoiseLevelFrequencyFilterParameter <: AbstractFrequencyFilterParameter
+  noiseMeas::MPIFile
+  frames::Union{Vector{Int64}, UnitRange{Int64}} = measBGFrameIdx(noiseMeas)
+  minFreq::Float64 = 0.0
+  maxFreq::Union{Float64, Nothing} = nothing
+  recChannels::Union{UnitRange{Int64}, Nothing} = nothing
+  SNRThresh::Float64=-1.0
+  numPeriodAverages::Int64 = 1
+  numPeriodGrouping::Int64 = 1
+  maxMixingOrder::Int64 = -1
+  numSidebandFreqs::Int64 = -1
+end
+function process(::Type{<:AbstractMPIRecoAlgorithm})(params::NoiseLevelFrequencyFilterParameter, file::MPIFile)
+  noiseLevel = getNoiseLevel(params.noiseMeas, params.frames, params.recChannels)
+  kwargs = toKwargs(params, ignore = [:noiseMeas, :frames], default = Dict{Symbol, Any}(:maxFreq => rxBandwidth(file), :recChannels => 1:rxNumChannels(file)))
+  return filterFrequencies(file; kwargs..., SNRThresh = params.SNRThresh * noiseLevel)
+end
