@@ -307,6 +307,7 @@ end
 
 include("Sparse.jl")
 
+#=
 """
 Calculates a noise level from empty measurement `bEmpty`.
 
@@ -333,3 +334,4 @@ function getNoiseLevel(bEmpty, bgframes, channels)
   end
   return mean(noise)
 end
+=#
