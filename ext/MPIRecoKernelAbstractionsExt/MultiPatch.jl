@@ -138,8 +138,8 @@ end
   @unroll for i = localIdx:grid_stride:N
     tmp = sign * conj(S[patch_row, xss[i, patch], smIdx]) * val
     # @atomic is not supported for ComplexF32 numbers
-    Atomix.@atomic res[1, xcc[i, patch]] += tmp.re
-    Atomix.@atomic res[2, xcc[i, patch]] += tmp.im
+    Atomix.@atomic res[1, xcc[i, patch]] += real(tmp)
+    Atomix.@atomic res[2, xcc[i, patch]] += imag(tmp)
   end
 end
 
