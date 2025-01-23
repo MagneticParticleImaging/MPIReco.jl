@@ -42,6 +42,10 @@ function prepareWeights(reco::SinglePatchReconstructionParameter{L,S,arrT,SP,R,W
   return process(AbstractMPIRecoAlgorithm, reco.weightingParams, freqs, sf, nothing, reco.arrayType)
 end
 
+Base.lock(algo::SinglePatchReconstructionAlgorithm) = lock(algo.output)
+Base.unlock(algo::SinglePatchReconstructionAlgorithm) = unlock(algo.output)
+Base.isready(algo::SinglePatchReconstructionAlgorithm) = isready(algo.output)
+Base.wait(algo::SinglePatchReconstructionAlgorithm) = wait(algo.output)
 AbstractImageReconstruction.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.output)
 
 function process(algo::SinglePatchReconstructionAlgorithm, params::Union{A, ProcessResultCache{<:A}}, f::MPIFile, args...) where A <: AbstractMPIPreProcessingParameters

@@ -31,12 +31,12 @@ SystemMatrixGriddingParameter(file::MPIFile) = SystemMatrixGriddingParameter(
 )
 
 export defaultParameterGridSize, defaultParameterCalibCenter, defaultParameterCalibFov
-defaultParameterGridSize(old, new::MPIFile) = gridSizeCommon(new)
-defaultParameterGridSize(old, new::Missing) = missing
-defaultParameterCalibCenter(old, new::MPIFile) = calibFovCenter(new)
-defaultParameterCalibCenter(old, new::Missing) = missing
-defaultParameterCalibFov(old, new::MPIFile) = calibFov(new)
-defaultParameterCalibFov(old, new::Missing) = missing
+defaultParameterGridSize(new::MPIFile) = gridSizeCommon(new)
+defaultParameterGridSize(new::Missing) = missing
+defaultParameterCalibCenter(new::MPIFile) = calibFovCenter(new)
+defaultParameterCalibCenter(new::Missing) = missing
+defaultParameterCalibFov(new::MPIFile) = calibFov(new)
+defaultParameterCalibFov(new::Missing) = missing
 
 # Maybe implement custom defaults with optional given sf -> remove @kwdef
 #function SystemMatrixGriddingParameter(;sf::MPIFile, gridsize = nothing, fov = nothing, center = [0.0, 0.0, 0.0], deadPixels = Int64[])

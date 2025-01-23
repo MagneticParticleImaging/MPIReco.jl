@@ -19,13 +19,15 @@ function process(algo::T, params::SinglePatchParameters, data::MPIFile, frequenc
 end
 
 function AbstractImageReconstruction.put!(algo::AbstractSinglePatchReconstructionAlgorithm, data)
-  #consistenceCheck(algo.sf, data)
-  
-  result = process(algo, algo.params, data, algo.freqs)
+  lock(algo) do
+    #consistenceCheck(algo.sf, data)
+    
+    result = process(algo, algo.params, data, algo.freqs)
 
-  result = finalizeResult(algo, result, data)
+    result = finalizeResult(algo, result, data)
 
-  Base.put!(algo.output, result)
+    Base.put!(algo.output, result)
+  end
 end
 
 function finalizeResult(algo::AbstractSinglePatchReconstructionAlgorithm, result, data::MPIFile)
@@ -46,6 +48,7 @@ include("SinglePatchBGEstimationAlgorithm.jl")
 #include("SinglePatchTemporalRegularizationAlgorithm.jl")
 
 ### Multi-Threading
+#=
 consistenceCheck(sf::MPIFile, threaded::MultiThreadedInput) = consistenceCheck(sf, threaded.inputs[1]) 
 finalizeResult(algo::AbstractSinglePatchReconstructionAlgorithm, result, threadedInput::MultiThreadedInput) = finalizeResult(algo, result, threadedInput.inputs[1])
 
@@ -119,3 +122,4 @@ function process(algo::T, params::LeastSquaresParameters, threadInput::MultiThre
 end
 
 process(algo::T, params::NoPostProcessing, threadInput::MultiThreadedInput) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}} = process(algo, params, threadInput.inputs...)
+=#

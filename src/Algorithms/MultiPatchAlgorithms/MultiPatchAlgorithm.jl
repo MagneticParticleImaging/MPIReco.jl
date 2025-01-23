@@ -46,24 +46,30 @@ end
 recoAlgorithmTypes(::Type{MultiPatchReconstruction}) = SystemMatrixBasedAlgorithm()
 AbstractImageReconstruction.parameter(algo::MultiPatchReconstructionAlgorithm) = algo.origParam
 
+Base.lock(algo::MultiPatchReconstructionAlgorithm) = lock(algo.output)
+Base.unlock(algo::MultiPatchReconstructionAlgorithm) = unlock(algo.output)
+Base.isready(algo::MultiPatchReconstructionAlgorithm) = isready(algo.output)
+Base.wait(algo::MultiPatchReconstructionAlgorithm) = wait(algo.output)
 AbstractImageReconstruction.take!(algo::MultiPatchReconstructionAlgorithm) = Base.take!(algo.output)
 
 function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm, data::MPIFile)
-  #consistenceCheck(algo.sf, data)
+  lock(algo) do 
+    #consistenceCheck(algo.sf, data)
 
-  algo.ffOp, algo.weights = process(algo, algo.opParams, data, algo.freqs, algo.params.reco.weightingParams)
+    algo.ffOp, algo.weights = process(algo, algo.opParams, data, algo.freqs, algo.params.reco.weightingParams)
+    
+    result = process(algo, algo.params, data, algo.freqs)
 
-  result = process(algo, algo.params, data, algo.freqs)
+    # Create Image (maybe image parameter as post params?)
+    # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
+    pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
+    offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
+    dt = acqNumAverages(data) * dfCycle(data) * algo.params.pre.numAverages * 1u"s"
+    im = makeAxisArray(result, pixspacing, offset, dt)
+    result = ImageMeta(im, generateHeaderDict(algo.sf, data))
 
-  # Create Image (maybe image parameter as post params?)
-  # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
-  pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
-  offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
-  dt = acqNumAverages(data) * dfCycle(data) * algo.params.pre.numAverages * 1u"s"
-  im = makeAxisArray(result, pixspacing, offset, dt)
-  result = ImageMeta(im, generateHeaderDict(algo.sf, data))
-
-  Base.put!(algo.output, result)
+    Base.put!(algo.output, result)
+  end
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::Union{OP, ProcessResultCache{OP}}, f::MPIFile, frequencies::Vector{CartesianIndex{2}}, weightingParams) where OP <: AbstractMultiPatchOperatorParameter

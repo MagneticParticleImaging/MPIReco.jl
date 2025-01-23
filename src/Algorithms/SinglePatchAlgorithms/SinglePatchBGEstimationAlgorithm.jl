@@ -41,6 +41,10 @@ function prepareSystemMatrix(reco::SinglePatchBGEstimationReconstructionParamete
   return freqs, sf, grid, reco.arrayType
 end
 
+Base.lock(algo::SinglePatchBGEstimationAlgorithm) = lock(algo.output)
+Base.unlock(algo::SinglePatchBGEstimationAlgorithm) = unlock(algo.output)
+Base.isready(algo::SinglePatchBGEstimationAlgorithm) = isready(algo.output)
+Base.wait(algo::SinglePatchBGEstimationAlgorithm) = wait(algo.output)
 AbstractImageReconstruction.take!(algo::SinglePatchBGEstimationAlgorithm) = Base.take!(algo.output)
 
 function process(algo::SinglePatchBGEstimationAlgorithm, params::AbstractMPIPreProcessingParameters, f::MPIFile)
