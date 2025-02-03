@@ -29,6 +29,8 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 AbstractImageReconstruction = "0.4"
 Adapt = "3, 4"
 Atomix = "1"
+Dagger = "0.18"
+DaggerImageReconstruction = "0.1"
 DSP = "0.6, 0.7"
 Distributed = "1"
 DistributedArrays = "0.6"
@@ -65,6 +67,8 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [weakdeps]
 Atomix = "a9b6321e-bd34-4604-b9c9-b65b8de01458"
+Dagger = "d58978e5-989f-55fb-8d15-ea34adc7bf54"
+DaggerImageReconstruction = "b99085f1-2f43-45a7-bd38-d511f4bff3b1"
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
 
@@ -73,3 +77,4 @@ test = ["Test", "HTTP", "FileIO", "LazyArtifacts", "Scratch", "ImageMagick", "Im
 
 [extensions]
 MPIRecoKernelAbstractionsExt = ["Atomix","KernelAbstractions", "GPUArrays"]
+MPIRecoDaggerExt = ["Dagger", "DaggerImageReconstruction"]
