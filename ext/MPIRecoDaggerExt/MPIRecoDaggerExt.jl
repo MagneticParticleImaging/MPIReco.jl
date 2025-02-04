@@ -1,14 +1,19 @@
 module MPIRecoDaggerExt
 
 using MPIReco, DaggerImageReconstruction, Dagger, DaggerImageReconstruction.Distributed
-using MPIFiles
+using MPIReco.AbstractImageReconstruction
+using MPIReco.MPIFiles
 
-const MPIFilesDaggerExt = Base.get_extension(MPIFiles, :MPIFilesDaggerExt)
+#https://github.com/JuliaLang/julia/pull/56368 didn't work
+#const MPIFilesDaggerExt = Base.get_extension(MPIFiles, :MPIFilesDaggerExt)
+#if isnothing(MPIFilesDaggerExt)
+#  error("Could not retrieve MPIFiles extension for Dagger.jl")
+#end
 
-if isnothing(MPIFilesDaggerExt)
-  error("Could not retrieve MPIFiles extension for Dagger.jl")
+if isdefined(MPIFiles, :DMPIFile)
+  include("AlgorithmInterface.jl")
+else
+  @warn "MPIFiles version does not export `DMPIFile`s, automatic distributed reconstruction is not possible"
 end
-
-include("AlgorithmInterface.jl")
 
 end
