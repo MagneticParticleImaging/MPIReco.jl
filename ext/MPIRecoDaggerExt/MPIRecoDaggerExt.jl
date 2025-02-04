@@ -12,6 +12,7 @@ using MPIReco.MPIFiles
 
 if isdefined(MPIFiles, :DMPIFile)
   include("AlgorithmInterface.jl")
+  include("DaggerRecoPlan.jl")
 else
   @warn "MPIFiles version does not export `DMPIFile`s, automatic distributed reconstruction is not possible"
 end
