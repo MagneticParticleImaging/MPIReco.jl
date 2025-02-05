@@ -90,7 +90,7 @@ function loadRecoPlan(name::AbstractString, cache::Bool, modules; kwargs...)
 
   # If the user disables caching or changes the plan structure we bypass the cache
   kwargValues = values(values(kwargs))
-  if !cache || any(val -> isa(val, RecoPlan) || isa(val, AbstractImageReconstructionParameters), kwargValues)
+  if !cache || any(val -> isa(val, AbstractRecoPlan) || isa(val, AbstractImageReconstructionParameters), kwargValues)
     return loadRecoPlan(planfile, modules)
   end
 

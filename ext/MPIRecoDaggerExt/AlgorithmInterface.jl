@@ -1,14 +1,26 @@
 function MPIReco.reconstruct(name::AbstractString, data::MPIFiles.DMPIFile, cache::Bool = true, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
-  # Load plan locally
-  plan = MPIReco.loadRecoPlan(name, cache, modules; kwargs...)
-  # Move to remote
-  # TODO Caching
-  params = RecoPlan(DaggerReconstructionParameter; worker = MPIFiles.worker(data), algo = plan)
-  distr_algo = RecoPlan(DaggerReconstructionAlgorithm; parameter = params)
-  # Configure on remote
-  setAll!(distr_algo; kwargs...)
+  planfile = AbstractImageReconstruction.planpath(MPIReco, name)
 
-  reconstruct(build(distr_algo), data)
+  # If the user disables caching or changes the plan structure we bypass the cache
+  kwargValues = values(values(kwargs))
+  if !cache || any(val -> isa(val, AbstractRecoPlan) || isa(val, AbstractImageReconstructionParameters), kwargValues)
+    plan = distribute_plan(MPIReco.loadRecoPlan(planfile, modules), MPIFiles.worker(data))
+  else
+    key = hash(planfile, hash(mtime(planfile), hash(MPIFiles.worker(data))))
+    plan = get!(MPIReco.recoPlans, key) do
+      distribute_plan(MPIReco.loadRecoPlan(planfile, modules), MPIFiles.worker(data))
+    end
+  end
+  # Configure on remote
+  setAll!(plan; kwargs...)
+
+  reconstruct(build(plan), data)
+end
+
+function distribute_plan(plan, worker)
+  params = RecoPlan(DaggerReconstructionParameter; worker = worker, algo = plan)
+  distr_algo = RecoPlan(DaggerReconstructionAlgorithm; parameter = params)
+  return distr_algo
 end
 
 
