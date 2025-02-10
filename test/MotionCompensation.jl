@@ -36,26 +36,25 @@ using MPIReco
   lambda = 0.01
   iterations = 1
 
-  plan = getPlan("Motion")
-  setAll!(plan, :sf, bSF)
-  setAll!(plan, :frames, 1:2)
-  setAll!(plan, :alpha, alpha)
-  setAll!(plan, :choosePeak, choosePeak)
-  setAll!(plan, :windowType, windowType)
-  setAll!(plan, :higherHarmonic, choosePeak)
-  setAll!(plan, :lambda, lambda)
-  setAll!(plan, :iterations, iterations) # reconstruction parameter
-  setAll!(plan, :SNRThresh, 10)
-  setAll!(plan, :minFreq, 80e3)
-  setAll!(plan, :recChannels, 1:3)
-  setAll!(plan, :λ, 0.0f0)
+  params = Dict{Symbol, Any}()
+  params[:sf] = bSF
+  params[:frames] = 1:2
+  params[:alpha] = alpha
+  params[:choosePeak] = choosePeak
+  params[:windowType] = windowType
+  params[:higherHarmonic] = choosePeak
+  params[:lambda] = lambda
+  params[:iterations] = iterations # reconstruction parameter
+  params[:SNRThresh] = 10
+  params[:minFreq] = 80e3
+  params[:recChannels] = 1:3
+  params[:λ] = 0.0f0
 
-  c = reconstruct(build(plan), bMeas)
+  c = reconstruct("MultiPatchMotion", bMeas; params...)
   exportImage(joinpath(imgdir, "Motion1.png"), maximum(Array(c[1,:,:,:,1]),dims=3)[:,:,1])
   @test compareImg("Motion1.png")
 
-  setAll!(plan, :bgParams, SimpleExternalBackgroundCorrectionParameters(;emptyMeas = bBG, bgFrames = bgFrames))
-  c = reconstruct(build(plan), bMeas)
+  c = reconstruct("MultiPatchMotion", bMeas; params..., bgParams = SimpleExternalBackgroundCorrectionParameters(;emptyMeas = bBG, bgFrames = bgFrames))
   exportImage(joinpath(imgdir, "Motion2.png"), maximum(Array(c[1,:,:,:,1]),dims=3)[:,:,1])
   @test compareImg("Motion2.png")
 

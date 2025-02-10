@@ -79,20 +79,55 @@ abstract type AbstractMultiPatchOperatorParameter <: AbstractMPIRecoParameters e
 # MultiPatchOperator is a type that acts as the MPI system matrix but exploits
 # its sparse structure.
 # Its very important to keep this type typestable
-mutable struct MultiPatchOperator{T, V <: AbstractMatrix{T}, U<:Positions}
+export AbstractMultiPatchOperator, MultiPatchOperator, DenseMultiPatchOperator
+abstract type AbstractMultiPatchOperator{T, V} <: AbstractArray{T, 2} end
+mutable struct MultiPatchOperator{T, V <: AbstractMatrix{T}, U<:Positions, I <: Integer, vecI <: AbstractVector{I}, matI <: AbstractMatrix{I}} <: AbstractMultiPatchOperator{T, V}
   S::Vector{V}
   grid::U
-  N::Int
-  M::Int
-  RowToPatch::Vector{Int}
-  xcc::Vector{Vector{Int}}
-  xss::Vector{Vector{Int}}
-  sign::Matrix{Int}
-  nPatches::Int
-  patchToSMIdx::Vector{Int}
+  N::Int64
+  M::Int64
+  RowToPatch::vecI
+  xcc::Vector{vecI}
+  xss::Vector{vecI}
+  sign::matI
+  nPatches::I
+  patchToSMIdx::vecI
+end
+
+mutable struct DenseMultiPatchOperator{T, V <: AbstractArray{T, 3}, U<:Positions, I <: Integer, vecI <: AbstractVector{I}, matI <: AbstractMatrix{I}} <: AbstractMultiPatchOperator{T, V}
+  S::V
+  grid::U
+  N::Int64
+  M::Int64
+  RowToPatch::vecI
+  xcc::matI
+  xss::matI
+  sign::matI
+  nPatches::I
+  patchToSMIdx::vecI
+end
+
+Adapt.adapt_structure(::Type{Array}, op::AbstractMultiPatchOperator) = op
+LinearOperators.storage_type(op::MultiPatchOperator) = LinearOperators.storage_type(first(op.S))
+LinearOperators.storage_type(op::DenseMultiPatchOperator) = typeof(similar(op.S, 0))
+
+function Base.hash(op::AbstractMultiPatchOperator, h::UInt64)
+  h = hash(typeof(op), h)
+  for field in fieldnames(typeof(op))
+    h = hash(getfield(op, field), h)
+  end
+  return h
+end
+
+function Base.convert(::Type{DenseMultiPatchOperator}, op::MultiPatchOperator)
+  S = stack(op.S)
+  xcc = stack(op.xcc)
+  xss = stack(op.xss)
+  return DenseMultiPatchOperator(S, op.grid, op.N, op.M, op.RowToPatch, xcc, xss, op.sign, op.nPatches, op.patchToSMIdx)
 end
 
 eltype(FFOp::MultiPatchOperator) = eltype(FFOp.S[1])
+eltype(FFOp::DenseMultiPatchOperator) = eltype(FFOp.S)
 
 function MultiPatchOperatorHighLevel(SF::MPIFile, bMeas, freq, bgCorrection::Bool; kargs...)
   return MultiPatchOperatorHighLevel(MultiMPIFile([SF]), bMeas, freq, bgCorrection; kargs...)
@@ -133,6 +168,10 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
   return FFOp
 end
 
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractMultiPatchOperatorParameter, bSF::MultiMPIFile, freq, gradient, FFPos, FFPosSF)
+  @info "Loading Multi Patch operator"
+  return MultiPatchOperator(bSF, freq; toKwargs(params)..., FFPos = FFPos, FFPosSF = FFPosSF, gradient = gradient)
+end 
 
 function MultiPatchOperator(SF::MPIFile, freq, bgCorrection::Bool; kargs...)
   return MultiPatchOperator(MultiMPIFile([SF]), freq, bgCorrection; kargs...)
@@ -194,7 +233,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
 		                gridsize = hcat(calibSize.(SFs)...),
                     fov = hcat(calibFov.(SFs)...),
                     grid = nothing,
-		                tfCorrection = true,
+		                tfCorrection = rxHasTransferFunction(SFs),
 		                kargs...)
 
                     
@@ -294,7 +333,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
   # now that we have all grids we can calculate the indices within the recoGrid
   xcc, xss = calculateLUT(grids, recoGrid)
 
-  return MultiPatchOperator{eltype(first(S)), reduce(promote_type, typeof.(S)), typeof(recoGrid)}(S, recoGrid, length(recoGrid), M*numPatches,
+  return MultiPatchOperator{eltype(first(S)), reduce(promote_type, typeof.(S)), typeof(recoGrid), eltype(patchToSMIdx), typeof(patchToSMIdx), typeof(sign)}(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
@@ -411,7 +450,7 @@ function MultiPatchOperatorRegular(SFs::MultiMPIFile, freq; bgCorrection::Bool,
 
   sign = ones(Int, M, numPatches)
 
-  return MultiPatchOperator{eltype(first(S)), reduce(promote_type, typeof.(S)), typeof(recoGrid)}(S, recoGrid, length(recoGrid), M*numPatches,
+  return MultiPatchOperator{eltype(first(S)), reduce(promote_type, typeof.(S)), typeof(recoGrid), eltype(patchToSMIdx), typeof(patchToSMIdx), typeof(sign)}(S, recoGrid, length(recoGrid), M*numPatches,
              RowToPatch, xcc, xss, sign, numPatches, patchToSMIdx)
 end
 
@@ -442,8 +481,51 @@ function size(FFOp::MultiPatchOperator,i::Int)
 end
 
 size(FFOp::MultiPatchOperator) = (FFOp.M,FFOp.N)
+size(FFTOp::DenseMultiPatchOperator) = (FFTOp.M,FFTOp.N)
 
 length(FFOp::MultiPatchOperator) = size(FFOp,1)*size(FFOp,2)
+function getindex(op::MultiPatchOperator, i::I, j::I) where I <: Integer
+  p = op.RowToPatch[i]
+  xs = op.xss[p]
+  xc = op.xcc[p]
+  row = mod1(i,div(op.M,op.nPatches))
+  A = op.S[op.patchToSMIdx[p]]
+  sign = op.sign[row,op.patchToSMIdx[p]]
+  index = findfirst(isequal(j), xc)
+  if !isnothing(index)
+    return sign*A[row,xs[index]]
+  else
+    return zero(eltype(op))
+  end
+end
+
+function LinearAlgebra.mul!(b::AbstractVector{T}, op::MultiPatchOperator{T}, x::AbstractVector{T}) where T
+  for i in 1:size(op, 1)
+    b[i] = dot_with_matrix_row(op, x, i)
+  end
+  return b
+end
+
+function LinearAlgebra.mul!(res::AbstractVector{T}, adj::Adjoint{T, OP}, t::AbstractVector{T}) where {T, V <: AbstractArray, OP <: MultiPatchOperator{T, V}}
+  op = adj.parent
+  res .= zero(T)
+
+  for i in 1:size(op, 1)
+    val = t[i]
+
+    p = op.RowToPatch[i]
+    xs = op.xss[p]
+    xc = op.xcc[p]
+    row = mod1(i,div(op.M,op.nPatches))
+    A = op.S[op.patchToSMIdx[p]]
+    sign = op.sign[row,op.patchToSMIdx[p]]
+  
+    for j in 1:length(xs)
+      res[xc[j]] += adjoint(sign*A[row,xs[j]]) * val
+    end
+  end
+  return res
+end
 
 ### The following is intended to use the standard kaczmarz method ###
 function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization, op::MultiPatchOperator, b)
@@ -455,6 +537,12 @@ function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization,
     #trace *= prod(Op.PixelSizeSF)/prod(Op.PixelSizeC)
     trace/=size(op, 2)
   end
+  return trace
+end
+
+function RegularizedLeastSquares.normalize(norm::SystemMatrixBasedNormalization, op::DenseMultiPatchOperator, b)
+  trace = sum([RegularizedLeastSquares.normalize(norm, view(op.S, :, :, i), b)*size(op.S, 2) for i in axes(op.S, 3)])
+  trace/=size(op, 2)
   return trace
 end
 
@@ -509,52 +597,13 @@ function kaczmarz_update_!(A,x,beta,xs,xc,j,sign)
   end
 end
 
-# TODO implement for ProdOp{WeightingOp, MultiPatchOperator}
-function initkaczmarz(Op::MultiPatchOperator{T},λ) where T
-  denom = T[] #zeros(T,Op.M)
-  rowindex = Int64[] #zeros(Int64,Op.M)
+function RegularizedLeastSquares.rownorm²(op::MultiPatchOperator, row::Int64)
+  p = op.RowToPatch[row]
+  xs = op.xss[p]
 
-  MSub = div(Op.M,Op.nPatches)
+  j = mod1(row,div(op.M,op.nPatches))
+  A = op.S[op.patchToSMIdx[p]]
+  sign = op.sign[j,op.patchToSMIdx[p]]
 
-  if length(Op.S) == 1
-    for i=1:MSub
-      s² = rownorm²(Op.S[1],i)#*weights[i]^2
-      if s²>0
-        for l=1:Op.nPatches
-          k = i+MSub*(l-1)
-          push!(denom,1/(s²+λ)) #denom[k] = weights[i]^2/(s²+λ)
-          push!(rowindex,k) #rowindex[k] = k
-        end
-      end
-    end
-  else
-    for l=1:Op.nPatches
-      for i=1:MSub
-        s² = rownorm²(Op.S[Op.patchToSMIdx[l]],i)#*weights[i]^2
-        if s²>0
-          k = i+MSub*(l-1)
-          push!(denom,1/(s²+λ)) #denom[k] = weights[i]^2/(s²+λ)
-          push!(rowindex,k) #rowindex[k] = k
-        end
-      end
-    end
-  end
-
-  Op, denom, rowindex
-end
-
-
-function RegularizedLeastSquares.rowProbabilities(Op::MultiPatchOperator, rowindex)
-  p = zeros(length(rowindex))
-  
-  for i=1:length(rowindex)
-    k = rowindex[i]
-    j = mod1(k, div(Op.M,Op.nPatches))
-    patch = Op.RowToPatch[k]
-    A = Op.S[Op.patchToSMIdx[patch]]
-    p[i] = rownorm²(A, j)
-  end
-  p ./= sum(p)
-
-  return p   
+  return mapreduce(x -> abs2(sign*A[j,x]), +, xs)
 end

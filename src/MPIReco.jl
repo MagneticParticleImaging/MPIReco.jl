@@ -1,10 +1,13 @@
 module MPIReco
   using Reexport
   @reexport using RegularizedLeastSquares
+  using RegularizedLeastSquares.LinearOperators
   @reexport using ImageUtils
   @reexport using MPIFiles
   const shape = MPIFiles.shape
   using AbstractImageReconstruction
+  using LRUCache
+  using Adapt
   @reexport using DSP
   using ProgressMeter
   using Unitful
@@ -16,10 +19,10 @@ module MPIReco
   using DistributedArrays
   # using TensorDecompositions
   using IniFile
-  import LinearAlgebra: ldiv!, \
+  import LinearAlgebra: ldiv!, \, mul!
   # TODO sort out import for Base and AbstractImageReconstruction to avoid boiler plate
   import Base: put!, take!
-  import AbstractImageReconstruction: process, parameter
+  import AbstractImageReconstruction: process, parameter, reconstruct
   using FFTW
   using LinearOperatorCollection
 

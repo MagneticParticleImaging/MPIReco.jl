@@ -1,0 +1,98 @@
+_module = "MPIReco"
+_type = "RecoPlan{SinglePatchReconstructionAlgorithm}"
+
+[parameter]
+_module = "MPIReco"
+_type = "RecoPlan{SinglePatchParameters}"
+
+    [parameter.reco]
+    _module = "MPIReco"
+    _type = "RecoPlan{SinglePatchReconstructionParameter}"
+
+        [parameter.reco.sfLoad]
+        _module = "AbstractImageReconstruction"
+        _type = "RecoPlan{ProcessResultCache}"
+
+            [parameter.reco.sfLoad.param]
+            _module = "MPIReco"
+            _type = "RecoPlan{DenseSystemMatixLoadingParameter}"
+
+                [parameter.reco.sfLoad.param.freqFilter]
+                _module = "MPIReco"
+                _type = "RecoPlan{SNRThresholdFrequencyFilterParameter}"
+
+                [parameter.reco.sfLoad.param.gridding]
+                _module = "MPIReco"
+                _type = "RecoPlan{SystemMatrixGriddingParameter}"
+
+
+        [[parameter.reco._listener.sf]]
+        field = "fov"
+        _module = "AbstractImageReconstruction"
+        _type = "LinkedFieldListener"
+        plan = ["parameter", "reco", "sfLoad", "param", "gridding"]
+
+            [parameter.reco._listener.sf.fn]
+            _module = "MPIReco"
+            _type = "defaultParameterCalibFov"
+        [[parameter.reco._listener.sf]]
+        field = "center"
+        _module = "AbstractImageReconstruction"
+        _type = "LinkedFieldListener"
+        plan = ["parameter", "reco", "sfLoad", "param", "gridding"]
+
+            [parameter.reco._listener.sf.fn]
+            _module = "MPIReco"
+            _type = "defaultParameterCalibCenter"
+        [[parameter.reco._listener.sf]]
+        field = "gridsize"
+        _module = "AbstractImageReconstruction"
+        _type = "LinkedFieldListener"
+        plan = ["parameter", "reco", "sfLoad", "param", "gridding"]
+
+            [parameter.reco._listener.sf.fn]
+            _module = "MPIReco"
+            _type = "defaultParameterGridSize"
+        [[parameter.reco._listener.sf]]
+        field = "minFreq"
+        _module = "AbstractImageReconstruction"
+        _type = "LinkedFieldListener"
+        plan = ["parameter", "reco", "sfLoad", "param", "freqFilter"]
+
+            [parameter.reco._listener.sf.fn]
+            _module = "MPIReco"
+            _type = "defaultParameterMinFreq"
+        [[parameter.reco._listener.sf]]
+        field = "maxFreq"
+        _module = "AbstractImageReconstruction"
+        _type = "LinkedFieldListener"
+        plan = ["parameter", "reco", "sfLoad", "param", "freqFilter"]
+
+            [parameter.reco._listener.sf.fn]
+            _module = "MPIReco"
+            _type = "defaultParameterMaxFreq"
+        [[parameter.reco._listener.sf]]
+        field = "recChannels"
+        _module = "AbstractImageReconstruction"
+        _type = "LinkedFieldListener"
+        plan = ["parameter", "reco", "sfLoad", "param", "freqFilter"]
+
+            [parameter.reco._listener.sf.fn]
+            _module = "MPIReco"
+            _type = "defaultParameterRecChannels"
+
+        [parameter.reco.solverParams]
+        _module = "MPIReco"
+        _type = "RecoPlan{ElaborateSolverParameters}"
+
+    [parameter.pre]
+    _module = "AbstractImageReconstruction"
+    _type = "RecoPlan{ProcessResultCache}"
+
+        [parameter.pre.param]
+        _module = "MPIReco"
+        _type = "RecoPlan{CommonPreProcessingParameters}"
+
+    [parameter.post]
+    _module = "MPIReco"
+    _type = "RecoPlan{NoPostProcessing}"

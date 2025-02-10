@@ -88,6 +88,9 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrix
   S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params)...)
   return S, grid
 end
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
+  return createLinearOperator(params.sparseTrafo, elType; shape, S = typeof(arrayType{elType}(undef, 0)))
+end
 
 function converttoreal(S::AbstractArray{Complex{T}},f) where T
   N = prod(calibSize(f))
@@ -119,15 +122,36 @@ function getSF(bSF, frequencies, sparseTrafo, solver::AbstractString; kargs...)
   end
 end
 getSF(bSF, frequencies, sparseTrafo, solver::AbstractLinearSolver; kargs...) = getSF(bSF, frequencies, sparseTrafo, typeof(solver); kargs...)
-function getSF(bSF, frequencies, sparseTrafo, solver::Type{<:AbstractLinearSolver}; kargs...)
+function getSF(bSF, frequencies, sparseTrafo, solver::Type{<:AbstractLinearSolver}; arrayType = Array, kargs...)
   SF, grid = getSF(bSF, frequencies, sparseTrafo; kargs...)
-  return prepareSF(solver, SF, grid)
+  SF, grid = prepareSF(solver, SF, grid)
+  SF = adaptSF(arrayType, SF)
+  return SF, grid
 end
+
+function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::Union{L, ProcessResultCache{L}}, sf::MPIFile, solverT, arrayType = Array) where L <: AbstractSystemMatrixLoadingParameter
+  freqs, sf, grid = process(type, params, sf) # Cachable process
+  sf, grid = prepareSF(solverT, sf, grid)
+  sf = adaptSF(arrayType, sf)
+  return freqs, sf, grid
+end
+
+
+# Assumption SF is a (wrapped) CPU-array
+# adapt(Array, Sparse-CPU) results in dense array, so we only want to adapt if necessary
+adaptSF(arrayType, SF) = adapt(arrayType, SF)
+adaptSF(arrayType::Type{<:Array}, SF) = SF
 
 prepareSF(solver::Type{Kaczmarz}, SF, grid) = transpose(SF), grid
 prepareSF(solver::Type{PseudoInverse}, SF, grid) = SVD(svd(transpose(SF))...), grid
-prepareSF(solver::Union{Type{<:RegularizedLeastSquares.AbstractLinearSolver}}, SF, grid) = copy(transpose(SF)), grid
 prepareSF(solver::Type{DirectSolver}, SF, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
+prepareSF(solver::Type{Kaczmarz}, SF::AbstractSparseArray, grid) = transpose(SF), grid
+prepareSF(solver::Type{PseudoInverse}, SF::AbstractSparseArray, grid) = SVD(svd(transpose(SF))...), grid
+prepareSF(solver::Type{DirectSolver}, SF::AbstractSparseArray, grid) = RegularizedLeastSquares.tikhonovLU(copy(transpose(SF))), grid
+
+prepareSF(solver, SF , grid) = copy(transpose(SF)), grid
+prepareSF(solver, SF::AbstractSparseArray, grid) = sparse(transpose(SF)), grid
+
 
 prepareNormalSF(solver::AbstractLinearSolver, SF) = prepareNormalSF(typeof(solver), SF)
 prepareNormalSF(solver::Type{<:RegularizedLeastSquares.AbstractLinearSolver}, SF) = nothing
@@ -283,3 +307,32 @@ function getSF(bSF::MPIFile, mx::Int, my::Int, mz::Int, recChan::Int; bgcorrecti
 end
 
 include("Sparse.jl")
+
+#=
+"""
+Calculates a noise level from empty measurement `bEmpty`.
+
+    NoiseLevel = getNoiseLevel(bEmpty,bgframes,channels)
+"""
+function getNoiseLevel(bEmpty, bgframes, channels)
+  tmp = getMeasurementsFD(bEmpty, true; frames=bgframes)[:, channels, :, :]
+  if length(channels) > 1
+    numfreq, numchannels, numpatches, numframes = size(tmp)
+    measBG = reshape(permutedims(tmp, [1, 3, 2, 4]), (numfreq * numpatches, numchannels, numframes))
+  else
+    numchannels = 1
+    numfreq, numpatches, numframes = size(tmp)
+    measBG = reshape(tmp, (numfreq * numpatches, numchannels, numframes))
+  end
+  noise = zeros(numfreq * numpatches, numchannels)
+  for r = 1:numchannels
+    for k = 1:numfreq*numpatches
+      tmp = view(measBG, k, r, :)
+      #maxBG = mapreduce(abs, max, tmp) # maximum(abs.(measBG[k, r, :]))
+      meanBG = mean(tmp)
+      noise[k, r] = mean(abs.((tmp .- meanBG)))#./maxBG))
+    end
+  end
+  return mean(noise)
+end
+=#

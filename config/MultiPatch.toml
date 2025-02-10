@@ -18,15 +18,19 @@ _module = "MPIReco"
         _module = "MPIReco"
 
         [parameter.reco.opParams]
-        _type = "RecoPlan{RegularMultiPatchOperatorParameter}"
-        _module = "MPIReco"
+        _module = "AbstractImageReconstruction"
+        _type = "RecoPlan{ProcessResultCache}"
+
+            [parameter.reco.opParams.param]
+            _type = "RecoPlan{RegularMultiPatchOperatorParameter}"
+            _module = "MPIReco"
 
         [parameter.reco.ffPosSF]
         _type = "RecoPlan{DefaultFocusFieldPositions}"
         _module = "MPIReco"
 
         [parameter.reco.solverParams]
-        _type = "RecoPlan{SimpleSolverParameters}"
+        _type = "RecoPlan{ElaborateSolverParameters}"
         _module = "MPIReco"
 
     [parameter.pre]

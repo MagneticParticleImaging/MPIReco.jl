@@ -18,8 +18,12 @@ _module = "MPIReco"
         _module = "MPIReco"
 
     [parameter.pre]
-    _type = "RecoPlan{PeriodicMotionPreProcessing}"
-    _module = "MPIReco"
+    _module = "AbstractImageReconstruction"
+    _type = "RecoPlan{ProcessResultCache}"
+
+    [parameter.pre.param]
+        _type = "RecoPlan{PeriodicMotionPreProcessing}"
+        _module = "MPIReco"
 
     [parameter.post]
     _type = "RecoPlan{NoPostProcessing}"

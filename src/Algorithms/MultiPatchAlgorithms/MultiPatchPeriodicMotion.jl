@@ -1,5 +1,5 @@
 export PeriodicMotionPreProcessing, PeriodicMotionReconstructionParameter
-Base.@kwdef struct PeriodicMotionPreProcessing{BG<:AbstractMPIBackgroundCorrectionParameters} <: AbstractMPIPreProcessingParameters{BG}
+Base.@kwdef struct PeriodicMotionPreProcessing{BG<:AbstractMPIBackgroundCorrectionParameters, W <: AbstractWeightingParameters} <: AbstractMPIPreProcessingParameters{BG}
   # Periodic Motion
   frames::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
   alpha::Float64 = 3.0
@@ -10,21 +10,21 @@ Base.@kwdef struct PeriodicMotionPreProcessing{BG<:AbstractMPIBackgroundCorrecti
   sf::MultiMPIFile
   tfCorrection::Bool = false
   bgParams::BG = NoBackgroundCorrectionParameters()
-  # weightingType::WeightingType = WeightingType.None
+  weightingParams::Union{W, ProcessResultCache{W}} = NoWeightingParameters()
 end
 
-Base.@kwdef struct PeriodicMotionReconstructionParameter{F<:AbstractFrequencyFilterParameter, S<:AbstractSolverParameters} <: AbstractMultiPatchReconstructionParameters
+Base.@kwdef struct PeriodicMotionReconstructionParameter{F<:AbstractFrequencyFilterParameter, S<:AbstractSolverParameters, R <: AbstractRegularization, arrT <: AbstractArray} <: AbstractMultiPatchReconstructionParameters
   sf::MultiMPIFile
   freqFilter::F
   solverParams::S
-  λ::Float32
-  # weightingType::WeightingType = WeightingType.None
+  reg::Vector{R} = AbstractRegularization[]
+  arrayType::Type{arrT} = Array
 end
 
 function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:PeriodicMotionPreProcessing,<:PeriodicMotionReconstructionParameter,<:AbstractMPIPostProcessingParameters})
   reco = params.reco
   freqs = process(MultiPatchReconstructionAlgorithm, reco.freqFilter, reco.sf)
-  return MultiPatchReconstructionAlgorithm(params, nothing, reco.sf, nothing, nothing, nothing, freqs, Channel{Any}(Inf))
+  return MultiPatchReconstructionAlgorithm{typeof(params), reco.arrayType, typeof(reco.arrayType{Float32}(undef, 0))}(params, nothing, reco.sf, nothing, reco.arrayType, nothing, nothing, nothing, freqs, Channel{Any}(Inf))
 end
 
 function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {R, T, PT <: PeriodicMotionPreProcessing}
@@ -41,8 +41,17 @@ function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorith
   Base.put!(algo.output, result)
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, params::PeriodicMotionPreProcessing{NoBackgroundCorrectionParameters},
-        f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
+function process(algo::MultiPatchReconstructionAlgorithm, params::Union{OP, ProcessResultCache{OP}}, 
+  f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where OP <: PeriodicMotionPreProcessing
+  uReco, ffOp, weights = process(typeof(algo), params, f, algo.sf, frequencies)
+  algo.ffOp = adapt(algo.arrayType, ffOp)
+  algo.weights = adapt(algo.arrayType, weights)
+  return adapt(algo.arrayType, uReco)
+end
+
+function process(algoT::Type{<:MultiPatchReconstructionAlgorithm}, params::PeriodicMotionPreProcessing{NoBackgroundCorrectionParameters},
+        f::MPIFile, sf::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
+  @info "Loading Multi Patch motion operator"
   ffPos_ = ffPos(f)
   motFreq = getMotionFreq(params.sf, f, params.choosePeak) ./ params.higherHarmonic
   tmot = getRepetitionsOfSameState(f, motFreq, params.frames)
@@ -59,26 +68,28 @@ function process(algo::MultiPatchReconstructionAlgorithm, params::PeriodicMotion
     resortedInd[i,:] = unflattenOffsetFieldShift(ffPos_)[i][1:p]
   end
 
-  algo.ffOp = MultiPatchOperator(algo.sf, frequencies,
+  # Can't adapt data here because it might be used in background correction
+  ffOp = MultiPatchOperator(sf, frequencies,
         #indFFPos=resortedInd[:,1], unused keyword
         FFPos=ffPos_[:,resortedInd[:,1]], mapping=mapping,
         FFPosSF=ffPos_[:,resortedInd[:,1]], bgCorrection = false, tfCorrection = params.tfCorrection)
 
-  return uReco
+  weights = process(algoT, params.weightingParams, frequencies, ffOp, nothing, Array)
+  return uReco, ffOp, weights
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm,
-  params::PeriodicMotionPreProcessing{SimpleExternalBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
+function process(algoT::Type{<:MultiPatchReconstructionAlgorithm},
+  params::PeriodicMotionPreProcessing{SimpleExternalBackgroundCorrectionParameters}, f::MPIFile, sf::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   # Foreground
   fgParams = fromKwargs(PeriodicMotionPreProcessing; toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
-  result = process(algo, fgParams, f, frequencies)
+  result, ffOp, weights = process(algoT, fgParams, f, sf, frequencies)
   # Background
   bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; toKwargs(params)..., bgParams = params.bgParams, spectralLeakageCorrection=true)
-  return process(algo, bgParams, result, frequencies)
+  return process(algoT, bgParams, result, frequencies), ffOp, weights
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::PeriodicMotionReconstructionParameter, u::Array)
-  solver = LeastSquaresParameters(S = algo.ffOp, reg = [L2Regularization(params.λ)], solverParams = params.solverParams)
+  solver = LeastSquaresParameters(S = algo.ffOp, reg = params.reg, solverParams = params.solverParams, weights = algo.weights)
 
   result = process(algo, solver, u)
 

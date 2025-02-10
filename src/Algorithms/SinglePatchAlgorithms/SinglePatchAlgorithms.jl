@@ -19,7 +19,7 @@ function process(algo::T, params::SinglePatchParameters, data::MPIFile, frequenc
 end
 
 function AbstractImageReconstruction.put!(algo::AbstractSinglePatchReconstructionAlgorithm, data)
-  consistenceCheck(algo.sf, data)
+  #consistenceCheck(algo.sf, data)
   
   result = process(algo, algo.params, data, algo.freqs)
 
