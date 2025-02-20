@@ -5,7 +5,8 @@ function Adapt.adapt_structure(::Type{arrT}, op::MultiPatchOperator) where {arrT
 
   # Ideally we create a DenseMultiPatchOperator on the GPU
   if validSMs && validXCC && validXSS
-    S = stack(adapt.(arrT, op.S))
+    S = stack(adapt.(arrT, transpose.(op.S)))
+    #S = permutedims(S, [2, 1, 3])
     # We want to use Int32 for better GPU performance
     xcc = Int32.(stack(adapt.(arrT, op.xcc)))
     xss = Int32.(stack(adapt.(arrT, op.xss)))
@@ -50,7 +51,7 @@ function LinearAlgebra.mul!(b::AbstractVector{T}, op::DenseMultiPatchOperator{T,
     #shared[localIdx] = tmp
     # We first sum in a temp variable, hoping that it is accumulated in a register, since registers are faster than shared memory
 
-    # In this variant we further try use multiple registers to do independent sums to have more instruction level parallelism
+    # In this variant we further try to use multiple registers to do independent sums to have more instruction level parallelism
     tmp = @private eltype(b) 8
     @unroll for j = 1:8
       tmp[j] = zero(eltype(b))
@@ -59,7 +60,7 @@ function LinearAlgebra.mul!(b::AbstractVector{T}, op::DenseMultiPatchOperator{T,
       @unroll for j = 1:8
         index = i + (j - 1) * grid_stride 
         if index <= N 
-          tmp[j] = tmp[j] + sign * S[patch_row, xss[index , patch], smIdx] * x[xcc[index , patch]]
+          tmp[j] = tmp[j] + sign * S[xss[index , patch], patch_row, smIdx] * x[xcc[index , patch]]
         end
       end
     end
@@ -111,7 +112,7 @@ function LinearAlgebra.mul!(b::AbstractVector{T}, op::DenseMultiPatchOperator{T,
     end
   end
 
-  kernel = dense_mul!(backend, 512)
+  kernel = dense_mul!(backend, 512, (512, size(op, 1)))
   kernel(b, x, op.S, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = (512, size(op, 1)))
   synchronize(backend)
   return b
@@ -136,7 +137,7 @@ end
   # Since we go along the columns during a matrix-vector product,
   # we have a race condition with other threads writing to the same result.
   @unroll for i = localIdx:grid_stride:N
-    tmp = sign * conj(S[patch_row, xss[i, patch], smIdx]) * val
+    tmp = sign * conj(S[xss[i, patch], patch_row, smIdx]) * val
     # @atomic is not supported for ComplexF32 numbers
     Atomix.@atomic res[1, xcc[i, patch]] += real(tmp)
     Atomix.@atomic res[2, xcc[i, patch]] += imag(tmp)
@@ -147,7 +148,7 @@ function LinearAlgebra.mul!(res::AbstractVector{T}, adj::Adjoint{T, OP}, t::Abst
   backend = get_backend(res)
   op = adj.parent
   res .= zero(T) # We need to zero the result, because we are using += in the kernel
-  kernel = dense_mul_adj!(backend, 1024)
+  kernel = dense_mul_adj!(backend, 1024, (1024, size(op, 1)))
   # We have to reinterpret the result as a real array, because atomic operations on Complex numbers are not supported
   kernel(reinterpret(reshape, real(eltype(res)), res), t, op.S, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = (1024, size(op, 1)))
   synchronize(backend)
@@ -163,7 +164,7 @@ function RegularizedLeastSquares.dot_with_matrix_row(op::DenseMultiPatchOperator
   S = op.S
   # Inplace reduce-broadcast: https://github.com/JuliaLang/julia/pull/31020
   return sum(Broadcast.instantiate(Base.broadcasted(view(op.xss, :, patch), view(op.xcc, :, patch)) do xs, xc
-    @inbounds sign * S[patch_row, xs, smIdx] * x[xc]
+    @inbounds sign * S[xs, patch_row, smIdx] * x[xc]
   end))
 end
 
@@ -173,7 +174,7 @@ function RegularizedLeastSquares.rownorm²(op::DenseMultiPatchOperator{T, V}, ro
   smIdx = @allowscalar op.patchToSMIdx[patch]
   sign = @allowscalar op.sign[patch_row, smIdx]
   S = op.S
-  return mapreduce(xs -> abs2(sign * S[patch_row, xs, smIdx]), +, view(op.xss, :, patch))
+  return mapreduce(xs -> abs2(sign * S[xs, patch_row, smIdx]), +, view(op.xss, :, patch))
 end
 
 @kernel cpu = false function kaczmarz_update_kernel!(x, @Const(S), @Const(row), @Const(beta), @Const(xcc), @Const(xss), @Const(signs), @Const(M), @Const(RowToPatch), @Const(patchToSMIdx))
@@ -183,7 +184,7 @@ end
   patch_row = mod1(row, M)
   smIdx = patchToSMIdx[patch]
   sign = eltype(x)(signs[patch_row, smIdx])
-  x[xcc[idx, patch]] += beta * conj(sign * S[patch_row, xss[idx, patch], smIdx])
+  x[xcc[idx, patch]] += beta * conj(sign * S[xss[idx, patch], patch_row, smIdx])
 end
 
 function RegularizedLeastSquares.kaczmarz_update!(op::DenseMultiPatchOperator{T, V}, x::vecT, row, beta) where {T, vecT <: AbstractGPUVector{T}, V <: AbstractGPUArray{T}}
@@ -233,7 +234,7 @@ end
 
   tmp = zero(eltype(energy))
   @unroll for i = localIdx:grid_stride:N
-    tmp += abs2(sign * S[patch_row, xss[i, patch], smIdx])
+    tmp += abs2(sign * S[xss[i, patch], patch_row, smIdx])
   end
   shared[localIdx] = tmp
   @synchronize
