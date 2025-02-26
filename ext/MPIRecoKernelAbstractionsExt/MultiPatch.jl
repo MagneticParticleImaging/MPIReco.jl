@@ -207,7 +207,7 @@ end
   patch_row = mod1(operator_row, M) # j
   smIdx = patchToSMIdx[patch]
   sign = eltype(energy)(signs[patch_row, smIdx])
-  grid_stride = prod(@groupsize())
+  @uniform grid_stride = prod(@groupsize())
   N = Int32(size(xss, 1))
   
   localIdx = @index(Local, Linear)
