@@ -96,7 +96,6 @@ function LinearAlgebra.mul!(b::AbstractVector{T}, op::DenseMultiPatchOperator{T,
 
   kernel = dense_mul!(backend, 512, (512, size(op, 1)))
   kernel(b, x, op.S, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = (512, size(op, 1)))
-  synchronize(backend)
   return b
 end
 
@@ -133,7 +132,6 @@ function LinearAlgebra.mul!(res::AbstractVector{T}, adj::Adjoint{T, OP}, t::Abst
   kernel = dense_mul_adj!(backend, 512, (512, size(op, 1)))
   # We have to reinterpret the result as a real array, because atomic operations on Complex numbers are not supported
   kernel(reinterpret(reshape, real(eltype(res)), res), t, op.S, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = (512, size(op, 1)))
-  synchronize(backend)
   return res
 end
 
@@ -173,7 +171,6 @@ function RegularizedLeastSquares.kaczmarz_update!(op::DenseMultiPatchOperator{T,
   backend = get_backend(x)
   kernel = kaczmarz_update_kernel!(backend, 512)
   kernel(x, op.S, row, beta, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = size(op.xss, 1))
-  synchronize(backend)
   return x
 end
 
@@ -195,7 +192,6 @@ function normalize_dense_op(op::DenseMultiPatchOperator{T, V}, weights) where {T
   kernel = normalize_kernel!(backend, 512)
   energy = KernelAbstractions.zeros(backend, real(eltype(op)), size(op, 1))
   kernel(energy, weights, op.S, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = (512, size(op, 1)))
-  synchronize(backend)
   return energy
 end
 
