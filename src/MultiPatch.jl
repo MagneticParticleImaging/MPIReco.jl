@@ -172,6 +172,9 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractMultiPatchO
   @info "Loading Multi Patch operator"
   return MultiPatchOperator(bSF, freq; toKwargs(params)..., FFPos = FFPos, FFPosSF = FFPosSF, gradient = gradient)
 end 
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractMultiPatchOperatorParameter, op::AbstractMultiPatchOperator, arrayType::Type{<:AbstractArray})
+  return adapt(arrayType, op)
+end
 
 function MultiPatchOperator(SF::MPIFile, freq, bgCorrection::Bool; kargs...)
   return MultiPatchOperator(MultiMPIFile([SF]), freq, bgCorrection; kargs...)

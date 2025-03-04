@@ -82,7 +82,8 @@ function process(algo::MultiPatchReconstructionAlgorithm, params::Union{OP, Proc
   # Have to create weights before ffop is (potentially) moved to GPU, as GPU arrays don't have efficient hash implementations
   # Which makes this process expensive to cache
   weights = process(typeof(algo), weightingParams, frequencies, result, nothing, algo.arrayType)
-  return adapt(algo.arrayType, result), weights
+  resultXPU = process(typeof(algo), params, result, algo.arrayType)
+  return resultXPU, weights
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::Union{A, ProcessResultCache{<:A}}, f::MPIFile, args...) where A <: AbstractMPIPreProcessingParameters
