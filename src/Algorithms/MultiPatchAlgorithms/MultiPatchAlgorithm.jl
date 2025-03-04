@@ -59,7 +59,7 @@ function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorith
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
   pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
   offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
-  dt = acqNumAverages(data) * dfCycle(data) * algo.params.pre.numAverages * 1u"s"
+  dt = acqNumAverages(data) * dfCycle(data) * numAverages(algo.params.pre) * 1u"s"
   im = makeAxisArray(result, pixspacing, offset, dt)
   result = ImageMeta(im, generateHeaderDict(algo.sf, data))
 
