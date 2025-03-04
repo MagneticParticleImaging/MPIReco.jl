@@ -172,7 +172,7 @@ end
 function RegularizedLeastSquares.kaczmarz_update!(op::DenseMultiPatchOperator{T, V}, x::vecT, row, beta) where {T, vecT <: AbstractGPUVector{T}, V <: AbstractGPUArray{T}}
   backend = get_backend(x)
   kernel = kaczmarz_update_kernel!(backend, 512)
-  kernel(x, op.S, row, beta, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = (512, size(op.xss, 1)))
+  kernel(x, op.S, row, beta, op.xcc, op.xss, op.sign, Int32(div(op.M, op.nPatches)), op.RowToPatch, op.patchToSMIdx; ndrange = size(op.xss, 1))
   synchronize(backend)
   return x
 end
@@ -207,7 +207,7 @@ end
   patch_row = mod1(operator_row, M) # j
   smIdx = patchToSMIdx[patch]
   sign = eltype(energy)(signs[patch_row, smIdx])
-  grid_stride = prod(@groupsize())
+  @uniform grid_stride = prod(@groupsize())
   N = Int32(size(xss, 1))
   
   localIdx = @index(Local, Linear)
