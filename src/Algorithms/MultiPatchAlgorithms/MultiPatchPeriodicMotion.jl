@@ -10,7 +10,7 @@ Base.@kwdef struct PeriodicMotionPreProcessing{BG<:AbstractMPIBackgroundCorrecti
   sf::MultiMPIFile
   tfCorrection::Bool = false
   bgParams::BG = NoBackgroundCorrectionParameters()
-  weightingParams::Union{W, ProcessResultCache{W}} = NoWeightingParameters()
+  weightingParams::Union{W, AbstractUtilityReconstructionParameters{W}} = NoWeightingParameters()
 end
 
 Base.@kwdef struct PeriodicMotionReconstructionParameter{F<:AbstractFrequencyFilterParameter, S<:AbstractSolverParameters, R <: AbstractRegularization, arrT <: AbstractArray} <: AbstractMultiPatchReconstructionParameters

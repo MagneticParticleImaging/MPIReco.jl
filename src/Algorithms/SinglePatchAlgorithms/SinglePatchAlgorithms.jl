@@ -6,7 +6,7 @@ abstract type AbstractSinglePatchAlgorithmParameters <: AbstractMPIRecoParameter
 
 Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractMPIPreProcessingParameters,
      R<:AbstractSinglePatchReconstructionParameters, PT<:AbstractMPIPostProcessingParameters} <: AbstractSinglePatchAlgorithmParameters
-  pre::Union{PR, ProcessResultCache{PR}}
+  pre::Union{PR, AbstractUtilityReconstructionParameters{PR}}
   reco::R
   post::PT = NoPostProcessing() 
 end

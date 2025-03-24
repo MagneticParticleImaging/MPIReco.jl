@@ -3,7 +3,7 @@ Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystem
   SP<:AbstractSolverParameters, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
-  sfLoad::Union{L, ProcessResultCache{L}}
+  sfLoad::Union{L, AbstractUtilityReconstructionParameters{L}}
   arrayType::Type{arrT} = Array
   # Solver
   solverParams::SP

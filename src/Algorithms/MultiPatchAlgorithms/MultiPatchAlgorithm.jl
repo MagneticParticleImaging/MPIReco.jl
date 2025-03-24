@@ -4,18 +4,18 @@ Base.@kwdef struct MultiPatchReconstructionParameter{arrT <: AbstractArray,F<:Ab
   # File
   sf::MultiMPIFile
   freqFilter::F
-  opParams::Union{O, ProcessResultCache{O}}
+  opParams::Union{O, AbstractUtilityReconstructionParameters{O}}
   ffPos::FF = DefaultFocusFieldPositions()
   ffPosSF::FFSF = DefaultFocusFieldPositions()
   solverParams::S
   reg::Vector{R} = AbstractRegularization[]
-  weightingParams::Union{W, ProcessResultCache{W}} = NoWeightingParameters()
+  weightingParams::Union{W, AbstractUtilityReconstructionParameters{W}} = NoWeightingParameters()
 end
 
 Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P, arrT <: AbstractArray, vecT <: AbstractArray} <: AbstractMultiPatchReconstructionAlgorithm where {P<:AbstractMultiPatchAlgorithmParameters}
   params::P
   # Could also do reconstruction progress meter here
-  opParams::Union{AbstractMultiPatchOperatorParameter, ProcessResultCache{<:AbstractMultiPatchOperatorParameter},Nothing} = nothing
+  opParams::Union{AbstractMultiPatchOperatorParameter, AbstractUtilityReconstructionParameters{<:AbstractMultiPatchOperatorParameter},Nothing} = nothing
   sf::MultiMPIFile
   weights::Union{Nothing, vecT} = nothing
   arrayType::Type{arrT}

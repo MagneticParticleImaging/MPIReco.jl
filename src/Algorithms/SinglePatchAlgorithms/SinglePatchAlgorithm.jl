@@ -2,12 +2,12 @@ Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoa
    arrT <: AbstractArray, SP<:AbstractSolverParameters{SL}, R<:AbstractRegularization, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
-  sfLoad::Union{L, ProcessResultCache{L}}
+  sfLoad::Union{L, AbstractUtilityReconstructionParameters{L}}
   arrayType::Type{arrT} = Array
   # Solver
   solverParams::SP
   reg::Vector{R} = AbstractRegularization[]
-  weightingParams::Union{W, ProcessResultCache{W}} = NoWeightingParameters()
+  weightingParams::Union{W, AbstractUtilityReconstructionParameters{W}} = NoWeightingParameters()
 end
 
 Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P, SM, arrT <: AbstractArray, vecT <: arrT} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
