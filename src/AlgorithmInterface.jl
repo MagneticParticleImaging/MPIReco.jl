@@ -42,15 +42,37 @@ struct MixedAlgorithm <: ReconstructionAlgorithmType end
 # TODO recoAlgorithmType
 # TODO undefined for certain "Algorithm" components
 #recoAlgorithmTypes(::Type{ConcreteRecoAlgorithm}) = SystemMatrixBasedAlgorithm()
-export planpath, plandir
-plandir() = abspath(homedir(), ".mpi", "RecoPlans")
+export addRecoPlanPath, getRecoPlanList
+const recoPlanPaths = [normpath(joinpath(@__DIR__, "..", "config"))]
+"""
+    addRecoPlanPath(path::String)
+
+Add all `RecoPlans` within the given directory as potential 
+"""
+addRecoPlanPath(path::String) = !(path in recoPlanPaths) ? pushfirst!(recoPlanPaths, path) : nothing
+"""
+    getRecoPlanList(; full = false)
+
+Retrieve a list of currently known `RecoPlan`s. If `full` is `true` then full paths are returned. 
+"""
+function getRecoPlanList(; full = false)
+  result = String[]
+  for path in recoPlanPaths
+    if isdir(path)
+      push!(result, [plan for plan in filter(a->contains(a,".toml"),readdir(path, join =  full))]...)
+    end
+  end
+  return result
+end
+
+
 
 function planpath(name::AbstractString)
   if isfile(name)
     return name
   end
 
-  for dir in [plandir(), joinpath(@__DIR__, "..", "config")]
+  for dir in recoPlanPaths
     filename = joinpath(dir, string(name, ".toml"))
     if isfile(filename)
       return filename
@@ -63,15 +85,16 @@ const recoPlans = LRU{UInt64, RecoPlan}(maxsize = 3)
 
 export reconstruct
 """
-    reconstruct(name::AbstractString, data::MPIFile, cache::Bool = true; kwargs...)
+    reconstruct(name::AbstractString, data::MPIFile, cache::Bool = false, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
 
-Perform a reconstruction with the `RecoPlan` specified by `name` and given `data`. If `cache` is `true` the reconstruction plan is cached and reused if the plan file has not changed.
+Perform a reconstruction with the `RecoPlan` specified by `name` and given `data`.
 Additional keyword arguments can be passed to the reconstruction plan.
 
-`RecoPlans` can be stored in the directory `$(plandir())` or in the MPIReco package config folder. The first plan found is used. The cache considers the last modification time of the plan file.
-If a keyword argument changes the structure of the plan the cache is bypassed. Alternatively, name can be a path to specific plan file.
+`RecoPlans` can be stored in the in the MPIReco package config folder or in a custom folder. New folder can be added with `addRecoPlanPath`. The first plan found is used.
+Alternatively, name can be a path to specific plan file.
 
-The cache can be emptied with `emptyRecoCache!()`.
+If `cache` is `true` the reconstruction plan is cached and reused if the plan file has not changed. If a keyword argument changes the structure of the plan the cache is also bypassed.
+The cache considers the last modification time of the plan file and can be manually be emptied with `emptyRecoCache!()`.
 
 # Examples
 ```julia
@@ -80,26 +103,25 @@ julia> mdf = MPIFile("data.mdf");
 julia> reconstruct("SinglePatch", mdf; solver = Kaczmarz, reg = [L2Regularization(0.3f0)], iterations = 10, frames = 1:10, ...)
 ```
 """
-function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = true, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
+function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = false, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
   plan = loadRecoPlan(name, cache, modules; kwargs...)
   setAll!(plan; kwargs...)
   return reconstruct(build(plan), data)
 end
 function loadRecoPlan(name::AbstractString, cache::Bool, modules; kwargs...)
-  planfile = AbstractImageReconstruction.planpath(MPIReco, name)
+  planfile = planpath(name)
 
   # If the user disables caching or changes the plan structure we bypass the cache
   kwargValues = values(values(kwargs))
   if !cache || any(val -> isa(val, AbstractRecoPlan) || isa(val, AbstractImageReconstructionParameters), kwargValues)
-    return loadRecoPlan(planfile, modules)
+    return loadPlan(planfile, modules)
   end
 
   key = hash(planfile, hash(mtime(planfile)))
   return get!(recoPlans, key) do
-    loadRecoPlan(planfile, modules)
+    loadPlan(planfile, modules)
   end
 end
-loadRecoPlan(planfile::AbstractString, modules) = loadPlan(planfile, modules)
 
 export emptyRecoCache!
 """
