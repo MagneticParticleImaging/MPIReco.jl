@@ -60,13 +60,13 @@ function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorith
     
     result = process(algo, algo.params, data, algo.freqs)
 
-    # Create Image (maybe image parameter as post params?)
-    # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
-    pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
-    offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
-    dt = acqNumAverages(data) * dfCycle(data) * algo.params.pre.numAverages * 1u"s"
-    im = makeAxisArray(result, pixspacing, offset, dt)
-    result = ImageMeta(im, generateHeaderDict(algo.sf, data))
+  # Create Image (maybe image parameter as post params?)
+  # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
+  pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
+  offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
+  dt = acqNumAverages(data) * dfCycle(data) * numAverages(algo.params.pre) * 1u"s"
+  im = makeAxisArray(result, pixspacing, offset, dt)
+  result = ImageMeta(im, generateHeaderDict(algo.sf, data))
 
     Base.put!(algo.output, result)
   end
@@ -88,7 +88,8 @@ function process(algo::MultiPatchReconstructionAlgorithm, params::Union{OP, Proc
   # Have to create weights before ffop is (potentially) moved to GPU, as GPU arrays don't have efficient hash implementations
   # Which makes this process expensive to cache
   weights = process(typeof(algo), weightingParams, frequencies, result, nothing, algo.arrayType)
-  return adapt(algo.arrayType, result), weights
+  resultXPU = process(typeof(algo), params, result, algo.arrayType)
+  return resultXPU, weights
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::Union{A, ProcessResultCache{<:A}}, f::MPIFile, args...) where A <: AbstractMPIPreProcessingParameters
