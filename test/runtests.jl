@@ -41,6 +41,7 @@ arrayTypes = areTypesDefined ? arrayTypes : [JLArray]
 
 @testset "MPIReco" begin
   if !areTypesDefined
+    include("Caching.jl")
     #include("LoadSaveMDF.jl")
     include("Reconstruction.jl") # FussedLasso causes segfault atm
     include("Solvers.jl")
