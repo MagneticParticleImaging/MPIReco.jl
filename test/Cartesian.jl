@@ -14,7 +14,7 @@ using MPIReco
   numPeriodGrouping = 1
   maxMixingOrder = -1
 
-  plan = loadPlan(MPIReco, "SinglePatch", [MPIReco, RegularizedLeastSquares, MPIFiles, AbstractImageReconstruction])
+  plan = loadPlan(joinpath(@__DIR__(), "..", "config", "SinglePatch"), [MPIReco, RegularizedLeastSquares, MPIFiles, AbstractImageReconstruction])
   setAll!(plan, :sf, bSF)
   setAll!(plan, :frames, 1:10)
   setAll!(plan, :numAverages, 10)
