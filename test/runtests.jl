@@ -7,6 +7,8 @@ using ImageMagick
 using ImageQualityIndexes
 using LazyArtifacts
 using Unitful
+using Dagger
+using DaggerImageReconstruction
 
 const datadir = joinpath(artifact"data")
 @info "The test data is located at $datadir."
@@ -31,7 +33,7 @@ end
 function exportImage(filename, I::AbstractMatrix)
   Iabs = abs.(I)
   Icolored = colorview(Gray, Iabs./maximum(Iabs))
-  save(filename, Icolored )
+  ImageMagick.save(filename, Icolored )
 end
 
 areTypesDefined = @isdefined arrayTypes

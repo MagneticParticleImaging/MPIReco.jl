@@ -25,6 +25,10 @@ for arrayType in arrayTypes
     c2 = reconstruct("SinglePatch", b; params..., arrayType = arrayType)
     @test isapprox(arraydata(c1), arraydata(c2))
 
+    db = DMPIFile(joinpath(datadir, "measurements", "20211226_203916_MultiPatch", "1.mdf"), worker = 1)
+    c2d = reconstruct("SinglePatch", db; params..., arrayType = arrayType)
+    @test isapprox(arraydata(c2), arraydata(c2d))
+
     params[:weightingParams] = WhiteningWeightingParameters(whiteningMeas = bSF)
     c3 = reconstruct("SinglePatch", b; params...)
     c4 = reconstruct("SinglePatch", b; params..., arrayType = arrayType)

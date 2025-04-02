@@ -26,7 +26,9 @@
   exportImage(joinpath(imgdir, "Reconstruction1.png"), Array(c1[1,:,:,1,1]))
   @test compareImg("Reconstruction1.png")
 
-  
+  db = DMPIFile(joinpath(datadir, "measurements", "20211226_203916_MultiPatch", "1.mdf"), worker = 1)
+  c2 = reconstruct("SinglePatch", db; params...)
+  @test isapprox(arraydata(c1), arraydata(c2))
   
   # with interpolation
   params[:gridding] = SystemMatrixGriddingParameter(;gridsize=[100,100,1], fov = calibFov(bSF))
@@ -162,4 +164,5 @@
   c11f = reconstruct("SinglePatch", b; params..., freqFilter = freqFilter)
   c11g = reconstruct("SinglePatch", b; params..., recChannels = 2:2)
   @test isapprox(arraydata(c11f), arraydata(c11g))
+  
 end
