@@ -1,14 +1,19 @@
-function MPIReco.reconstruct(name::AbstractString, data::MPIFiles.DMPIFile, cache::Bool = true, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
-  planfile = AbstractImageReconstruction.planpath(MPIReco, name)
+"""
+    reconstruct(name::AbstractString, data::MPIFiles.DMPIFile, cache::Bool = false, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
+
+Perform a reconstruction on the worker specified by `DMPIFile`. Cache entries are local to the respective workers.
+"""
+function MPIReco.reconstruct(name::AbstractString, data::MPIFiles.DMPIFile, cache::Bool = false, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
+  planfile = MPIReco.planpath(name)
 
   # If the user disables caching or changes the plan structure we bypass the cache
   kwargValues = values(values(kwargs))
   if !cache || any(val -> isa(val, AbstractRecoPlan) || isa(val, AbstractImageReconstructionParameters), kwargValues)
-    plan = distribute_plan(MPIReco.loadRecoPlan(planfile, modules), MPIFiles.worker(data))
+    plan = loadDaggerPlan(planfile, modules; worker = MPIFiles.worker(data))
   else
     key = hash(planfile, hash(mtime(planfile), hash(MPIFiles.worker(data))))
     plan = get!(MPIReco.recoPlans, key) do
-      distribute_plan(MPIReco.loadRecoPlan(planfile, modules), MPIFiles.worker(data))
+      loadDaggerPlan(planfile, modules; worker = MPIFiles.worker(data))
     end
   end
   # Configure on remote
