@@ -31,8 +31,7 @@ function AbstractImageReconstruction.put!(algo::AbstractSinglePatchReconstructio
 end
 
 function finalizeResult(algo::AbstractSinglePatchReconstructionAlgorithm, result, data::MPIFile)
-  pixspacing = (spacing(algo.grid) ./ acqGradient(data)[1] .* acqGradient(algo.sf)[1])*1000u"mm"
-  offset = (ffPos(data) .- 0.5 .* calibFov(algo.sf))*1000u"mm" .+ 0.5 .* pixspacing
+  pixspacing, offset = calcSpacingAndOffset(algo.sf, data, algo.grid)
   dt = acqNumAverages(data)*dfCycle(data)*numAverages(algo.params.pre)*1u"s"
   im = makeAxisArray(result, pixspacing, offset, dt)
   return ImageMeta(im, generateHeaderDict(algo.sf, data))
