@@ -78,7 +78,7 @@ function planpath(name::AbstractString)
       return filename
     end
   end
-  throw(ArgumentError("Could not find a suitable MPI reconstruction plan with name $name. Custom plans can be stored in $(plandir())."))
+  throw(ArgumentError("Could not find a suitable MPI reconstruction plan with name $name. Custom plans can be stored in the following directories $(join(recoPlanPaths, ", "))."))
 end
 
 const recoPlans = LRU{UInt64, RecoPlan}(maxsize = 3)
