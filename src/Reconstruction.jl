@@ -377,6 +377,10 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
       @warn "An explicit regularization has been given, overriding the behaviour of enforcePositive and enforceReal"
     end
   end
+
+  if !isnothing(sparseTrafo)
+    reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
+  end
   
   solv = createLinearSolver(solverType, S; weights=weights,
                             sparseTrafo=sparseTrafo, normalizeReg = norm, reg = reg, kargs...)
