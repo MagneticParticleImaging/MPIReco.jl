@@ -107,21 +107,21 @@
   exportImage(joinpath(imgdir, "Reconstruction7c.png"), Array(c7c[1,:,:,1,1]))
   @test compareImg("Reconstruction7c.png")
   
-
+  
   params[:weightingParams] = ChannelWeightingParameters(channelWeights = [1.0, 0.0, 1.0])
   c7d = reconstruct("SinglePatch", b; params...)
   params[:weightingParams] = NoWeightingParameters()
-  params[:recChannel] = 1:1
+  params[:recChannels] = 1:1
   c7e = reconstruct("SinglePatch", b; params...)
-  params[:recChannel] = 1:2
+  params[:recChannels] = 1:2
   @test isapprox(arraydata(c7d), arraydata(c7e))
 
   params[:weightingParams] = ChannelWeightingParameters(channelWeights = [0.0, 1.0, 1.0])
   c7f = reconstruct("SinglePatch", b; params...)
   params[:weightingParams] = NoWeightingParameters()
-  params[:recChannel] = 2:2
+  params[:recChannels] = 2:2
   c7g = reconstruct("SinglePatch", b; params...)
-  params[:recChannel] = 1:2
+  params[:recChannels] = 1:2
   @test isapprox(arraydata(c7f), arraydata(c7g))
 
   params[:weightingParams] = WhiteningWeightingParameters(whiteningMeas = bSF)
