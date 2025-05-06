@@ -37,7 +37,7 @@ function exportImage(filename, I::AbstractMatrix)
 end
 
 areTypesDefined = @isdefined arrayTypes
-arrayTypes = areTypesDefined ? arrayTypes : [JLArray]
+arrayTypes = areTypesDefined ? arrayTypes : []
 
 @testset "MPIReco" begin
   if !areTypesDefined
