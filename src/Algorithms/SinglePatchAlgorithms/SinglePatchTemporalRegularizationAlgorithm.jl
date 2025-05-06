@@ -3,7 +3,7 @@ Base.@kwdef struct SinglePatchTemporalRegularizationReconstructionParameter{L<:D
   SP<:AbstractSolverParameters, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
-  sfLoad::Union{L, ProcessResultCache{L}}
+  sfLoad::Union{L, AbstractUtilityReconstructionParameters{L}}
   arrayType::Type{arrT} = Array
   # Solver
   solverParams::SP
@@ -44,6 +44,10 @@ function prepareSystemMatrix(reco::SinglePatchTemporalRegularizationReconstructi
   return freqs, sf, grid, reco.arrayType
 end
 
+Base.lock(algo::SinglePatchTemporalRegularizationAlgorithm) = lock(algo.output)
+Base.unlock(algo::SinglePatchTemporalRegularizationAlgorithm) = unlock(algo.output)
+Base.isready(algo::SinglePatchTemporalRegularizationAlgorithm) = isready(algo.output)
+Base.wait(algo::SinglePatchTemporalRegularizationAlgorithm) = wait(algo.output)
 AbstractImageReconstruction.take!(algo::SinglePatchTemporalRegularizationAlgorithm) = Base.take!(algo.output)
 
 function process(algo::SinglePatchTemporalRegularizationAlgorithm, params::AbstractMPIPreProcessingParameters, f::MPIFile)

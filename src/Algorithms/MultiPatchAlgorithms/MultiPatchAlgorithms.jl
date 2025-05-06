@@ -15,7 +15,7 @@ positions(ffPos::CustomFocusFieldPositions) = ffPos.positions
 
 Base.@kwdef mutable struct MultiPatchParameters{PR<:AbstractMPIPreProcessingParameters,
      R<:AbstractMultiPatchReconstructionParameters, PT<:AbstractMPIPostProcessingParameters} <: AbstractMultiPatchAlgorithmParameters
-  pre::Union{PR, ProcessResultCache{PR}}
+  pre::Union{PR, AbstractUtilityReconstructionParameters{PR}}
   reco::R
   post::PT = NoPostProcessing() 
 end

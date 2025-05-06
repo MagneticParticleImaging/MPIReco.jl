@@ -46,12 +46,12 @@ Base.@kwdef struct SNRThresholdFrequencyFilterParameter <: AbstractFrequencyFilt
   numSidebandFreqs::Int64 = -1
 end
 export defaultParameterMaxFreq, defaultParameterMinFreq, defaultParameterRecChannels
-defaultParameterMaxFreq(old, new::MPIFile) = rxBandwidth(new)
-defaultParameterMaxFreq(old, new::Missing) = missing
-defaultParameterMinFreq(old, new::MPIFile) = first(rxFrequencies(new))
-defaultParameterMinFreq(old, new::Missing) = missing
-defaultParameterRecChannels(old, new::MPIFile) = 1:rxNumChannels(new)
-defaultParameterRecChannels(old, new::Missing) = missing
+defaultParameterMaxFreq(new::MPIFile) = rxBandwidth(new)
+defaultParameterMaxFreq(new::Missing) = missing
+defaultParameterMinFreq(new::MPIFile) = first(rxFrequencies(new))
+defaultParameterMinFreq(new::Missing) = missing
+defaultParameterRecChannels(new::MPIFile) = 1:rxNumChannels(new)
+defaultParameterRecChannels(new::Missing) = missing
 #function SNRThresholdFrequencyFilterParameter(;sf::MPIFile, maxFreq = nothing, recChannels = nothing)
 #  if isnothing(maxFreq)
 #    maxFreq = rxBandwidth(sf)

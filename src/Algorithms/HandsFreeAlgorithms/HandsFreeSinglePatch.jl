@@ -3,12 +3,12 @@ Base.@kwdef struct SinglePatchHandsFreeReconstructionParameter{L<:AbstractSystem
   arrT <: AbstractArray, SP<:HandsFreeSolverParameters, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
  # File
  sf::MPIFile
- sfLoad::Union{L, ProcessResultCache{L}}
+ sfLoad::Union{L, AbstractUtilityReconstructionParameters{L}}
  arrayType::Type{arrT} = Array
  # Solver
  solverParams::SP
  #reg::Vector{R} = AbstractRegularization[]
- weightingParams::Union{W, ProcessResultCache{W}} = NoWeightingParameters()
+ weightingParams::Union{W, AbstractUtilityReconstructionParameters{W}} = NoWeightingParameters()
 end
 
 function prepareSystemMatrix(reco::SinglePatchHandsFreeReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}

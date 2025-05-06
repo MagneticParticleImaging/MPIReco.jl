@@ -1,6 +1,6 @@
 AbstractImageReconstruction.toDictValue(file::MPIFile) = AbstractImageReconstruction.toDict(file)
-AbstractImageReconstruction.addDictValue!(dict, file::Union{MultiMPIFile, MultiContrastFile}) = dict[AbstractImageReconstruction.VALUE_TAG] = filepath.(file)
-AbstractImageReconstruction.addDictValue!(dict, file::MPIFile) = dict[AbstractImageReconstruction.VALUE_TAG] = filepath(file)
+AbstractImageReconstruction.toDictValue!(dict, file::Union{MultiMPIFile, MultiContrastFile}) = dict[AbstractImageReconstruction.VALUE_TAG] = filepath.(file)
+AbstractImageReconstruction.toDictValue!(dict, file::MPIFile) = dict[AbstractImageReconstruction.VALUE_TAG] = filepath(file)
 AbstractImageReconstruction.toDictValue(norm::AbstractRegularizationNormalization) = AbstractImageReconstruction.toDict(norm)
 
 function AbstractImageReconstruction.fromTOML(::Type{T}, dict::Dict{String, Any}) where {T<: UnitRange}

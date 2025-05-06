@@ -4,8 +4,8 @@ Base.@kwdef struct SinglePatchTwoStepReconstructionParameters{L_H<:AbstractSyste
   Γ::Float64
   # File
   sf::MPIFile
-  sfLoadHigh::Union{L_H, ProcessResultCache{L_H}}
-  sfLoadLow::Union{L_L, ProcessResultCache{L_L}}
+  sfLoadHigh::Union{L_H, AbstractUtilityReconstructionParameters{L_H}}
+  sfLoadLow::Union{L_L, AbstractUtilityReconstructionParameters{L_L}}
   # Solver
   solver::Type{S}
   solverParams_high::SP_H
@@ -57,10 +57,10 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::TwoStepSubstractio
 end
 
 # Specify multi threaded variant, s.t. substraction happens on collected results
-function process(algo::T, params::TwoStepSubstractionPreProcessingParameter, threadedInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where T <: SinglePatchReconstructionAlgorithm
-  meas = process(algo, params.pre, threadedInput, frequencies)
-  return meas .- params.proj
-end
+#function process(algo::T, params::TwoStepSubstractionPreProcessingParameter, threadedInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where T <: SinglePatchReconstructionAlgorithm
+#  meas = process(algo, params.pre, threadedInput, frequencies)
+#  return meas .- params.proj
+#end
 
 function SinglePatchReconstruction(params::SinglePatchParameters{<:CommonPreProcessingParameters, <:SinglePatchTwoStepReconstructionParameters, PT}) where {PT <:AbstractMPIPostProcessingParameters}
   return SinglePatchTwoStepReconstructionAlgorithm(params)
@@ -78,31 +78,36 @@ function SinglePatchTwoStepReconstructionAlgorithm(params::SinglePatchParameters
 end
 AbstractImageReconstruction.parameter(algo::SinglePatchTwoStepReconstructionAlgorithm) = algo.params
 AbstractImageReconstruction.take!(algo::SinglePatchTwoStepReconstructionAlgorithm) = Base.take!(algo.output)
+function Base.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data)
+  lock(algo.output) do
+    # First reco
+    cPre = reconstruct(algo.algoHigh, data)
 
-function AbstractImageReconstruction.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data)
-  # First reco
-  cPre = reconstruct(algo.algoHigh, data)
+    # Thresholding
+    thresh = maximum(abs.(cPre))*algo.params.reco.Γ
+    cThresh = map(x-> abs(x) < thresh ? 0.0 : x, cPre.data)
 
-  # Thresholding
-  thresh = maximum(abs.(cPre))*algo.params.reco.Γ
-  cThresh = map(x-> abs(x) < thresh ? 0.0 : x, cPre.data)
+    # Projection into raw data space
+    uProj = zeros(ComplexF32, size(algo.algoLow.S, 1), 1, size(cThresh)[end])
+    cMapped = map(ComplexF32, cThresh)
+    for frame = 1:size(uProj, 3)
+      uProj[:, 1, frame] = algo.algoLow.S*vec(cMapped[1, :, :, :, frame])
+    end
 
-  # Projection into raw data space
-  uProj = zeros(ComplexF32, size(algo.algoLow.S, 1), 1, size(cThresh)[end])
-  cMapped = map(ComplexF32, cThresh)
-  for frame = 1:size(uProj, 3)
-    uProj[:, 1, frame] = algo.algoLow.S*vec(cMapped[1, :, :, :, frame])
+    # Prepare subtraction
+    algo.algoLow.params.pre.proj = uProj
+
+    # Second reconstruction
+    cPost = reconstruct(algo.algoLow, data)
+
+    # Addition
+    result = AxisArray(cPost.data + cThresh, cPost.data.axes)
+    result = ImageMeta(result, properties(cPost))
+
+    Base.put!(algo.output, result)
   end
-
-  # Prepare subtraction
-  algo.algoLow.params.pre.proj = uProj
-
-  # Second reconstruction
-  cPost = reconstruct(algo.algoLow, data)
-
-  # Addition
-  result = AxisArray(cPost.data + cThresh, cPost.data.axes)
-  result = ImageMeta(result, properties(cPost))
-
-  Base.put!(algo.output, result)
 end
+Base.lock(algo::SinglePatchTwoStepReconstructionAlgorithm) = lock(algo.output)
+Base.unlock(algo::SinglePatchTwoStepReconstructionAlgorithm) = unlock(algo.output)
+Base.isready(algo::SinglePatchTwoStepReconstructionAlgorithm) = isready(algo.output)
+Base.wait(algo::SinglePatchTwoStepReconstructionAlgorithm) = wait(algo.output)

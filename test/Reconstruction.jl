@@ -26,23 +26,10 @@
   exportImage(joinpath(imgdir, "Reconstruction1.png"), Array(c1[1,:,:,1,1]))
   @test compareImg("Reconstruction1.png")
 
-  # fused lasso
-  #params[:iterations, 100)
-  #params[:loadasreal, true)
-  #params[:solver, FusedLasso)
-  #params[:reg, [TVRegularization(0.01f0), L1Regularization(0.01f0)])
-  #params[:normalizeReg, NoNormalization())
-  #c2 = reconstruct(build(plan), b)
-  #params[:iterations, 1)
-  #params[:loadasreal, false)
-  #params[:solver, Kaczmarz)
-  #params[:reg, [L2Regularization(0.0f0)])
-  #params[:normalizeReg, SystemMatrixBasedNormalization())
-  #@test axisnames(c2) == names
-  #@test axisvalues(c2) == values
-  #exportImage(joinpath(imgdir, "Reconstruction2.png"), Array(c2[1,:,:,1,1]))
-  #@test compareImg("Reconstruction2.png")
-
+  db = DMPIFile(joinpath(datadir, "measurements", "20211226_203916_MultiPatch", "1.mdf"), worker = 1)
+  c2 = reconstruct("SinglePatch", db; params...)
+  @test isapprox(arraydata(c1), arraydata(c2))
+  
   # with interpolation
   params[:gridding] = SystemMatrixGriddingParameter(;gridsize=[100,100,1], fov = calibFov(bSF))
   c3 = reconstruct("SinglePatch", b; params...)
@@ -177,4 +164,5 @@
   c11f = reconstruct("SinglePatch", b; params..., freqFilter = freqFilter)
   c11g = reconstruct("SinglePatch", b; params..., recChannels = 2:2)
   @test isapprox(arraydata(c11f), arraydata(c11g))
+  
 end

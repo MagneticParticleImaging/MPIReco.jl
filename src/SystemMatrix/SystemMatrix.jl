@@ -31,12 +31,12 @@ SystemMatrixGriddingParameter(file::MPIFile) = SystemMatrixGriddingParameter(
 )
 
 export defaultParameterGridSize, defaultParameterCalibCenter, defaultParameterCalibFov
-defaultParameterGridSize(old, new::MPIFile) = gridSizeCommon(new)
-defaultParameterGridSize(old, new::Missing) = missing
-defaultParameterCalibCenter(old, new::MPIFile) = calibFovCenter(new)
-defaultParameterCalibCenter(old, new::Missing) = missing
-defaultParameterCalibFov(old, new::MPIFile) = calibFov(new)
-defaultParameterCalibFov(old, new::Missing) = missing
+defaultParameterGridSize(new::MPIFile) = gridSizeCommon(new)
+defaultParameterGridSize(new::Missing) = missing
+defaultParameterCalibCenter(new::MPIFile) = calibFovCenter(new)
+defaultParameterCalibCenter(new::Missing) = missing
+defaultParameterCalibFov(new::MPIFile) = calibFov(new)
+defaultParameterCalibFov(new::Missing) = missing
 
 # Maybe implement custom defaults with optional given sf -> remove @kwdef
 #function SystemMatrixGriddingParameter(;sf::MPIFile, gridsize = nothing, fov = nothing, center = [0.0, 0.0, 0.0], deadPixels = Int64[])
@@ -129,13 +129,23 @@ function getSF(bSF, frequencies, sparseTrafo, solver::Type{<:AbstractLinearSolve
   return SF, grid
 end
 
+# In this instance we want to dispatch before the cache and call individual steps processing steps which in turn can use the cache. This is only effective if the cache size is >= number of sub-processes
+# Alternative solutions require us to nest our parameters with caches in between
 function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::Union{L, ProcessResultCache{L}}, sf::MPIFile, solverT, arrayType = Array) where L <: AbstractSystemMatrixLoadingParameter
-  freqs, sf, grid = process(type, params, sf) # Cachable process
-  sf, grid = prepareSF(solverT, sf, grid)
-  sf = adaptSF(arrayType, sf)
+  # Each process step can access the cache
+  freqs, sf, grid = process(type, params, sf)
+  sf, grid = process(type, params, sf, solverT, grid)
+  sf = process(type, params, sf, arrayType)
   return freqs, sf, grid
 end
-
+function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::L, sf::AbstractArray, solverT::Type{<:AbstractLinearSolver}, grid) where L <: AbstractSystemMatrixLoadingParameter
+  @info "Preparing SF"
+  return prepareSF(solverT, sf, grid)
+end
+function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::L, sf::AbstractArray, arrayType::Type{<:AbstractArray}) where L <: AbstractSystemMatrixLoadingParameter
+  @info "Adapting SF"
+  return adaptSF(arrayType, sf)
+end
 
 # Assumption SF is a (wrapped) CPU-array
 # adapt(Array, Sparse-CPU) results in dense array, so we only want to adapt if necessary
