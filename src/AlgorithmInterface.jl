@@ -105,7 +105,9 @@ julia> reconstruct("SinglePatch", mdf; solver = Kaczmarz, reg = [L2Regularizatio
 """
 function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = false, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
   plan = loadRecoPlan(name, cache, modules; kwargs...)
-  setAll!(plan; kwargs...)
+  setFirst = filter(kw->kw[2] isa Union{<:AbstractImageReconstructionAlgorithm, <:AbstractImageReconstructionParameters, <:AbstractRecoPlan}, kwargs)
+  setAll!(plan; setFirst...)
+  setAll!(plan; [kw for kw in kwargs if kw ∉ setFirst]...)
   return reconstruct(build(plan), data)
 end
 function loadRecoPlan(name::AbstractString, cache::Bool, modules; kwargs...)

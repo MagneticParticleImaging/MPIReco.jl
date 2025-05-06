@@ -64,10 +64,10 @@ using MPIReco
     calibsize=hcat((calibSize.(bSFs)...)).+[6, 6, 0]*ones(Int,4)'
     fov=hcat((calibFov.(bSFs)...)).+[0.006,0.006,0]*ones(Int,4)'         
     params[:opParams] = RecoPlan(ExplicitMultiPatchParameter)
-    params[:opParams][:tfCorrection] = false
-    params[:opParams][:gridsize] = calibsize
-    params[:opParams][:fov] = fov
-    params[:opParams][:mapping] = 1:4
+    params[:tfCorrection] = false
+    params[:gridsize] = calibsize
+    params[:fov] = fov
+    params[:mapping] = 1:4
     c_extr3 = reconstruct("MultiPatch", b; params...)     
     @test size(c2[1,:,:,:,1]) .+ (6,6,0) == size(c_extr3[1,:,:,:,1])               
     exportImage(joinpath(imgdir, "ExtrapolatedMultiPatch1.png"), Array(c_extr3[1,:,:,1,1]))
