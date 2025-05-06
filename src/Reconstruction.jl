@@ -322,8 +322,7 @@ function initImage(bSFs::Union{T,Vector{T}}, bMeas::S, L::Int, numAverages::Int,
   end
   # calculate axis
   shp = shape(grid)
-  pixspacing = (spacing(grid) ./ acqGradient(bMeas)[1] .* acqGradient(bSF)[1])*1000u"mm"
-  offset = (ffPos(bMeas) .- 0.5 .* calibFov(bSF))*1000u"mm" .+ 0.5 .* pixspacing
+  pixspacing, offset = calcSpacingAndOffset(bSF, bMeas, grid)
   dtframes = acqNumAverages(bMeas)*dfCycle(bMeas)*numAverages*1u"s"
   # initialize raw array
   array = Array{Float32}(undef, numcolors,shp...,L)
