@@ -3,7 +3,7 @@
 
 Perform a reconstruction on the worker specified by `DMPIFile`. Cache entries are local to the respective workers.
 """
-function MPIReco.reconstruct(name::AbstractString, data::MPIFiles.DMPIFile, cache::Bool = false, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
+function MPIReco.reconstruct(name::AbstractString, data::MPIFiles.DMPIFile, cache::Bool = false, modules = getRecoPlanModules(); kwargs...)
   planfile = MPIReco.planpath(name)
 
   # If the user disables caching or changes the plan structure we bypass the cache
