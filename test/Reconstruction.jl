@@ -122,7 +122,9 @@
 
   c10a = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = WhiteningWeightingParameters(whiteningMeas = bSF))
   c10b = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = CompositeWeightingParameters([WhiteningWeightingParameters(whiteningMeas = bSF), RowNormWeightingParameters()]))
+  c10c = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = CompositeWeightingParameters(map(ProcessResultCache, [WhiteningWeightingParameters(whiteningMeas = bSF), RowNormWeightingParameters()])))
   @test isapprox(arraydata(c9a), arraydata(c9b))
+  @test isapprox(arraydata(c10b), arraydata(c10c))
 
   # Frequency Filtering
   params = Dict{Symbol, Any}()
