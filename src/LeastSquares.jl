@@ -35,6 +35,8 @@ Base.@kwdef mutable struct ElaborateSolverParameters{SL} <: AbstractSolverParame
   # Union of all kwargs
   normalizeReg::AbstractRegularizationNormalization = SystemMatrixBasedNormalization()
   randomized::Union{Nothing, Bool, Symbol} = nothing
+  greedy_randomized::Union{Nothing, Bool} = nothing
+  subMatrixFraction::Union{Nothing, Float64} = nothing
   seed::Union{Nothing, Int64} = nothing
   shuffleRows::Union{Nothing, Bool} = false
   rho::Union{Nothing, Float64} = nothing
