@@ -68,11 +68,11 @@ end
 export addRecoPlanModule, getRecoPlanModules
 const recoPlanModules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]
 """
-    addRecoPlanPath(mod::Modul)
+    addRecoPlanPath(mod::Module)
 
 Add the `mod` module to the list of modules which are used for plan loading 
 """
-addRecoPlanModule(mod::Modul) = !(mod in recoPlanModules) ? push!(recoPlanPaths, path) : nothing
+addRecoPlanModule(mod::Module) = !(mod in recoPlanModules) ? push!(recoPlanPaths, path) : nothing
 """
     getRecoPlanModules()
 
