@@ -65,7 +65,20 @@ function getRecoPlanList(; full = false)
   return result
 end
 
+export addRecoPlanModule, getRecoPlanModules
+const recoPlanModules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]
+"""
+    addRecoPlanPath(mod::Modul)
 
+Add the `mod` module to the list of modules which are used for plan loading 
+"""
+addRecoPlanModule(mod::Modul) = !(mod in recoPlanModules) ? push!(recoPlanPaths, path) : nothing
+"""
+    getRecoPlanModules()
+
+Retrieve a list of currently used modules for plan loading 
+"""
+getRecoPlanModules() = recoPlanModules
 
 function planpath(name::AbstractString)
   if isfile(name)
@@ -85,7 +98,7 @@ const recoPlans = LRU{UInt64, RecoPlan}(maxsize = 3)
 
 export reconstruct
 """
-    reconstruct(name::AbstractString, data::MPIFile, cache::Bool = false, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
+    reconstruct(name::AbstractString, data::MPIFile, cache::Bool = false, modules = getRecoPlanModules(); kwargs...)
 
 Perform a reconstruction with the `RecoPlan` specified by `name` and given `data`.
 Additional keyword arguments can be passed to the reconstruction plan.
@@ -103,14 +116,14 @@ julia> mdf = MPIFile("data.mdf");
 julia> reconstruct("SinglePatch", mdf; solver = Kaczmarz, reg = [L2Regularization(0.3f0)], iterations = 10, frames = 1:10, ...)
 ```
 """
-function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = false, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
+function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = false, modules = getRecoPlanModules(); kwargs...)
   plan = loadRecoPlan(name, cache, modules; kwargs...)
   setFirst = filter(kw->kw[2] isa Union{<:AbstractImageReconstructionAlgorithm, <:AbstractImageReconstructionParameters, <:AbstractRecoPlan}, kwargs)
   setAll!(plan; setFirst...)
   setAll!(plan; [kw for kw in kwargs if kw ∉ setFirst]...)
   return reconstruct(build(plan), data)
 end
-function loadRecoPlan(name::AbstractString, cache::Bool, modules; kwargs...)
+function loadRecoPlan(name::AbstractString, cache::Bool, modules = getRecoPlanModules(); kwargs...)
   planfile = planpath(name)
 
   # If the user disables caching or changes the plan structure we bypass the cache
