@@ -24,6 +24,7 @@ export SimpleExternalBackgroundCorrectionParameters
 Base.@kwdef struct SimpleExternalBackgroundCorrectionParameters <: ExternalBackgroundCorrection
   emptyMeas::MPIFile
   bgFrames::Union{Vector{Int64}, UnitRange{Int64}} = [1]
+  tfCorrection::Bool = false
 end
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::SimpleExternalBackgroundCorrectionParameters, data::Array)
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgFrames))
@@ -41,6 +42,7 @@ Base.@kwdef struct LinearInterpolatedExternalBackgroundCorrectionParameters <: A
   emptyMeas::MPIFile
   bgFrames::UnitRange{Int64} = 1:1
   bgFramesPost::UnitRange{Int64} = 1:1
+  tfCorrection::Bool = false
 end
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::LinearInterpolatedExternalBackgroundCorrectionParameters, data::Array)
   kwargs = toKwargs(params)

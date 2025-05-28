@@ -30,7 +30,9 @@ SystemMatrixGriddingParameter(file::MPIFile) = SystemMatrixGriddingParameter(
   center = calibFovCenter(file)
 )
 
-export defaultParameterGridSize, defaultParameterCalibCenter, defaultParameterCalibFov
+export defaultParameterTfCorrection, defaultParameterGridSize, defaultParameterCalibCenter, defaultParameterCalibFov
+defaultParameterTfCorrection(new::MPIFile) = rxHasTransferFunction(new)
+defaultParameterTfCorrection(new::Missing) = missing
 defaultParameterGridSize(new::MPIFile) = gridSizeCommon(new)
 defaultParameterGridSize(new::Missing) = missing
 defaultParameterCalibCenter(new::MPIFile) = calibFovCenter(new)
@@ -56,6 +58,7 @@ Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterPa
   freqFilter::F
   gridding::G
   bgCorrection::Bool = false
+  tfCorrection::Bool = false
   loadasreal::Bool = false
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile)
@@ -76,6 +79,7 @@ Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilter
   thresh::Float64 = 0.0
   redFactor::Float64 = 0.1
   bgCorrection::Bool = false
+  tfCorrection::Bool = false
   loadasreal::Bool=false
   useDFFoV::Bool = false
 end

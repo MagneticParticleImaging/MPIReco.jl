@@ -10,6 +10,8 @@ Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractMPIBackgroundCorrect
   bgParams::T = NoBackgroundCorrectionParameters()
   "Frames to be retrieved from the data"
   frames::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
+  "If measurement should be corrected with a transfer function"
+  tfCorrection::Bool = false
   "If background frames should be neglected in frame index selection"
   neglectBGFrames::Bool = true
   "Number of frames that should be averaged together"
