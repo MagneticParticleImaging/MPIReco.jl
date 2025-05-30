@@ -49,8 +49,17 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::RowNormWeightingPar
 end
 
 export CompositeWeightingParameters
-Base.@kwdef struct CompositeWeightingParameters <: AbstractWeightingParameters
-  weightingParameters::Union{Vector{AbstractWeightingParameters}, Vector{AbstractUtilityReconstructionParameters{<:AbstractWeightingParameters}}}
+struct CompositeWeightingParameters{C} <: AbstractWeightingParameters where {C <: Union{<:AbstractWeightingParameters, <:AbstractUtilityReconstructionParameters}}
+  weightingParameters::Vector{C}
+  CompositeWeightingParameters(; weightingParameters) = CompositeWeightingParameters(weightingParameters)
+  CompositeWeightingParameters(weightingParameters::Vector{<:AbstractWeightingParameters}) = new{eltype(weightingParameters)}(weightingParameters)
+  function CompositeWeightingParameters(weightingParameters::Vector{O}) where O
+    # Type definition will usually lose AbstractWeightingParameters, so we could check here
+    if !all(p -> p isa AbstractUtilityReconstructionParameters{<:AbstractWeightingParameters}, weightingParameters)
+      throw(ArgumentError("Cannot construct an CompositeWeightingParameters with a utility wrapped around a non weighting parameter"))
+    end
+    return new{eltype(weightingParameters)}(weightingParameters)
+  end
 end
 function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::CompositeWeightingParameters, args...)
   weights = map(p -> process(algoT, p, args...), params.weightingParameters)
