@@ -58,7 +58,7 @@ Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterPa
   freqFilter::F
   gridding::G
   bgCorrection::Bool = false
-  tfCorrection::Bool = false
+  tfCorrection::Union{Bool, Nothing} = nothing
   loadasreal::Bool = false
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile)
@@ -67,7 +67,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLo
   return frequencies, process(t, params, sf, frequencies)...
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
-  S, grid = getSF(sf, frequencies, nothing; toKwargs(params)...)
+  S, grid = getSF(sf, frequencies, nothing; toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(sf)))...)
   @info "Loading SM"
   return S, grid
 end
@@ -79,7 +79,7 @@ Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilter
   thresh::Float64 = 0.0
   redFactor::Float64 = 0.1
   bgCorrection::Bool = false
-  tfCorrection::Bool = false
+  tfCorrection::Union{Bool, Nothing} = nothing
   loadasreal::Bool=false
   useDFFoV::Bool = false
 end
@@ -89,7 +89,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrix
   return frequencies, process(t, params, sf, frequencies)...
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
-  S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params)...)
+  S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(sf)))...)
   return S, grid
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
