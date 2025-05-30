@@ -16,6 +16,7 @@ Base.@kwdef struct ExternalPreProcessedBackgroundCorrectionParameters{T} <: Abst
   numPeriodGrouping::Int64 = 1
   spectralLeakageCorrection::Bool = false
   loadasreal::Bool = false
+  tfCorrection::Union{Bool, Nothing} = nothing
   bgParams::T
 end
 # TODO Shorter struct names?
@@ -31,7 +32,8 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::SimpleExternalBackg
   return data .-empty
 end
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::ExternalPreProcessedBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}, data::Array, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
-  kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
+  kwargs = toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(params.bgParams.emptyMeas)),
+                    overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
   empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=length(params.bgParams.bgFrames), kwargs..., frequencies = frequencies)
   return data .-empty
 end
@@ -55,8 +57,8 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::LinearInterpolatedE
   return result
 end
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::ExternalPreProcessedBackgroundCorrectionParameters{LinearInterpolatedExternalBackgroundCorrectionParameters}, data::Array, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
-  kwargs = toKwargs(params, ignore = [:bgParams])
   bgParams = params.bgParams
+  kwargs = toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(bgParams.emptyMeas)), ignore = [:bgParams])
   kwargs[:frames] = bgParams.bgFrames
   empty = getMeasurementsFD(bgParams.emptyMeas, false; bgCorrection = false, numAverages=length(bgParams.bgFrames), kwargs..., frequencies = frequencies)
   kwargs[:frames] = bgParams.bgFramesPost
