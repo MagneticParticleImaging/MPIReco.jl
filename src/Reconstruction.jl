@@ -128,6 +128,7 @@ function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
   bEmpty = nothing, emptyMeas=bEmpty, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, 
   numPeriodAverages=1, numPeriodGrouping=1, kargs...) where {T<:MPIFile}
+  Base.depwarn("`reconstructionSinglePatch` is deprecated. Use `reconstruct(\"SinglePatch\", bMeas; kwargs...)` or another fitting SinglePatch algorithm instead", :reconstructionSinglePatch)
 
   freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, 
                            numUsedFreqs=numUsedFreqs, numPeriodAverages=numPeriodAverages, 
@@ -344,6 +345,8 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
                         lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver::Type{<:AbstractLinearSolver} = Kaczmarz,
                         weights=nothing, enforceReal=true, enforcePositive=true,
                         relativeLambda=true, reg::Union{Vector{<:AbstractRegularization}, Nothing} = nothing, kargs...)
+  
+  Base.depwarn("`reconstruction` is deprecated. Use `reconstruct(\"...\", bMeas; kwargs...)` with a fitting RecoPlan or use RegularizedLeastSquares directly", :reconstruction)                        
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
 
