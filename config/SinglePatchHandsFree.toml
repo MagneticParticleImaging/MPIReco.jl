@@ -29,7 +29,7 @@ _type = "RecoPlan{SinglePatchParameters}"
         [[parameter.reco._listener.sf]]
         field = "fov"
         _module = "AbstractImageReconstruction"
-        _type = "LinkedFieldListener"
+        _type = "LinkedPropertyListener"
         plan = ["parameter", "reco", "sfLoad", "param", "gridding"]
 
             [parameter.reco._listener.sf.fn]
@@ -38,7 +38,7 @@ _type = "RecoPlan{SinglePatchParameters}"
         [[parameter.reco._listener.sf]]
         field = "center"
         _module = "AbstractImageReconstruction"
-        _type = "LinkedFieldListener"
+        _type = "LinkedPropertyListener"
         plan = ["parameter", "reco", "sfLoad", "param", "gridding"]
 
             [parameter.reco._listener.sf.fn]
@@ -47,7 +47,7 @@ _type = "RecoPlan{SinglePatchParameters}"
         [[parameter.reco._listener.sf]]
         field = "gridsize"
         _module = "AbstractImageReconstruction"
-        _type = "LinkedFieldListener"
+        _type = "LinkedPropertyListener"
         plan = ["parameter", "reco", "sfLoad", "param", "gridding"]
 
             [parameter.reco._listener.sf.fn]
@@ -56,7 +56,7 @@ _type = "RecoPlan{SinglePatchParameters}"
         [[parameter.reco._listener.sf]]
         field = "minFreq"
         _module = "AbstractImageReconstruction"
-        _type = "LinkedFieldListener"
+        _type = "LinkedPropertyListener"
         plan = ["parameter", "reco", "sfLoad", "param", "freqFilter"]
 
             [parameter.reco._listener.sf.fn]
@@ -65,7 +65,7 @@ _type = "RecoPlan{SinglePatchParameters}"
         [[parameter.reco._listener.sf]]
         field = "maxFreq"
         _module = "AbstractImageReconstruction"
-        _type = "LinkedFieldListener"
+        _type = "LinkedPropertyListener"
         plan = ["parameter", "reco", "sfLoad", "param", "freqFilter"]
 
             [parameter.reco._listener.sf.fn]
@@ -74,7 +74,7 @@ _type = "RecoPlan{SinglePatchParameters}"
         [[parameter.reco._listener.sf]]
         field = "recChannels"
         _module = "AbstractImageReconstruction"
-        _type = "LinkedFieldListener"
+        _type = "LinkedPropertyListener"
         plan = ["parameter", "reco", "sfLoad", "param", "freqFilter"]
 
             [parameter.reco._listener.sf.fn]
@@ -84,6 +84,16 @@ _type = "RecoPlan{SinglePatchParameters}"
         [parameter.reco.solverParams]
         _module = "MPIReco"
         _type = "RecoPlan{HandsFreeSolverParameters}"
+
+        [parameter.reco.weightingParams]
+        _module = "AbstractImageReconstruction"
+        _type = "RecoPlan{ProcessResultCache}"
+        maxsize = 1
+
+            [parameter.reco.weightingParams.param]
+            _module = "MPIReco"
+            _type = "RecoPlan{NoWeightingParameters}"
+
 
     [parameter.pre]
     _module = "AbstractImageReconstruction"

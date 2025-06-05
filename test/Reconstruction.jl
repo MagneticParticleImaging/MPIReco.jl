@@ -26,23 +26,10 @@
   exportImage(joinpath(imgdir, "Reconstruction1.png"), Array(c1[1,:,:,1,1]))
   @test compareImg("Reconstruction1.png")
 
-  # fused lasso
-  #params[:iterations, 100)
-  #params[:loadasreal, true)
-  #params[:solver, FusedLasso)
-  #params[:reg, [TVRegularization(0.01f0), L1Regularization(0.01f0)])
-  #params[:normalizeReg, NoNormalization())
-  #c2 = reconstruct(build(plan), b)
-  #params[:iterations, 1)
-  #params[:loadasreal, false)
-  #params[:solver, Kaczmarz)
-  #params[:reg, [L2Regularization(0.0f0)])
-  #params[:normalizeReg, SystemMatrixBasedNormalization())
-  #@test axisnames(c2) == names
-  #@test axisvalues(c2) == values
-  #exportImage(joinpath(imgdir, "Reconstruction2.png"), Array(c2[1,:,:,1,1]))
-  #@test compareImg("Reconstruction2.png")
-
+  db = DMPIFile(joinpath(datadir, "measurements", "20211226_203916_MultiPatch", "1.mdf"), worker = 1)
+  c2 = reconstruct("SinglePatch", db; params...)
+  @test isapprox(arraydata(c1), arraydata(c2))
+  
   # with interpolation
   params[:gridding] = SystemMatrixGriddingParameter(;gridsize=[100,100,1], fov = calibFov(bSF))
   c3 = reconstruct("SinglePatch", b; params...)
@@ -107,21 +94,21 @@
   exportImage(joinpath(imgdir, "Reconstruction7c.png"), Array(c7c[1,:,:,1,1]))
   @test compareImg("Reconstruction7c.png")
   
-
+  
   params[:weightingParams] = ChannelWeightingParameters(channelWeights = [1.0, 0.0, 1.0])
   c7d = reconstruct("SinglePatch", b; params...)
   params[:weightingParams] = NoWeightingParameters()
-  params[:recChannel] = 1:1
+  params[:recChannels] = 1:1
   c7e = reconstruct("SinglePatch", b; params...)
-  params[:recChannel] = 1:2
+  params[:recChannels] = 1:2
   @test isapprox(arraydata(c7d), arraydata(c7e))
 
   params[:weightingParams] = ChannelWeightingParameters(channelWeights = [0.0, 1.0, 1.0])
   c7f = reconstruct("SinglePatch", b; params...)
   params[:weightingParams] = NoWeightingParameters()
-  params[:recChannel] = 2:2
+  params[:recChannels] = 2:2
   c7g = reconstruct("SinglePatch", b; params...)
-  params[:recChannel] = 1:2
+  params[:recChannels] = 1:2
   @test isapprox(arraydata(c7f), arraydata(c7g))
 
   params[:weightingParams] = WhiteningWeightingParameters(whiteningMeas = bSF)
@@ -135,7 +122,9 @@
 
   c10a = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = WhiteningWeightingParameters(whiteningMeas = bSF))
   c10b = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = CompositeWeightingParameters([WhiteningWeightingParameters(whiteningMeas = bSF), RowNormWeightingParameters()]))
+  c10c = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = CompositeWeightingParameters(map(ProcessResultCache, [WhiteningWeightingParameters(whiteningMeas = bSF), RowNormWeightingParameters()])))
   @test isapprox(arraydata(c9a), arraydata(c9b))
+  @test isapprox(arraydata(c10b), arraydata(c10c))
 
   # Frequency Filtering
   params = Dict{Symbol, Any}()
@@ -177,4 +166,5 @@
   c11f = reconstruct("SinglePatch", b; params..., freqFilter = freqFilter)
   c11g = reconstruct("SinglePatch", b; params..., recChannels = 2:2)
   @test isapprox(arraydata(c11f), arraydata(c11g))
+  
 end

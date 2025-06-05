@@ -128,6 +128,7 @@ function reconstructionSinglePatch(bSF::Union{T,Vector{T}}, bMeas::MPIFile;
   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas),
   bEmpty = nothing, emptyMeas=bEmpty, bgFrames = 1, fgFrames = 1, varMeanThresh = 0, minAmplification=2, 
   numPeriodAverages=1, numPeriodGrouping=1, kargs...) where {T<:MPIFile}
+  Base.depwarn("`reconstructionSinglePatch` is deprecated. Use `reconstruct(\"SinglePatch\", bMeas; kwargs...)` or another fitting SinglePatch algorithm instead", :reconstructionSinglePatch)
 
   freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, 
                            numUsedFreqs=numUsedFreqs, numPeriodAverages=numPeriodAverages, 
@@ -322,8 +323,7 @@ function initImage(bSFs::Union{T,Vector{T}}, bMeas::S, L::Int, numAverages::Int,
   end
   # calculate axis
   shp = shape(grid)
-  pixspacing = (spacing(grid) ./ acqGradient(bMeas)[1] .* acqGradient(bSF)[1])*1000u"mm"
-  offset = (ffPos(bMeas) .- 0.5 .* calibFov(bSF))*1000u"mm" .+ 0.5 .* pixspacing
+  pixspacing, offset = calcSpacingAndOffset(bSF, bMeas, grid)
   dtframes = acqNumAverages(bMeas)*dfCycle(bMeas)*numAverages*1u"s"
   # initialize raw array
   array = Array{Float32}(undef, numcolors,shp...,L)
@@ -342,9 +342,11 @@ end
 Low level reconstruction method
 """
 function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = nothing,
-                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver = Kaczmarz,
+                        lambd=0.0, lambda=lambd, λ=lambda, progress=nothing, solver::Type{<:AbstractLinearSolver} = Kaczmarz,
                         weights=nothing, enforceReal=true, enforcePositive=true,
-                        relativeLambda=true, reg = nothing, kargs...)
+                        relativeLambda=true, reg::Union{Vector{<:AbstractRegularization}, Nothing} = nothing, kargs...)
+  
+  Base.depwarn("`reconstruction` is deprecated. Use `reconstruct(\"...\", bMeas; kwargs...)` with a fitting RecoPlan or use RegularizedLeastSquares directly", :reconstruction)                        
   N = size(S,2) #prod(shape)
   M = div(length(S), N)
 
@@ -357,10 +359,33 @@ function reconstruction(S, u::Array, bgDict::Nothing=nothing; sparseTrafo = noth
     norm = SystemMatrixBasedNormalization()
   end
   solverType = eval(Symbol(solver)) # this probably should happen much earlier
+  if isnothing(reg)
+    reg = AbstractRegularization[L2Regularization(λ)]
+    if enforcePositive && !enforceReal
+      @warn "enforcePositive also needs enforceReal. Overwriting setting for enforceReal!"
+      enforceReal = true
+    end
+    if enforceReal
+      append!(reg, RealRegularization())
+    end
+    if enforcePositive
+      append!(reg, PositiveRegularization())
+    end
+  else
+    if sum(abs.(λ)) > 0
+      error("Only λ or an explicit regularization can be given at the same time!")
+    end
+    if ((RealRegularization() in reg) != enforceReal) || ((PositiveRegularization() in reg) != enforcePositive)
+      @warn "An explicit regularization has been given, overriding the behaviour of enforcePositive and enforceReal"
+    end
+  end
 
-  solv = createLinearSolver(solverType, S; weights=weights, λ=λ,
-                            sparseTrafo=sparseTrafo, enforceReal=enforceReal,
-			                      enforcePositive=enforcePositive, normalizeReg = norm, reg = reg, kargs...)
+  if !isnothing(sparseTrafo)
+    reg = map(r -> TransformedRegularization(r, sparseTrafo), reg)
+  end
+  
+  solv = createLinearSolver(solverType, S; weights=weights,
+                            sparseTrafo=sparseTrafo, normalizeReg = norm, reg = reg, kargs...)
   progress==nothing ? p = Progress(L, 1, "Reconstructing data...") : p = progress
   for l=1:L
 

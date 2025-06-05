@@ -26,17 +26,19 @@ end
 
 SystemMatrixGriddingParameter(file::MPIFile) = SystemMatrixGriddingParameter(
   gridsize = calibSize(file),
-  fov = calibFieldOfView(file),
-  center = calibFieldOfViewCenter(file)
+  fov = calibFov(file),
+  center = calibFovCenter(file)
 )
 
-export defaultParameterGridSize, defaultParameterCalibCenter, defaultParameterCalibFov
-defaultParameterGridSize(old, new::MPIFile) = gridSizeCommon(new)
-defaultParameterGridSize(old, new::Missing) = missing
-defaultParameterCalibCenter(old, new::MPIFile) = calibFovCenter(new)
-defaultParameterCalibCenter(old, new::Missing) = missing
-defaultParameterCalibFov(old, new::MPIFile) = calibFov(new)
-defaultParameterCalibFov(old, new::Missing) = missing
+export defaultParameterTfCorrection, defaultParameterGridSize, defaultParameterCalibCenter, defaultParameterCalibFov
+defaultParameterTfCorrection(new::MPIFile) = rxHasTransferFunction(new)
+defaultParameterTfCorrection(new::Missing) = missing
+defaultParameterGridSize(new::MPIFile) = gridSizeCommon(new)
+defaultParameterGridSize(new::Missing) = missing
+defaultParameterCalibCenter(new::MPIFile) = calibFovCenter(new)
+defaultParameterCalibCenter(new::Missing) = missing
+defaultParameterCalibFov(new::MPIFile) = calibFov(new)
+defaultParameterCalibFov(new::Missing) = missing
 
 # Maybe implement custom defaults with optional given sf -> remove @kwdef
 #function SystemMatrixGriddingParameter(;sf::MPIFile, gridsize = nothing, fov = nothing, center = [0.0, 0.0, 0.0], deadPixels = Int64[])
@@ -56,6 +58,7 @@ Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterPa
   freqFilter::F
   gridding::G
   bgCorrection::Bool = false
+  tfCorrection::Union{Bool, Nothing} = nothing
   loadasreal::Bool = false
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile)
@@ -64,7 +67,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLo
   return frequencies, process(t, params, sf, frequencies)...
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
-  S, grid = getSF(sf, frequencies, nothing; toKwargs(params)...)
+  S, grid = getSF(sf, frequencies, nothing; toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(sf)))...)
   @info "Loading SM"
   return S, grid
 end
@@ -76,6 +79,7 @@ Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilter
   thresh::Float64 = 0.0
   redFactor::Float64 = 0.1
   bgCorrection::Bool = false
+  tfCorrection::Union{Bool, Nothing} = nothing
   loadasreal::Bool=false
   useDFFoV::Bool = false
 end
@@ -85,7 +89,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrix
   return frequencies, process(t, params, sf, frequencies)...
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
-  S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params)...)
+  S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(sf)))...)
   return S, grid
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
@@ -117,6 +121,7 @@ function getSF(bSF, frequencies, sparseTrafo, solver::AbstractString; kargs...)
   elseif solver == "direct"
     return getSF(bSF, frequencies, sparseTrafo, DirectSolver; kargs...)
   else
+    @warn "Unsupported solver $(solver) used in getSF"
     return getSF(bSF, frequencies, sparseTrafo; kargs...)
   end
 end
@@ -128,13 +133,23 @@ function getSF(bSF, frequencies, sparseTrafo, solver::Type{<:AbstractLinearSolve
   return SF, grid
 end
 
+# In this instance we want to dispatch before the cache and call individual steps processing steps which in turn can use the cache. This is only effective if the cache size is >= number of sub-processes
+# Alternative solutions require us to nest our parameters with caches in between
 function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::Union{L, ProcessResultCache{L}}, sf::MPIFile, solverT, arrayType = Array) where L <: AbstractSystemMatrixLoadingParameter
-  freqs, sf, grid = process(type, params, sf) # Cachable process
-  sf, grid = prepareSF(solverT, sf, grid)
-  sf = adaptSF(arrayType, sf)
+  # Each process step can access the cache
+  freqs, sf, grid = process(type, params, sf)
+  sf, grid = process(type, params, sf, solverT, grid)
+  sf = process(type, params, sf, arrayType)
   return freqs, sf, grid
 end
-
+function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::L, sf::AbstractArray, solverT::Type{<:AbstractLinearSolver}, grid) where L <: AbstractSystemMatrixLoadingParameter
+  @info "Preparing SF"
+  return prepareSF(solverT, sf, grid)
+end
+function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::L, sf::AbstractArray, arrayType::Type{<:AbstractArray}) where L <: AbstractSystemMatrixLoadingParameter
+  @info "Adapting SF"
+  return adaptSF(arrayType, sf)
+end
 
 # Assumption SF is a (wrapped) CPU-array
 # adapt(Array, Sparse-CPU) results in dense array, so we only want to adapt if necessary

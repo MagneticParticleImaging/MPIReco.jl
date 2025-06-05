@@ -10,6 +10,8 @@ Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractMPIBackgroundCorrect
   bgParams::T = NoBackgroundCorrectionParameters()
   "Frames to be retrieved from the data"
   frames::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
+  "If measurement should be corrected with a transfer function. Default behaviour (nothing) is `rxHasTransferFunction`"
+  tfCorrection::Union{Bool, Nothing} = nothing
   "If background frames should be neglected in frame index selection"
   neglectBGFrames::Bool = true
   "Number of frames that should be averaged together"
@@ -25,17 +27,20 @@ Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractMPIBackgroundCorrect
 end
 
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{NoBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
-  kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
+  kwargs = toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(f),
+                    :frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
   result = getMeasurementsFD(f; bgCorrection = false, kwargs..., frequencies = frequencies)
   return result
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{InternalBackgroundCorrectionParameters}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
-  kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
+  kwargs = toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(f),
+                    :frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
   result = getMeasurementsFD(f; bgCorrection = true, interpolateBG = params.bgParams.interpolateBG, kwargs..., frequencies = frequencies)
   return result
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::CommonPreProcessingParameters{<:ExternalBackgroundCorrection}, f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
-  kwargs = toKwargs(params, default = Dict{Symbol, Any}(:frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
+  kwargs = toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(f),
+                    :frames => params.neglectBGFrames ? (1:acqNumFGFrames(f)) : (1:acqNumFrames(f))), ignore = [:neglectBGFrames, :bgParams])
   result = getMeasurementsFD(f; bgCorrection = false, kwargs..., frequencies = frequencies)
   bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; kwargs..., bgParams = params.bgParams, frequencies = frequencies)
   return process(t, bgParams, result, frequencies)

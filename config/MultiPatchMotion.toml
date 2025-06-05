@@ -17,6 +17,16 @@ _module = "MPIReco"
         _type = "RecoPlan{SimpleSolverParameters}"
         _module = "MPIReco"
 
+        [parameter.reco.weightingParams]
+        _module = "AbstractImageReconstruction"
+        _type = "RecoPlan{ProcessResultCache}"
+        maxsize = 1
+
+            [parameter.reco.weightingParams.param]
+            _module = "MPIReco"
+            _type = "RecoPlan{NoWeightingParameters}"
+
+
     [parameter.pre]
     _module = "AbstractImageReconstruction"
     _type = "RecoPlan{ProcessResultCache}"

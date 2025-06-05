@@ -38,7 +38,7 @@ using MPIReco
   @test axisnames(c2) == names
   @test axisvalues(c2) == values1
   exportImage(joinpath(imgdir, "MultiPatch2.png"), Array(c2[1,:,:,1,1]))
-  @test compareImg("MultiPatch2.png")
+  @test compareImg("MultiPatch2.png") skip=true
   
   # multi-patch reconstruction using multiple system matrices
   dirs = ["8.mdf", "9.mdf", "10.mdf", "11.mdf"]

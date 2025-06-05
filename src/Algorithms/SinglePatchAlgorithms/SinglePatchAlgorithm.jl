@@ -2,12 +2,12 @@ Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoa
    arrT <: AbstractArray, SP<:AbstractSolverParameters{SL}, R<:AbstractRegularization, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
-  sfLoad::Union{L, ProcessResultCache{L}}
+  sfLoad::Union{L, AbstractUtilityReconstructionParameters{L}}
   arrayType::Type{arrT} = Array
   # Solver
   solverParams::SP
   reg::Vector{R} = AbstractRegularization[]
-  weightingParams::Union{W, ProcessResultCache{W}} = NoWeightingParameters()
+  weightingParams::Union{W, AbstractUtilityReconstructionParameters{W}} = NoWeightingParameters()
 end
 
 Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P, SM, arrT <: AbstractArray, vecT <: arrT} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
@@ -42,6 +42,10 @@ function prepareWeights(reco::SinglePatchReconstructionParameter{L,S,arrT,SP,R,W
   return process(AbstractMPIRecoAlgorithm, reco.weightingParams, freqs, sf, nothing, reco.arrayType)
 end
 
+Base.lock(algo::SinglePatchReconstructionAlgorithm) = lock(algo.output)
+Base.unlock(algo::SinglePatchReconstructionAlgorithm) = unlock(algo.output)
+Base.isready(algo::SinglePatchReconstructionAlgorithm) = isready(algo.output)
+Base.wait(algo::SinglePatchReconstructionAlgorithm) = wait(algo.output)
 AbstractImageReconstruction.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.output)
 
 function process(algo::SinglePatchReconstructionAlgorithm, params::Union{A, ProcessResultCache{<:A}}, f::MPIFile, args...) where A <: AbstractMPIPreProcessingParameters

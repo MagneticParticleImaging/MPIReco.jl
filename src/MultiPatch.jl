@@ -13,6 +13,7 @@ generateHeaderDict(bSF::MultiMPIFile,bMeas::MPIFile) =
 
 function reconstructionMultiPatch(bSF, bMeas::MPIFile;
   minFreq=0, maxFreq=1.25e6, SNRThresh=-1,maxMixingOrder=-1, numUsedFreqs=-1, sortBySNR=false, recChannels=1:numReceivers(bMeas), kargs...)
+  Base.depwarn("`reconstructionMultiPatch` is deprecated. Use `reconstruct(\"MultiPatch\", bMeas; kwargs...)` or another fitting MultiPatch algorithm instead", :reconstructionMultiPatch)
 
   freq = filterFrequencies(bSF,minFreq=minFreq, maxFreq=maxFreq,recChannels=recChannels, SNRThresh=SNRThresh, numUsedFreqs=numUsedFreqs)
   freq = sortFrequencies(freq, bSF, numPeriodGrouping = 1, sortBySNR = sortBySNR)
@@ -172,6 +173,9 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractMultiPatchO
   @info "Loading Multi Patch operator"
   return MultiPatchOperator(bSF, freq; toKwargs(params)..., FFPos = FFPos, FFPosSF = FFPosSF, gradient = gradient)
 end 
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractMultiPatchOperatorParameter, op::AbstractMultiPatchOperator, arrayType::Type{<:AbstractArray})
+  return adapt(arrayType, op)
+end
 
 function MultiPatchOperator(SF::MPIFile, freq, bgCorrection::Bool; kargs...)
   return MultiPatchOperator(MultiMPIFile([SF]), freq, bgCorrection; kargs...)

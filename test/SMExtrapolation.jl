@@ -68,7 +68,7 @@ using MPIReco
     params[:gridsize] = calibsize
     params[:fov] = fov
     params[:mapping] = 1:4
-    c_extr3 = reconstruct("MultiPatch", b; params...)                 
+    c_extr3 = reconstruct("MultiPatch", b; params...)     
     @test size(c2[1,:,:,:,1]) .+ (6,6,0) == size(c_extr3[1,:,:,:,1])               
     exportImage(joinpath(imgdir, "ExtrapolatedMultiPatch1.png"), Array(c_extr3[1,:,:,1,1]))
     @test compareImg("ExtrapolatedMultiPatch1.png")

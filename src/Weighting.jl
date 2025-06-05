@@ -30,10 +30,11 @@ process(::Type{<:AbstractMPIRecoAlgorithm}, params::ChannelWeightingParameters, 
 export WhiteningWeightingParameters
 Base.@kwdef struct WhiteningWeightingParameters <: AbstractWeightingParameters
   whiteningMeas::MPIFile
-  tfCorrection::Bool = false
+  tfCorrection::Union{Bool, Nothing} = nothing
 end
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::WhiteningWeightingParameters, freqs::Vector{CartesianIndex{2}}, args...)
-  u_bg = getMeasurementsFD(params.whiteningMeas, false, frequencies=freqs, frames=measBGFrameIdx(params.whiteningMeas), bgCorrection = false, tfCorrection=false)
+  u_bg = getMeasurementsFD(params.whiteningMeas, false, tfCorrection = isnothing(params.tfCorrection) ? rxHasTransferFunction(params.whiteningMeas) : params.tfCorrection, 
+                           frequencies=freqs, frames=measBGFrameIdx(params.whiteningMeas), bgCorrection = false)
   bg_std = std(u_bg, dims=3)
   weights = minimum(abs.(vec(bg_std))) ./ abs.(vec(bg_std))
   return weights
@@ -49,8 +50,17 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::RowNormWeightingPar
 end
 
 export CompositeWeightingParameters
-Base.@kwdef struct CompositeWeightingParameters <: AbstractWeightingParameters
-  weightingParameters::Vector{AbstractWeightingParameters}
+struct CompositeWeightingParameters{C} <: AbstractWeightingParameters where {C <: Union{<:AbstractWeightingParameters, <:AbstractUtilityReconstructionParameters}}
+  weightingParameters::Vector{C}
+  CompositeWeightingParameters(; weightingParameters) = CompositeWeightingParameters(weightingParameters)
+  CompositeWeightingParameters(weightingParameters::Vector{<:AbstractWeightingParameters}) = new{eltype(weightingParameters)}(weightingParameters)
+  function CompositeWeightingParameters(weightingParameters::Vector{O}) where O
+    # Type definition will usually lose AbstractWeightingParameters, so we could check here
+    if !all(p -> p isa AbstractUtilityReconstructionParameters{<:AbstractWeightingParameters}, weightingParameters)
+      throw(ArgumentError("Cannot construct an CompositeWeightingParameters with a utility wrapped around a non weighting parameter"))
+    end
+    return new{eltype(weightingParameters)}(weightingParameters)
+  end
 end
 function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::CompositeWeightingParameters, args...)
   weights = map(p -> process(algoT, p, args...), params.weightingParameters)
