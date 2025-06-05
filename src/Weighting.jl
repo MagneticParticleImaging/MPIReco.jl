@@ -30,10 +30,11 @@ process(::Type{<:AbstractMPIRecoAlgorithm}, params::ChannelWeightingParameters, 
 export WhiteningWeightingParameters
 Base.@kwdef struct WhiteningWeightingParameters <: AbstractWeightingParameters
   whiteningMeas::MPIFile
-  tfCorrection::Bool = false
+  tfCorrection::Union{Bool, Nothing} = nothing
 end
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::WhiteningWeightingParameters, freqs::Vector{CartesianIndex{2}}, args...)
-  u_bg = getMeasurementsFD(params.whiteningMeas, false, frequencies=freqs, frames=measBGFrameIdx(params.whiteningMeas), bgCorrection = false, tfCorrection=false)
+  u_bg = getMeasurementsFD(params.whiteningMeas, false, tfCorrection = isnothing(params.tfCorrection) ? rxHasTransferFunction(params.whiteningMeas) : params.tfCorrection, 
+                           frequencies=freqs, frames=measBGFrameIdx(params.whiteningMeas), bgCorrection = false)
   bg_std = std(u_bg, dims=3)
   weights = minimum(abs.(vec(bg_std))) ./ abs.(vec(bg_std))
   return weights
