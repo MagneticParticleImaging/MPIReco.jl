@@ -43,7 +43,7 @@ struct MixedAlgorithm <: ReconstructionAlgorithmType end
 # TODO undefined for certain "Algorithm" components
 #recoAlgorithmTypes(::Type{ConcreteRecoAlgorithm}) = SystemMatrixBasedAlgorithm()
 export addRecoPlanPath, getRecoPlanList
-const recoPlanPaths = [normpath(joinpath(@__DIR__, "..", "config"))]
+const recoPlanPaths::Vector{String} = [normpath(joinpath(@__DIR__, "..", "config"))]
 """
     addRecoPlanPath(path::String)
 
@@ -66,13 +66,13 @@ function getRecoPlanList(; full = false)
 end
 
 export addRecoPlanModule, getRecoPlanModules
-const recoPlanModules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]
+const recoPlanModules::Vector{Module} = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]
 """
     addRecoPlanPath(mod::Module)
 
 Add the `mod` module to the list of modules which are used for plan loading 
 """
-addRecoPlanModule(mod::Module) = !(mod in recoPlanModules) ? push!(recoPlanPaths, path) : nothing
+addRecoPlanModule(mod::Module) = !(mod in recoPlanModules) ? push!(recoPlanModules, mod) : nothing
 """
     getRecoPlanModules()
 
