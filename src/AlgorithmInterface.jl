@@ -43,13 +43,14 @@ struct MixedAlgorithm <: ReconstructionAlgorithmType end
 # TODO undefined for certain "Algorithm" components
 #recoAlgorithmTypes(::Type{ConcreteRecoAlgorithm}) = SystemMatrixBasedAlgorithm()
 export addRecoPlanPath, getRecoPlanList
-const recoPlanPaths::Vector{String} = [normpath(joinpath(@__DIR__, "..", "config"))]
+const DEFAULT_PLANS_PATH = @path joinpath(@__DIR__, "..", "config")
+const recoPlanPaths = AbstractString[DEFAULT_PLANS_PATH]
 """
-    addRecoPlanPath(path::String)
+    addRecoPlanPath(path)
 
 Add all `RecoPlans` within the given directory as potential 
 """
-addRecoPlanPath(path::String) = !(path in recoPlanPaths) ? pushfirst!(recoPlanPaths, path) : nothing
+addRecoPlanPath(path) = !(path in recoPlanPaths) ? pushfirst!(recoPlanPaths, path) : nothing
 """
     getRecoPlanList(; full = false)
 

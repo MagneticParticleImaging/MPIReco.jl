@@ -25,6 +25,7 @@ module MPIReco
   import AbstractImageReconstruction: process, parameter, reconstruct
   using FFTW
   using LinearOperatorCollection
+  using RelocatableFolders
 
 
   include("AlgorithmInterface.jl")
