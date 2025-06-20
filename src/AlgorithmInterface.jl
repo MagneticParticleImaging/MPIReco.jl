@@ -182,6 +182,13 @@ export emptyRecoCache!
 Empty the cache of `RecoPlans`. This is useful if the cache is too large.
 """
 emptyRecoCache!() = Base.empty!(recoPlans)
+function emptyRecoCache!(plan::RecoPlan)
+  for p in PostOrderDFS(plan)
+    if p isa ProcessResultCache || p isa  RecoPlan{ProcessResultCache}
+      empty!(p)
+    end
+  end
+end
 
 # Check if contains
 isSystemMatrixBased(::T) where T <: AbstractImageReconstructionAlgorithm = recoAlgorithmTypes(T) isa SystemMatrixBasedAlgorithm
