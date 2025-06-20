@@ -95,7 +95,7 @@ function planpath(name::AbstractString)
   throw(ArgumentError("Could not find a suitable MPI reconstruction plan with name $name. Custom plans can be stored in the following directories $(join(recoPlanPaths, ", "))."))
 end
 
-const recoPlans = LRU{UInt64, RecoPlan}(maxsize = parse(Int, get(ENV, "MPIRECO_CACHE_SIZE", 3)))
+const recoPlans = LRU{UInt64, RecoPlan}(maxsize = parse(Int, get(ENV, "MPIRECO_CACHE_SIZE", "3")))
 
 export reconstruct
 """
