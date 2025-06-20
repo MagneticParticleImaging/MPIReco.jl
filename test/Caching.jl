@@ -46,6 +46,7 @@
   # Test that repeated reconstructions result in same result
   c1 = reconstruct("SinglePatch", b, true; params...)
   c2 = reconstruct("SinglePatch", b, true; params...)
+  @test isapprox(arraydata(c1), arraydata(c2))
   # Including weights
   plan = MPIRecoPlan("SinglePatch"; params...)
   setAll!(plan, :weightingParams, ChannelWeightingParameters([0.4, 0.2]))
