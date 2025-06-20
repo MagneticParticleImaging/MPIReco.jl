@@ -119,24 +119,59 @@ julia> reconstruct("SinglePatch", mdf; solver = Kaczmarz, reg = [L2Regularizatio
 """
 function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = false, modules = getRecoPlanModules(); kwargs...)
   plan = loadRecoPlan(name, cache, modules; kwargs...)
-  setFirst = filter(kw->kw[2] isa Union{<:AbstractImageReconstructionAlgorithm, <:AbstractImageReconstructionParameters, <:AbstractRecoPlan}, kwargs)
-  setAll!(plan; setFirst...)
-  setAll!(plan; [kw for kw in kwargs if kw ∉ setFirst]...)
   return reconstruct(build(plan), data)
 end
-function loadRecoPlan(name::AbstractString, cache::Bool, modules = getRecoPlanModules(); kwargs...)
+# Load plan with RecoCache consideration
+function loadRecoPlan(name::AbstractString, cache::Bool, modules; kwargs...)
   planfile = planpath(name)
 
   # If the user disables caching or changes the plan structure we bypass the cache
   kwargValues = values(values(kwargs))
   if !cache || any(val -> isa(val, AbstractRecoPlan) || isa(val, AbstractImageReconstructionParameters), kwargValues)
-    return loadPlan(planfile, modules)
+    plan = loadRecoPlan(planfile, modules; kwargs...)
+  else 
+    key = hash(planfile, hash(mtime(planfile)))
+    plan = get!(recoPlans, key) do
+      loadRecoPlan(planfile, modules; kwargs...)
+    end
   end
 
-  key = hash(planfile, hash(mtime(planfile)))
-  return get!(recoPlans, key) do
-    loadPlan(planfile, modules)
+  return plan
+end
+# Load plan from a .toml file
+function loadRecoPlan(planfile::AbstractString, modules; kwargs...)
+  return open(planfile, "r") do io
+    return loadRecoPlan(io, modules; kwargs...)
   end
+end
+# Load plan from an io (could be file or iobuffer backed string)
+function loadRecoPlan(io, modules; kwargs...)
+  plan = loadPlan(io, modules)
+  setFirst = filter(kw->kw[2] isa Union{<:AbstractImageReconstructionAlgorithm, <:AbstractImageReconstructionParameters, <:AbstractRecoPlan}, kwargs)
+  setAll!(plan; setFirst...)
+  setAll!(plan; [kw for kw in kwargs if kw ∉ setFirst]...)
+  return plan
+end
+export MPIRecoPlan
+"""
+    MPIRecoPlan(value, modules = getRecoPlanModules(); kwargs...)
+
+Load a `RecoPlan` and set the keyword arguments if applicable. Value can be the name of a plan or path to plan file or an MDF or a path to one.
+"""
+function MPIRecoPlan(value::AbstractString, modules = getRecoPlanModules(); kwargs...)
+  if isfile(value) && endswith(value, ".toml")
+    return loadRecoPlan(value, modules; kwargs...)
+  elseif isfile(value)
+    return MPIRecoPlan(MDFFile(value), modules; kwargs...)
+  else
+    return loadRecoPlan(planpath(value), modules; kwargs...)
+  end
+end
+function MPIRecoPlan(file::MDFFileV2, modules; kwargs...)
+  error("Loading reconstruction from MDF not yet supported")
+  planstr = ""
+  io = IOBuffer(planstr)
+  return loadRecoPlan(io, modules; kwargs...) 
 end
 
 export emptyRecoCache!
