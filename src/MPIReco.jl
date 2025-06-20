@@ -43,4 +43,15 @@ module MPIReco
   include("MotionCompensation/MotionCompensation.jl")
   include("Algorithms/Algorithms.jl")
   include("Serialisation.jl")
+
+  function __init__()
+    if haskey(ENV, "MPIRECO_PLAN_DIRS")
+      dirs = ENV["MPIRECO_PLAN_DIRS"]
+      for dir in filter(!isempty, split(dirs, ","))
+        @debug "Adding RecoPlan directory $dir"
+        addRecoPlanPath(dir)
+      end
+    end
+  end
+  
 end # module
