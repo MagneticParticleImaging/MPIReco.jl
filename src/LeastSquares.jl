@@ -69,9 +69,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
   S = params.S
   if !isnothing(params.weights)
     S = ProdOp(WeightingOp(params.weights), S)
-    for l = 1:L
-      u[:, l] = params.weights.*u[:, l]
-    end
+    u = params.weights.*u
   end
   SHS = prepareNormalSF(SL, S)
   args[:AHA] = SHS
