@@ -95,7 +95,7 @@ function planpath(name::AbstractString)
   throw(ArgumentError("Could not find a suitable MPI reconstruction plan with name $name. Custom plans can be stored in the following directories $(join(recoPlanPaths, ", "))."))
 end
 
-const recoPlans = LRU{UInt64, RecoPlan}(maxsize = 3)
+const recoPlans = LRU{UInt64, RecoPlan}(maxsize = get(ENV, "MPIRECO_CACHE_SIZE"))
 
 export reconstruct
 """
@@ -109,6 +109,7 @@ Alternatively, name can be a path to specific plan file.
 
 If `cache` is `true` the reconstruction plan is cached and reused if the plan file has not changed. If a keyword argument changes the structure of the plan the cache is also bypassed.
 The cache considers the last modification time of the plan file and can be manually be emptied with `emptyRecoCache!()`.
+The cache size (in number of plans) can be changed with by setting the `MPIRECO_CACHE_SIZE` environment variable.
 
 # Examples
 ```julia
