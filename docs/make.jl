@@ -31,16 +31,16 @@ makedocs(
         "Tutorials" => Any[
             "Basic Reconstructions" => "generated/tutorials/basicReconstruction.md",
             "Weighting" => "generated/tutorials/weighting.md",
+            #"Background Correction" => "generated/tutorials/background.md",
             "Multi-Contrast" => "generated/tutorials/multiContrast.md",
             "Compression" => "generated/tutorials/matrixCompression.md",
             "Multi-Patch" => "generated/tutorials/multiPatch.md",
             #"Low-Level" => "generated/tutorials/lowlevel.md",
             "GPU-Acceleration" => "generated/tutorials/gpuAcceleration.md",
-            "Distributed Image Reconstruction" => "generated/tutorials/distributed.md"
+            "Distributed Reconstruction" => "generated/tutorials/distributed.md"
         ],
         "How to" => Any[
-            #"Caching" => "generated/howtos/caching.md",
-            #"Background Correction" => "generated/howtos/background.md",
+            "Caching" => "generated/howtos/caching.md",
             #"Solvers" => "generated/howtos/solvers.md",
             #"Custom Algorithms and Processing" => "generated/howtos/custom.md",
             #"Plugin Reconstruction Packages/Algorithms" => "generated/howtos/extensions.md",
