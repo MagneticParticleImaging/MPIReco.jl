@@ -133,11 +133,18 @@ function loadRecoPlan(name::AbstractString, cache::Bool, modules; kwargs...)
   else 
     key = hash(planfile, hash(mtime(planfile)))
     plan = get!(recoPlans, key) do
-      loadRecoPlan(planfile, modules; kwargs...)
+      loadRecoPlan(planfile, modules)
     end
+    # Set kwargs outside of cache to make sure they are correctly updated
+    setKwargs!(plan; kwargs...)
   end
 
   return plan
+end
+function setKwargs!(plan; kwargs...)
+  setFirst = filter(kw->kw[2] isa Union{<:AbstractImageReconstructionAlgorithm, <:AbstractImageReconstructionParameters, <:AbstractRecoPlan}, kwargs)
+  setAll!(plan; setFirst...)
+  setAll!(plan; [kw for kw in kwargs if kw ∉ setFirst]...)
 end
 # Load plan from a .toml file
 function loadRecoPlan(planfile::AbstractString, modules; kwargs...)
@@ -148,9 +155,7 @@ end
 # Load plan from an io (could be file or iobuffer backed string)
 function loadRecoPlan(io, modules; kwargs...)
   plan = loadPlan(io, modules)
-  setFirst = filter(kw->kw[2] isa Union{<:AbstractImageReconstructionAlgorithm, <:AbstractImageReconstructionParameters, <:AbstractRecoPlan}, kwargs)
-  setAll!(plan; setFirst...)
-  setAll!(plan; [kw for kw in kwargs if kw ∉ setFirst]...)
+  setKwargs!(plan; kwargs...)
   return plan
 end
 export MPIRecoPlan

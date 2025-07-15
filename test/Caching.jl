@@ -47,6 +47,10 @@
   c1 = reconstruct("SinglePatch", b, true; params...)
   c2 = reconstruct("SinglePatch", b, true; params...)
   @test isapprox(arraydata(c1), arraydata(c2))
+  # Test changed reconstructions don't result in same result
+  c1 = reconstruct("SinglePatch", b, true; params..., SNRThresh = 5)
+  c2 = reconstruct("SinglePatch", b, true; params..., SNRThresh = 2)
+  @test !isapprox(arraydata(c1), arraydata(c2))
   # Including weights
   plan = MPIRecoPlan("SinglePatch"; params...)
   setAll!(plan, :weightingParams, ChannelWeightingParameters([0.4, 0.2]))
