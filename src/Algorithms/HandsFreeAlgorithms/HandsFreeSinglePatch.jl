@@ -34,7 +34,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHa
   return gridresult(result, algo.grid, algo.sf)
 end
 
-function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHandsFreeReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
+function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHandsFreeReconstructionParameter{<:DenseSystemMatrixLoadingParameter, S}) where {S}
   return nothing
 end
 

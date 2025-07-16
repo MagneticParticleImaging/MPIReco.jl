@@ -53,20 +53,20 @@ defaultParameterCalibFov(new::Missing) = missing
 export AbstractSystemMatrixLoadingParameter
 abstract type AbstractSystemMatrixLoadingParameter <: AbstractSystemMatrixParameter end
 
-export DenseSystemMatixLoadingParameter
-Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
+export DenseSystemMatrixLoadingParameter
+Base.@kwdef struct DenseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilterParameter, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
   freqFilter::F
   gridding::G
   bgCorrection::Bool = false
   tfCorrection::Union{Bool, Nothing} = nothing
   loadasreal::Bool = false
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile)
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatrixLoadingParameter, sf::MPIFile)
   # Construct freqFilter
   frequencies = process(t, params.freqFilter, sf)
   return frequencies, process(t, params, sf, frequencies)...
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatrixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
   S, grid = getSF(sf, frequencies, nothing; toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(sf)))...)
   @info "Loading SM"
   return S, grid
