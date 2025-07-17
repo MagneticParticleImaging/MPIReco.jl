@@ -12,6 +12,7 @@ _type = "RecoPlan{SinglePatchParameters}"
         [parameter.reco.sfLoad]
         _module = "AbstractImageReconstruction"
         _type = "RecoPlan{ProcessResultCache}"
+        maxsize = 3
 
             [parameter.reco.sfLoad.param]
             _module = "MPIReco"
@@ -21,42 +22,65 @@ _type = "RecoPlan{SinglePatchParameters}"
                 _module = "MPIReco"
                 _type = "RecoPlan{SNRThresholdFrequencyFilterParameter}"
 
+                    [[parameter.reco.sfLoad.param.freqFilter._listener.minFreq]]
+                    field = "sf"
+                    _module = "AbstractImageReconstruction"
+                    _type = "LinkedPropertyListener"
+                    plan = ["parameter", "reco"]
+
+                        [parameter.reco.sfLoad.param.freqFilter._listener.minFreq.fn]
+                        _module = "MPIReco"
+                        _type = "defaultParameterMinFreq"
+
+                    [[parameter.reco.sfLoad.param.freqFilter._listener.maxFreq]]
+                    field = "sf"
+                    _module = "AbstractImageReconstruction"
+                    _type = "LinkedPropertyListener"
+                    plan = ["parameter", "reco"]
+
+                        [parameter.reco.sfLoad.param.freqFilter._listener.maxFreq.fn]
+                        _module = "MPIReco"
+                        _type = "defaultParameterMaxFreq"
+
                 [parameter.reco.sfLoad.param.gridding]
                 _module = "MPIReco"
                 _type = "RecoPlan{SystemMatrixGriddingParameter}"
 
-        [[parameter.reco._listener.sf]]
-        field = "minFreq"
-        _module = "AbstractImageReconstruction"
-        _type = "LinkedPropertyListener"
-        plan = ["parameter", "reco", "sfLoad", "param", "freqFilter"]
+                    [[parameter.reco.sfLoad.param.gridding._listener.fov]]
+                    field = "sf"
+                    _module = "AbstractImageReconstruction"
+                    _type = "LinkedPropertyListener"
+                    plan = ["parameter", "reco"]
 
-            [parameter.reco._listener.sf.fn]
-            _module = "MPIReco"
-            _type = "defaultParameterMinFreq"
-        [[parameter.reco._listener.sf]]
-        field = "maxFreq"
-        _module = "AbstractImageReconstruction"
-        _type = "LinkedPropertyListener"
-        plan = ["parameter", "reco", "sfLoad", "param", "freqFilter"]
+                        [parameter.reco.sfLoad.param.gridding._listener.fov.fn]
+                        _module = "MPIReco"
+                        _type = "defaultParameterCalibFov"
 
-            [parameter.reco._listener.sf.fn]
-            _module = "MPIReco"
-            _type = "defaultParameterMaxFreq"
-        [[parameter.reco._listener.sf]]
-        field = "recChannels"
-        _module = "AbstractImageReconstruction"
-        _type = "LinkedPropertyListener"
-        plan = ["parameter", "reco", "sfLoad", "param", "freqFilter"]
+                    [[parameter.reco.sfLoad.param.gridding._listener.center]]
+                    field = "sf"
+                    _module = "AbstractImageReconstruction"
+                    _type = "LinkedPropertyListener"
+                    plan = ["parameter", "reco"]
 
-            [parameter.reco._listener.sf.fn]
-            _module = "MPIReco"
-            _type = "defaultParameterRecChannels"
+                        [parameter.reco.sfLoad.param.gridding._listener.center.fn]
+                        _module = "MPIReco"
+                        _type = "defaultParameterCalibCenter"
+
+                    [[parameter.reco.sfLoad.param.gridding._listener.gridsize]]
+                    field = "sf"
+                    _module = "AbstractImageReconstruction"
+                    _type = "LinkedPropertyListener"
+                    plan = ["parameter", "reco"]
+
+                        [parameter.reco.sfLoad.param.gridding._listener.gridsize.fn]
+                        _module = "MPIReco"
+                        _type = "defaultParameterGridSize"
 
         [parameter.reco.solverParams]
         _module = "MPIReco"
         _type = "RecoPlan{ElaborateSolverParameters}"
 
+        
         [parameter.reco.weightingParams]
         _module = "AbstractImageReconstruction"
         _type = "RecoPlan{ProcessResultCache}"
@@ -65,7 +89,6 @@ _type = "RecoPlan{SinglePatchParameters}"
             [parameter.reco.weightingParams.param]
             _module = "MPIReco"
             _type = "RecoPlan{NoWeightingParameters}"
-
 
     [parameter.pre]
     _module = "AbstractImageReconstruction"
