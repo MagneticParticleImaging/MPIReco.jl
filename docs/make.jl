@@ -35,15 +35,15 @@ makedocs(
             "Multi-Contrast" => "generated/tutorials/multiContrast.md",
             "Compression" => "generated/tutorials/matrixCompression.md",
             "Multi-Patch" => "generated/tutorials/multiPatch.md",
-            #"Low-Level" => "generated/tutorials/lowlevel.md",
             "GPU-Acceleration" => "generated/tutorials/gpuAcceleration.md",
+            #"Low-Level" => "generated/tutorials/lowlevel.md",
             "Distributed Reconstruction" => "generated/tutorials/distributed.md"
         ],
         "How to" => Any[
-            "Caching" => "generated/howtos/caching.md",
-            #"Solvers" => "generated/howtos/solvers.md",
-            #"Custom Algorithms and Processing" => "generated/howtos/custom.md",
-            #"Plugin Reconstruction Packages/Algorithms" => "generated/howtos/extensions.md",
+            "Change and Configure Solvers" => "generated/howtos/solvers.md",
+            "Enable Caching" => "generated/howtos/caching.md",
+            "Implement Custom Data Processing" => "generated/howtos/custom.md",
+            "Implement Reconstruction Packages" => "generated/howtos/extensions.md",
         ],
         "Explanations" => Any[
             "Data Structures" => "datastructures.md",

@@ -1,12 +1,12 @@
 # # GPU Acceleration
 include("../../download.jl") #hide
+gpu = Array; #hide
 # MPIReco supports generic GPU acceleration. This means that the user can use any GPU array type that supports the GPUArrays interface. This includes [CUDA.jl](https://github.com/JuliaGPU/CUDA.jl), [AMDGPU.jl](https://github.com/JuliaGPU/AMDGPU.jl), and [Metal.jl](https://github.com/JuliaGPU/Metal.jl).
 # To perform a reconstruction on the GPU, one has to load a GPU backend package such as CUDA and specify the GPU array type:
 # ```julia
 # using CUDA
 # gpu = CuArray
 # ```
-gpu = Array; #hide # comment out when using proper GPUs
 
 # Afterwards one can use the normal reconstruction interface and specify the `arrayType` parameter.
 # However, the default solver is Kaczmarz, which has poor GPU performance. One should instead use CGNR or other solver.

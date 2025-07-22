@@ -1,4 +1,4 @@
-# # Caching
+# # Enable Caching
 include("../../download.jl") #hide
 
 # Image reconstructions implemented with AbstractImageReconstruction.jl are composed of several individual processing steps which form the whole (computationally expensive) image recosntruction procses.
@@ -42,7 +42,6 @@ for λ in [0.1f0, 0.5f0, 1.0f0]
   c = reconstruct(build(plan), b)
   push!(results, c[1, :, :, 1, 1].data)
 end
-using CairoMakie #hide
 using CairoMakie #hide
 fig = Figure();
 hidedecorations!(heatmap(fig[1, 1], results[1], axis = (title = "λ = 0.1",)).axis)
