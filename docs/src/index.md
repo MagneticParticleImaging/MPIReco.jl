@@ -15,7 +15,7 @@ is implemented in the programming language Julia and its algorithms use the inte
 * [Multi-Contrast Reconstruction](@ref) for reconstructions using multiple system matrices
 * [Matrix-Compression Techniques](@ref)
 
-Furthermore, the existing algorithms can easily be adapted with new data processing steps and new algortihms can be seamlessly integrated into MPIRecos reconstruction interface.
+Furthermore, the existing algorithms can easily be adapted with new data processing steps and newly created algorithms can be seamlessly integrated into MPIRecos reconstruction interface.
 
 Key features are
 

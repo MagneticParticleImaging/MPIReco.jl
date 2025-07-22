@@ -11,7 +11,7 @@ include("../../download.jl") #hide
 #   \underset{\mathbf{c}}{argmin} \frac{1}{2}\vert\vert \mathbf{S}\mathbf{c}-\mathbf{u} \vert\vert_2^2 + + \mathbf{R(x)}
 # \end{equation}
 # ```
-# where $\mathbf{S}$ is a single system matrix, $\mathbf{u}$ is the measurement vector, and $\mathbf{R(x)}$ is an (optional) regularization term.
+# where $\mathbf{S}$ is a system matrix, $\mathbf{u}$ is the measurement vector, and $\mathbf{R(x)}$ is an (optional) regularization term.
  
 # MPIReco comes with a few prepared blueprints, however one can easily add and store their own blueprints. 
 # These can be new configurations of existing algorithms and parameters or even new ones developed in other packages. Such packages could provide algorithms which are not based on system-matrix reconstructions. 
@@ -30,7 +30,7 @@ c = reconstruct("SinglePatch", b;
                    minFreq=80e3,
                    recChannels=1:rxNumChannels(b),
                    iterations=1,
-                   spectralLeakageCorrection=true)
+                   spectralLeakageCorrection=true);
 
 # "SinglePatch" here refers to a blueprint for system-matrix based single-patch image reconstruction. The keyword arguments are used to set parameters defined in the blueprint.
 
@@ -100,6 +100,6 @@ algo = build(plan);
 
 # After constructing the algorithm, you can perform multiple reconstructions and reuse the algorithm with:
 c = reconstruct(algo, b);
-# Depending on the algorithm, it might be faster to reconstruct multiple measurements from an `algorithm`, instead of the high-level interface.
+# Depending on the algorithm, it might be faster to reconstruct multiple measurements from a `RecoPlan`, instead of the high-level interface.
 # For more information on that, we refer to the How-To for caching.
 # Algorithms are usually thread-safe, though they might not necessarily run concurrently.

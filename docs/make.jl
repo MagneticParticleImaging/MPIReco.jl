@@ -48,8 +48,7 @@ makedocs(
         "Explanations" => Any[
             "Data Structures" => "datastructures.md",
             "MPIRecoPlan" => "generated/explanations/recoplans.md", # What are recoplans, how/where do we load them, how does caching work
-            "Operators" => "generated/explanations/operators.md", # What is required for an operator, how does GPU acceleration work
-            #"Linked Parameters" => "generated/explanations/observables.md"
+            "Imaging Operators" => "generated/explanations/operators.md", # What is required for an operator, how does GPU acceleration work
         ],
         "Reference" => Any[
             "Utility" => "references/utility.md",

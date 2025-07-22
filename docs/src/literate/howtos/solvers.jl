@@ -32,7 +32,7 @@ solverParams
 # With these parameters we can define both the solver and the solver parameters as defined in RegularizedLeastSquares.
 
 # It is also possible to add new solvers, such as variants of existing solver specialised for MPI.
-# To do this, we have to implement a new solver variant for RegularizedLeastSquares. To do this we can either implement a new solver or implement a new variant of a solver via its state:
+# To do this, we have to implement a new solver variant for RegularizedLeastSquares. We can either implement a new solver or implement a new variant of a solver via its state:
 using MPIReco.RegularizedLeastSquares
 mutable struct OurSolver{OP, T} <: RegularizedLeastSquares.AbstractLinearSolver
   S::OP
