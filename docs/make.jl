@@ -47,13 +47,16 @@ makedocs(
         ],
         "Explanations" => Any[
             "Data Structures" => "datastructures.md",
-            #"MPIRecoPlan" => "generated/explanations/recoplans.md", # What are recoplans, how/where do we load them, how does caching work
-            #"Operators" => "generated/explanations/operators.md", # What is required for an operator, how does GPU acceleration work
+            "MPIRecoPlan" => "generated/explanations/recoplans.md", # What are recoplans, how/where do we load them, how does caching work
+            "Operators" => "generated/explanations/operators.md", # What is required for an operator, how does GPU acceleration work
             #"Linked Parameters" => "generated/explanations/observables.md"
         ],
-        #"Reference" => Any[
-        #
-        #]
+        "Reference" => Any[
+            "Utility" => "references/utility.md",
+            "Parameters" => "references/parameters.md",
+            "Single-Patch" => "references/singlepatch.md",
+            "Multi-Patch" => "references/multipatch.md",
+        ]
     ],
     warnonly = [:missing_docs]
 )
