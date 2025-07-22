@@ -1,0 +1,20 @@
+loadasreal = true
+numAverages = 61
+_module = "MPIReco"
+_type = "RecoPlan{CommonPreProcessingParameters}"
+
+[frames]
+_unionmodule = "Core"
+_module = "Core"
+_type = "Union"
+_uniontype = "UnitRange{Int64}"
+
+    [frames._value]
+    stop = 42
+    start = 1
+    _module = "Base"
+    _type = "UnitRange"
+
+[bgParams]
+_module = "MPIReco"
+_type = "RecoPlan{NoBackgroundCorrectionParameters}"

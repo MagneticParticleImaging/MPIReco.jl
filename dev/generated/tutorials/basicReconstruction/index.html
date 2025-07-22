@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Basic Reconstructions · MPIReco</title><meta name="title" content="Basic Reconstructions · MPIReco"/><meta property="og:title" content="Basic Reconstructions · MPIReco"/><meta property="twitter:title" content="Basic Reconstructions · MPIReco"/><meta name="description" content="Documentation for MPIReco."/><meta property="og:description" content="Documentation for MPIReco."/><meta property="twitter:description" content="Documentation for MPIReco."/><meta property="og:url" content="https://github.com/MagneticParticleImaging/MPIReco.jl/generated/tutorials/basicReconstruction/"/><meta property="twitter:url" content="https://github.com/MagneticParticleImaging/MPIReco.jl/generated/tutorials/basicReconstruction/"/><link rel="canonical" href="https://github.com/MagneticParticleImaging/MPIReco.jl/generated/tutorials/basicReconstruction/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="MPIReco logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">MPIReco</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../overview/">Getting Started</a></li><li><input class="collapse-toggle" id="menuitem-3" type="checkbox" checked/><label class="tocitem" for="menuitem-3"><span class="docs-label">Tutorials</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Basic Reconstructions</a><ul class="internal"><li><a class="tocitem" href="#High-Level-Interface"><span>High-Level Interface</span></a></li><li><a class="tocitem" href="#RecoPlan-Interface"><span>RecoPlan Interface</span></a></li></ul></li><li><a class="tocitem" href="../weighting/">Weighting</a></li><li><a class="tocitem" href="../multiContrast/">Multi-Contrast</a></li><li><a class="tocitem" href="../matrixCompression/">Compression</a></li><li><a class="tocitem" href="../multiPatch/">Multi-Patch</a></li><li><a class="tocitem" href="../gpuAcceleration/">GPU-Acceleration</a></li><li><a class="tocitem" href="../distributed/">Distributed Reconstruction</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4" type="checkbox"/><label class="tocitem" for="menuitem-4"><span class="docs-label">How to</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../howtos/solvers/">Change and Configure Solvers</a></li><li><a class="tocitem" href="../../howtos/caching/">Enable Caching</a></li><li><a class="tocitem" href="../../howtos/custom/">Implement Custom Data Processing</a></li><li><a class="tocitem" href="../../howtos/extensions/">Implement Reconstruction Packages</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-5" type="checkbox"/><label class="tocitem" for="menuitem-5"><span class="docs-label">Explanations</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../datastructures/">Data Structures</a></li><li><a class="tocitem" href="../../explanations/recoplans/">MPIRecoPlan</a></li><li><a class="tocitem" href="../../explanations/operators/">Imaging Operators</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-6" type="checkbox"/><label class="tocitem" for="menuitem-6"><span class="docs-label">Reference</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../references/utility/">Utility</a></li><li><a class="tocitem" href="../../../references/parameters/">Parameters</a></li><li><a class="tocitem" href="../../../references/singlepatch/">Single-Patch</a></li><li><a class="tocitem" href="../../../references/multipatch/">Multi-Patch</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Basic Reconstructions</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Basic Reconstructions</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/MagneticParticleImaging/MPIReco.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/MagneticParticleImaging/MPIReco.jl/blob/master/docs/src/literate/tutorials/basicReconstruction.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Basic-Reconstruction"><a class="docs-heading-anchor" href="#Basic-Reconstruction">Basic Reconstruction</a><a id="Basic-Reconstruction-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-Reconstruction" title="Permalink"></a></h1><p>MPIReco.jl provides different reconstruction interfaces. All of the interfaces interact with <code>RecoPlans</code> from <code>AbstractImageReconstruction</code>. These are blueprints from which different algorithms can be constructed. from which different algorithms can be constructed. For more details on these blueprints, we refer to the <a href="https://juliaimagerecon.github.io/AbstractImageReconstruction.jl/dev/">AbstractImageReconstruction documentation</a>.</p><p>The reconstruction algorithm in MPIReco mainly focus on system-matrix based reconstructions, where one considers an inverse problem of the form:</p><p class="math-container">\[\begin{equation}
+  \underset{\mathbf{c}}{argmin} \frac{1}{2}\vert\vert \mathbf{S}\mathbf{c}-\mathbf{u} \vert\vert_2^2 + + \mathbf{R(x)}
+\end{equation}\]</p><p>where <span>$\mathbf{S}$</span> is a system matrix, <span>$\mathbf{u}$</span> is the measurement vector, and <span>$\mathbf{R(x)}$</span> is an (optional) regularization term.</p><p>MPIReco comes with a few prepared blueprints, however one can easily add and store their own blueprints. These can be new configurations of existing algorithms and parameters or even new ones developed in other packages. Such packages could provide algorithms which are not based on system-matrix reconstructions. To read more on how to write and integrate such packages, consult the How-Tos.</p><h2 id="High-Level-Interface"><a class="docs-heading-anchor" href="#High-Level-Interface">High-Level Interface</a><a id="High-Level-Interface-1"></a><a class="docs-heading-anchor-permalink" href="#High-Level-Interface" title="Permalink"></a></h2><p>In the <a href="../overview/#Getting-Started">Getting Started</a> section, we created our first MPI reconstruction as follows:</p><pre><code class="language-julia hljs">c = reconstruct(&quot;SinglePatch&quot;, b;
+                   SNRThresh=5,
+                   sf = bSF,
+                   frames=1:acqNumFrames(b),
+                   minFreq=80e3,
+                   recChannels=1:rxNumChannels(b),
+                   iterations=1,
+                   spectralLeakageCorrection=true);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Loading SM
+[ Info: Preparing SF
+[ Info: Adapting SF</code></pre><p>&quot;SinglePatch&quot; here refers to a blueprint for system-matrix based single-patch image reconstruction. The keyword arguments are used to set parameters defined in the blueprint.</p><p>It is also possible to provide these parameters as a dictionary. This is especially helpful if you want to reuse parameters or change parameters programmatically.</p><pre><code class="language-julia hljs">parameters = Dict{Symbol, Any}()
+parameters[:SNRThresh] = 5
+parameters[:sf] = bSF
+parameters[:frames] = 1:acqNumFrames(b)
+parameters[:minFreq] = 80e3
+parameters[:recChannels] = 1:rxNumChannels(b)
+parameters[:iterations] = 1
+parameters[:spectralLeakageCorrection] = true;</code></pre><p>You can just pass the dictionary as an argument to the <code>reconstruct</code> function as follows:</p><pre><code class="language-julia hljs">c2 = reconstruct(&quot;SinglePatch&quot;, b; parameters...)
+isapprox(c.data, c2.data)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>It is also possible to combine both methods of defining parameters:</p><pre><code class="language-julia hljs">c3 = reconstruct(&quot;SinglePatch&quot;, b; parameters..., recChannels = 1:1)
+c3.rxNumChannels</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3</code></pre><p>Here, we overwrote the recChannels parameter within in the dictionary.</p><p>We can retrieve a list of all available blueprints that MPIReco can find using:</p><pre><code class="language-julia hljs">getRecoPlanList()</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{String}:
+ &quot;Parameters.toml&quot;
+ &quot;MultiPatch.toml&quot;
+ &quot;MultiPatchMotion.toml&quot;
+ &quot;SinglePatch.toml&quot;
+ &quot;SinglePatchHandsFree.toml&quot;
+ &quot;SinglePatchSparse.toml&quot;</code></pre><p>This list returns the filenames of the blueprints. In the reconstruct call, you only need to refer to the name without an extension.</p><p>To get the full paths of each blueprint, use:</p><pre><code class="language-julia hljs">planpaths = getRecoPlanList(;full=true)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{String}:
+ &quot;/home/runner/work/MPIReco.jl/MP&quot;<span class="sgr93"><span class="sgr1"> ⋯ 27 bytes ⋯ </span></span>&quot;ed/explanations/Parameters.toml&quot;
+ &quot;/home/runner/work/MPIReco.jl/MPIReco.jl/config/MultiPatch.toml&quot;
+ &quot;/home/runner/work/MPIReco.jl/MPIReco.jl/config/MultiPatchMotion.toml&quot;
+ &quot;/home/runner/work/MPIReco.jl/MPIReco.jl/config/SinglePatch.toml&quot;
+ &quot;/home/runner/work/MPIReco.jl/MPIReco.jl/config/SinglePatchHandsFree.toml&quot;
+ &quot;/home/runner/work/MPIReco.jl/MPIReco.jl/config/SinglePatchSparse.toml&quot;</code></pre><p>You can add custom directories for MPIReco to search for blueprints. Other packages might do this automatically when they are loaded.</p><p>It is also possible to specify a direct path to a blueprint in the <code>reconstruct</code> function.</p><pre><code class="language-julia hljs">index = findfirst(endswith(&quot;SinglePatch.toml&quot;), planpaths)
+c4 = reconstruct(planpaths[index], b; parameters...)
+isapprox(c.data, c4.data)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><h2 id="RecoPlan-Interface"><a class="docs-heading-anchor" href="#RecoPlan-Interface">RecoPlan Interface</a><a id="RecoPlan-Interface-1"></a><a class="docs-heading-anchor-permalink" href="#RecoPlan-Interface" title="Permalink"></a></h2><p>You can also directly access a blueprint via:</p><pre><code class="language-julia hljs">plan = MPIRecoPlan(&quot;SinglePatch&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">RecoPlan{SinglePatchReconstructionAlgorithm}
+└─ parameter::RecoPlan{SinglePatchParameters}
+   ├─ reco::RecoPlan{SinglePatchReconstructionParameter}
+   │  ├─ solverParams::RecoPlan{ElaborateSolverParameters}
+   │  │  ├─ solver
+   │  │  ├─ iterations
+   │  │  ├─ enforceReal
+   │  │  ├─ enforcePositive
+   │  │  ├─ normalizeReg
+   │  │  ├─ randomized
+   │  │  ├─ subMatrixFraction
+   │  │  ├─ shuffleRows
+   │  │  └─ seed
+   │  ├─ weightingParams::RecoPlan{NoWeightingParameters} [Cached, 1]
+   │  ├─ reg
+   │  ├─ sf
+   │  ├─ arrayType
+   │  └─ sfLoad::RecoPlan{DenseSystemMatixLoadingParameter} [Cached, 3]
+   │     ├─ tfCorrection
+   │     ├─ loadasreal
+   │     ├─ freqFilter::RecoPlan{SNRThresholdFrequencyFilterParameter}
+   │     │  ├─ numPeriodAverages
+   │     │  ├─ numPeriodGrouping
+   │     │  ├─ maxMixingOrder
+   │     │  ├─ numSidebandFreqs
+   │     │  ├─ SNRThresh
+   │     │  ├─ minFreq
+   │     │  ├─ recChannels
+   │     │  └─ maxFreq
+   │     ├─ bgCorrection
+   │     └─ gridding::RecoPlan{SystemMatrixGriddingParameter}
+   │        ├─ fov
+   │        ├─ deadPixels
+   │        ├─ gridsize
+   │        └─ center
+   ├─ post::RecoPlan{NoPostProcessing}
+   └─ pre::RecoPlan{CommonPreProcessingParameters} [Cached, 1]
+      ├─ tfCorrection
+      ├─ neglectBGFrames
+      ├─ numPeriodAverages
+      ├─ numPeriodGrouping
+      ├─ numAverages
+      ├─ spectralLeakageCorrection
+      ├─ bgParams
+      ├─ frames
+      └─ loadasreal
+</code></pre><p>This allows you to see all parameters associated with the blueprint and configure them individually. The keyword arguments previously mentioned apply to all parameters with the same name. Note that different parameters in different contexts can share the same name in RecoPlans.</p><p>To modify specific parameters of the plan, you can directly access its properties:</p><pre><code class="language-julia hljs">plan.parameter.reco.sf = bSF</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">MDFFile
+	Study: &quot;FocusField&quot;, Dates.DateTime(&quot;2014-11-13T16:20:01.217&quot;)
+	Experiment: &quot;SF_DF10_Middle (E39)&quot;, Dates.DateTime(&quot;2014-11-19T19:31:31.527&quot;)
+</code></pre><p>Although we only updated the system matrix parameter, the plan now also includes derived values from the system matrix, such as the grid size.</p><pre><code class="language-julia hljs">plan.parameter.reco</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">RecoPlan{SinglePatchReconstructionParameter}
+├─ solverParams::RecoPlan{ElaborateSolverParameters}
+│  ├─ solver
+│  ├─ iterations
+│  ├─ enforceReal
+│  ├─ enforcePositive
+│  ├─ normalizeReg
+│  ├─ randomized
+│  ├─ subMatrixFraction
+│  ├─ shuffleRows
+│  └─ seed
+├─ weightingParams::RecoPlan{NoWeightingParameters} [Cached, 1]
+├─ reg
+├─ sf = MDFFile
+	Study: &quot;FocusField&quot;, DateTime(&quot;2014-11-13T16:20:01.217&quot;)
+	Experiment: &quot;SF_DF10_Middle (E39)&quot;, DateTime(&quot;2014-11-19T19:31:31.527&quot;)
+
+├─ arrayType
+└─ sfLoad::RecoPlan{DenseSystemMatixLoadingParameter} [Cached, 3]
+   ├─ tfCorrection
+   ├─ loadasreal
+   ├─ freqFilter::RecoPlan{SNRThresholdFrequencyFilterParameter}
+   │  ├─ numPeriodAverages
+   │  ├─ numPeriodGrouping
+   │  ├─ maxMixingOrder
+   │  ├─ numSidebandFreqs
+   │  ├─ SNRThresh
+   │  ├─ minFreq = 0.0
+   │  ├─ recChannels
+   │  └─ maxFreq = 1.25e6
+   ├─ bgCorrection
+   └─ gridding::RecoPlan{SystemMatrixGriddingParameter}
+      ├─ fov = [0.04, 0.04, 0.001]
+      ├─ deadPixels
+      ├─ gridsize = [32, 32, 1]
+      └─ center = [0.0, 0.0, 0.0]
+</code></pre><p>This worked because the <code>SinglePatch</code> blueprint has connections between parameters. These connections depend on the blueprint itself and are not hardcoded in MPIReco.</p><p>You can also utilize the previously created dictionary to configure the plan:</p><pre><code class="language-julia hljs">setAll!(plan, parameters)</code></pre><p>Alternatively, you can set all parameters of a specific name directly:</p><pre><code class="language-julia hljs">setAll!(plan, :iterations, 3)</code></pre><p>Once the plan is configured, you can construct an algorithm from it using:</p><pre><code class="language-julia hljs">algo = build(plan);</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">[ Info: Loading SM
+[ Info: Preparing SF
+[ Info: Adapting SF</code></pre><p>After constructing the algorithm, you can perform multiple reconstructions and reuse the algorithm with:</p><pre><code class="language-julia hljs">c = reconstruct(algo, b);</code></pre><p>Depending on the algorithm, it might be faster to reconstruct multiple measurements from a <code>RecoPlan</code>, instead of the high-level interface. For more information on that, we refer to the How-To for caching. Algorithms are usually thread-safe, though they might not necessarily run concurrently.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../overview/">« Getting Started</a><a class="docs-footer-nextpage" href="../weighting/">Weighting »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Tuesday 22 July 2025 15:58">Tuesday 22 July 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
