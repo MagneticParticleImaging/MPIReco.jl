@@ -7,6 +7,8 @@ deps/build.log
 test/img
 */__MACOSX/
 test/data.zip
+docs/src/generated
+docs/build
 
 Manifest.toml
 .vscode

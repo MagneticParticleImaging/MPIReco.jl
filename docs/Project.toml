@@ -1,6 +1,12 @@
 [deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+LinearOperatorCollection = "a4a2c56f-fead-462a-a3ab-85921a5f2575"
+Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+Observables = "510215fc-4207-5dde-b226-833fc4488ee2"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DaggerImageReconstruction = "b99085f1-2f43-45a7-bd38-d511f4bff3b1"
 ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
+MPIReco = "e4246700-6248-511e-8146-a1d1f47669d2"
 
 [compat]
 Documenter = "1"
