@@ -80,7 +80,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::Union{W, Proc
   return algo.weights
 end
 
-function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
+function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:DenseSystemMatrixLoadingParameter, S}) where {S}
   return nothing
 end
 
