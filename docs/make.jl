@@ -35,8 +35,8 @@ makedocs(
             "Multi-Contrast" => "generated/tutorials/multiContrast.md",
             "Compression" => "generated/tutorials/matrixCompression.md",
             "Multi-Patch" => "generated/tutorials/multiPatch.md",
+            "Low-Level" => "generated/tutorials/lowlevel.md",
             "GPU-Acceleration" => "generated/tutorials/gpuAcceleration.md",
-            #"Low-Level" => "generated/tutorials/lowlevel.md",
             "Distributed Reconstruction" => "generated/tutorials/distributed.md"
         ],
         "How to" => Any[

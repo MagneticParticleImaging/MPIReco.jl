@@ -118,7 +118,7 @@ julia> mdf = MPIFile("data.mdf");
 julia> reconstruct("SinglePatch", mdf; solver = Kaczmarz, reg = [L2Regularization(0.3f0)], iterations = 10, frames = 1:10, ...)
 ```
 """
-function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = false, modules = getRecoPlanModules(); kwargs...)
+function reconstruct(name::AbstractString, data::Union{MPIFile, AbstractArray}, cache::Bool = false, modules = getRecoPlanModules(); kwargs...)
   plan = loadRecoPlan(name, cache, modules; kwargs...)
   return reconstruct(build(plan), data)
 end
