@@ -85,9 +85,9 @@ function process(algo::SinglePatchTemporalRegularizationAlgorithm, params::Singl
   solverParams = fromKwargs(typeof(params.solverParams); toKwargs(params.solverParams, overwrite = Dict{Symbol, Any}(:normalizeReg => NoNormalization()))...)
   solverParams = ConstraintMaskedSolverParameters(;constraintMask = constraintMask, params = params.solverParams)
 
-  solver = LeastSquaresParameters(solver = Kaczmarz, S = op, reg = [reg], solverParams = solverParams)
+  solver = LeastSquaresParameters(solver = Kaczmarz, reg = [reg], solverParams = solverParams)
 
-  temp = process(algo, solver, u)
+  temp = process(algo, solver, op, u)
   temp = real.( reshape(temp[1:(NSub*J),:],NSub,J) ./ sqrt(λ) ) 
 
   cInterp = similar(temp, size(c,1), op.L)

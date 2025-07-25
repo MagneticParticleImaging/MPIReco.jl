@@ -29,7 +29,7 @@ S, grid = getSF(bSF, freqs, sparseTrafo, Kaczmarz)
 typeof.([S, grid])
 
 # Now we can configur a low-level reconstruction:
-cLow = reconstruct("LowLevel", u; S = S, iterations = params[:iterations], reg = params[:reg])
+cLow = reconstruct("LowLevel", S, u; iterations = params[:iterations], reg = params[:reg])
 # Note that the low-level reconstruction returns a matrix without any metadata unlike the other reconstructions.
 # The second dimension of the result matrix are the frames. To compare and plot our data we have to reshape it:
 sliceLow = sliceLow = reshape(cLow[:, 1], Tuple(grid.shape))

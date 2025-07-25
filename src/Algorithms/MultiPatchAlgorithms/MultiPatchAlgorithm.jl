@@ -135,9 +135,9 @@ end
 function process(algo::MultiPatchReconstructionAlgorithm, params::MultiPatchReconstructionParameter, u::AbstractArray)
   weights = process(algo, params.weightingParams, u, WeightingType(params.weightingParams))
 
-  solver = LeastSquaresParameters(S = algo.ffOp, reg = params.reg, solverParams = params.solverParams, weights = weights)
+  solver = LeastSquaresParameters(reg = params.reg, solverParams = params.solverParams, weights = weights)
 
-  result = process(algo, solver, u)
+  result = process(algo, solver, algo.ffOp, u)
 
   return gridresult(result, algo.ffOp.grid, algo.sf)
 end

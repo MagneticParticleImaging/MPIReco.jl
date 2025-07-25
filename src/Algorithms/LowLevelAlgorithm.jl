@@ -12,6 +12,6 @@ Base.isready(algo::LowLevelReconstructionAlgorithm) = isready(algo.output)
 Base.wait(algo::LowLevelReconstructionAlgorithm) = wait(algo.output)
 AbstractImageReconstruction.take!(algo::LowLevelReconstructionAlgorithm) = Base.take!(algo.output)
 
-function AbstractImageReconstruction.put!(algo::LowLevelReconstructionAlgorithm, u::AbstractArray)
-  put!(algo.output, process(algo, algo.params, u))
+function AbstractImageReconstruction.put!(algo::LowLevelReconstructionAlgorithm, S, u::AbstractArray)
+  put!(algo.output, process(algo, algo.params, S, u))
 end

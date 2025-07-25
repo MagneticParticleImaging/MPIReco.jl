@@ -122,6 +122,16 @@ function reconstruct(name::AbstractString, data::Union{MPIFile, AbstractArray}, 
   plan = loadRecoPlan(name, cache, modules; kwargs...)
   return reconstruct(build(plan), data)
 end
+function reconstruct(name::AbstractString, S, data::Union{MPIFile, AbstractArray}, cache::Bool = false, modules = getRecoPlanModules(); kwargs...)
+  plan = loadRecoPlan(name, cache, modules; kwargs...)
+  algo = build(plan)
+  result = nothing
+  lock(algo) do
+    put!(algo, S, data)
+    result = take!(algo)
+  end
+  return result
+end
 # Load plan with RecoCache consideration
 function loadRecoPlan(name::AbstractString, cache::Bool, modules; kwargs...)
   planfile = planpath(name)

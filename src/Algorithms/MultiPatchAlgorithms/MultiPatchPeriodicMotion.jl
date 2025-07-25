@@ -91,9 +91,9 @@ function process(algoT::Type{<:MultiPatchReconstructionAlgorithm},
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::PeriodicMotionReconstructionParameter, u::Array)
-  solver = LeastSquaresParameters(S = algo.ffOp, reg = params.reg, solverParams = params.solverParams, weights = algo.weights)
+  solver = LeastSquaresParameters(reg = params.reg, solverParams = params.solverParams, weights = algo.weights)
 
-  result = process(algo, solver, u)
+  result = process(algo, solver, algo.ffOp, u)
 
   return gridresult(result, algo.ffOp.grid, algo.sf)
 end
