@@ -25,11 +25,11 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHa
 
   B = getLinearOperator(algo, params)
 
-  solver = LeastSquaresParameters(op = B, S = algo.S, reg = L2Regularization[], solverParams = params.solverParams, weights = weights)
+  solver = LeastSquaresParameters(op = B, reg = L2Regularization[], solverParams = params.solverParams, weights = weights)
 
   snr = real(eltype(algo.S)).(vec(MPIFiles.getCalibSNR(algo.sf)[algo.freqs, 1]))
 
-  result = process(algo, solver, u, snr)
+  result = process(algo, solver, algo.S, u, snr)
 
   return gridresult(result, algo.grid, algo.sf)
 end

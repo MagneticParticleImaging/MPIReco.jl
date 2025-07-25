@@ -3,9 +3,8 @@ export LeastSquaresParameters
 abstract type AbstractSolverParameters{AbstractLinearSolver} <: AbstractMPIRecoParameters end
 
 export LeastSquaresParameters
-Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters{L}, W} <: AbstractMPIRecoParameters
+Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, R<:AbstractRegularization, P<:AbstractSolverParameters{L}, W} <: AbstractMPIRecoParameters
   op::O = nothing
-  S::M
   reg::Vector{R} 
   solverParams::P
   weights::W = nothing
@@ -55,10 +54,10 @@ Base.propertynames(params::RecoPlan{ElaborateSolverParameters}) = union([:solver
 
 getSolverKwargs(::Type{SL}) where SL <: AbstractLinearSolver = intersect(union(Base.kwarg_decl.(methods(SL))...), fieldnames(ElaborateSolverParameters))
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{SL}, u::AbstractArray) where SL
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{SL}, S, u::AbstractArray) where SL
 
-  N = size(params.S, 2)
-  M = div(length(params.S), N)
+  N = size(S, 2)
+  M = div(length(S), N)
   L = size(u)[end]
   u = reshape(u, M, L)
   c = zeros(N, L)
@@ -66,7 +65,6 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
   reg, args = prepareRegularization(params.reg, params)
   args[:reg] = reg
 
-  S = params.S
   if !isnothing(params.weights)
     S = ProdOp(WeightingOp(params.weights), S)
     u = params.weights.*u

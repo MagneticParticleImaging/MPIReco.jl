@@ -11,18 +11,17 @@ Base.@kwdef struct HandsFreeSolverParameters <: AbstractSolverParameters{Kaczmar
   flattenIters::Bool=false
 end
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{Kaczmarz, O, SF, R, SL, W}, u::AbstractArray, snr::AbstractVector) where {O, SF, R, SL <: HandsFreeSolverParameters, W}
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{Kaczmarz, O, R, SL, W}, S, u::AbstractArray, snr::AbstractVector) where {O, SF, R, SL <: HandsFreeSolverParameters, W}
 
   solverParams = params.solverParams
-  N = size(params.S, 2)
-  M = div(length(params.S), N)
+  N = size(S, 2)
+  M = div(length(S), N)
   L = size(u)[end]
   u = reshape(u, M, L)
   c = zeros(N, L)
 
   reg, _ = prepareRegularization([L2Regularization(real(eltype(u))(solverParams.startλ))], params)
 
-  S = params.S
   if !isnothing(params.weights)
     S = ProdOp(WeightingOp(params.weights), S)
     for l = 1:L

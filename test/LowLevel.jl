@@ -20,7 +20,7 @@
     
     S = high.S
     u = process(high, high.params.pre, b, high.freqs)
-    cLow = reconstruct("LowLevel", u; S = S, iterations = params[:iterations], reg = params[:reg], solver = params[:solver])
+    cLow = reconstruct("LowLevel", S, u;, iterations = params[:iterations], reg = params[:reg], solver = params[:solver])
     
     cLow = reshape(cLow, size(cHigh))
     @test isapprox(cHigh.data.data, cLow)
@@ -33,7 +33,7 @@
     S = high.S
     u = process(high, high.params.pre, b, high.freqs)
     weights = high.weights
-    cLow = reconstruct("LowLevel", u; S = S, iterations = params[:iterations], reg = params[:reg], solver = params[:solver], weights = weights)
+    cLow = reconstruct("LowLevel", S, u; iterations = params[:iterations], reg = params[:reg], solver = params[:solver], weights = weights)
     
     cLow = reshape(cLow, size(cHigh))
     @test isapprox(cHigh.data.data, cLow)
@@ -63,7 +63,7 @@
     S = high.S
     u = process(high, high.params.pre, b, high.freqs)
     op = MPIReco.getLinearOperator(high, high.params.reco)
-    cLow = reconstruct("LowLevel", u; S = S, op = op, iterations = params[:iterations], reg = params[:reg], solver = params[:solver])
+    cLow = reconstruct("LowLevel", S, u; op = op, iterations = params[:iterations], reg = params[:reg], solver = params[:solver])
     
     cLow = reshape(cLow, size(cHigh))
     @test isapprox(cHigh.data.data, cLow)
@@ -77,7 +77,7 @@
     u = process(high, high.params.pre, b, high.freqs)
     op = MPIReco.getLinearOperator(high, high.params.reco)
     weights = high.weights
-    cLow = reconstruct("LowLevel", u; S = S, op = op, iterations = params[:iterations], reg = params[:reg], solver = params[:solver], weights = weights)
+    cLow = reconstruct("LowLevel", S, u; op = op, iterations = params[:iterations], reg = params[:reg], solver = params[:solver], weights = weights)
     
     cLow = reshape(cLow, size(cHigh))
     @test isapprox(cHigh.data.data, cLow)
@@ -105,7 +105,7 @@
     
     S = copy(high.ffOp)
     u = process(high, high.params.pre, b, high.freqs)
-    cLow = reconstruct("LowLevel", u; S = S, iterations = params[:iterations], reg = params[:reg], solver = params[:solver])
+    cLow = reconstruct("LowLevel", S, u; iterations = params[:iterations], reg = params[:reg], solver = params[:solver])
     
     cLow = reshape(cLow, size(cHigh))
     @test isapprox(cHigh.data.data, cLow)
@@ -118,7 +118,7 @@
     S = copy(high.ffOp)
     u = process(high, high.params.pre, b, high.freqs)
     weights = high.weights
-    cLow = reconstruct("LowLevel", u; S = S, iterations = params[:iterations], reg = params[:reg], solver = params[:solver], weights = weights)
+    cLow = reconstruct("LowLevel", S, u; iterations = params[:iterations], reg = params[:reg], solver = params[:solver], weights = weights)
     
     cLow = reshape(cLow, size(cHigh))
     @test isapprox(cHigh.data.data, cLow)

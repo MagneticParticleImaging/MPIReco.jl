@@ -64,9 +64,9 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchRe
 
   B = getLinearOperator(algo, params)
 
-  solver = LeastSquaresParameters(op = B, S = algo.S, reg = params.reg, solverParams = params.solverParams, weights = weights)
+  solver = LeastSquaresParameters(op = B, reg = params.reg, solverParams = params.solverParams, weights = weights)
 
-  result = process(algo, solver, u)
+  result = process(algo, solver, algo.S, u)
 
   return gridresult(result, algo.grid, algo.sf)
 end
