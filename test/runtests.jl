@@ -55,6 +55,7 @@ arrayTypes = areTypesDefined ? arrayTypes : []
     include("Sparse.jl")
     include("SMExtrapolation.jl")
     include("ReconstructionGPU.jl")
+    include("LowLevel.jl")
     #include("SMCenter.jl")
     #include("SMRecovery.jl") # will be moved to SMTools
   else
