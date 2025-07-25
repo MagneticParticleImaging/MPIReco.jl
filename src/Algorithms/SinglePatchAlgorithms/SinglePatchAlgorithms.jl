@@ -17,6 +17,9 @@ function process(algo::T, params::SinglePatchParameters, data::MPIFile, frequenc
   result = process(algo, params.post, result)
   return result
 end
+function process(algo::T, params::SinglePatchParameters, data::AbstractArray, args...) where {T<:AbstractSinglePatchReconstructionAlgorithm}
+  throw(ArgumentError("SinglePatchAlgorithms are not defined for the given arguments, expected <: MPIFile, found $(typeof(data))"))
+end
 
 function AbstractImageReconstruction.put!(algo::AbstractSinglePatchReconstructionAlgorithm, data)
   lock(algo) do

@@ -26,6 +26,10 @@ function process(algo::T, params::MultiPatchParameters, data::MPIFile, frequenci
   result = process(algo, params.post, result)
   return result
 end
+function process(algo::T, params::MultiPatchParameters, data::AbstractArray, args...) where {T<:AbstractMultiPatchReconstructionAlgorithm}
+  throw(ArgumentError("MultiPatchAlgorithms are not defined for the given arguments, expected <: MPIFile, found $(typeof(data))"))
+end
+
 
 
 include("MultiPatchAlgorithm.jl")
