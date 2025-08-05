@@ -44,6 +44,7 @@ module MPIReco
   include("MotionCompensation/MotionCompensation.jl")
   include("Algorithms/Algorithms.jl")
   include("Serialisation.jl")
+  include("Callbacks.jl")
 
   function __init__()
     if haskey(ENV, "MPIRECO_PLAN_DIRS")
