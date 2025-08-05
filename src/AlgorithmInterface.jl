@@ -128,7 +128,7 @@ end
 Attach a callback `f(solver, frame, iteration)` to the reconstruction. Callbacks are passed as a `callbacks` keyword argument to the underlying algorithm
 For more information on solver callbacks, see the RegularizedLeastSquares documentation.
 """
-function reconstruct(f::Base.Callable, args...; kwargs...)
+function reconstruct(f, name::AbstractString, args...; kwargs...)
   frame = 0
   function frame_counter_callback(solver, iteration)
     if iteration == 0
@@ -136,7 +136,7 @@ function reconstruct(f::Base.Callable, args...; kwargs...)
     end
     f(solver, frame, iteration)
   end
-  reconstruct(args...; kwargs..., callbacks = frame_counter_callback)
+  reconstruct(name, args...; kwargs..., callbacks = frame_counter_callback)
 end
 # Load plan with RecoCache consideration
 function loadRecoPlan(name::AbstractString, cache::Bool, modules; kwargs...)

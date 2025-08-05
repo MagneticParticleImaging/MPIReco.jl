@@ -49,7 +49,7 @@ Base.@kwdef mutable struct ElaborateSolverParameters{SL} <: AbstractSolverParame
   tolInner::Union{Nothing, Float64} = nothing
   iterationsCG::Union{Nothing, Int64} = nothing
   iterationsInner::Union{Nothing, Int64} = nothing
-  callbacks::Union{Nothing, Base.Callable} = nothing
+  callbacks::Union{Nothing, Any} = nothing
 end
 Base.propertynames(params::ElaborateSolverParameters{SL}) where SL = union([:solver, :iterations, :enforceReal, :enforcePositive, :callbacks], getSolverKwargs(SL))
 Base.propertynames(params::RecoPlan{ElaborateSolverParameters}) = union([:solver, :iterations, :enforceReal, :enforcePositive, :callbacks], ismissing(params.solver) ? getSolverKwargs(Kaczmarz) : getSolverKwargs(params.solver))
