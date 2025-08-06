@@ -1,4 +1,10 @@
 export CompareSolutionPerFrameCallback, StoreSolutionPerFrameCallback
+"""
+    CompareSolutionPerFrameCallback(ref, cmp = nrmsd)
+
+Callback that compares the solver's current `solution` with the given reference via `cmp(ref, solution)` for each iteration and frame. 
+Results are stored in the `results` field as a vector of comparison results per frame.
+"""
 mutable struct CompareSolutionPerFrameCallback{T, F}
   ref::Matrix{T}
   cmp::F
@@ -15,6 +21,12 @@ function (cb::CompareSolutionPerFrameCallback)(solver, frame, _)
   push!(cb.results[frame], cb.cmp(cb.ref[:, frame], c))
 end
 
+"""
+    StoreSolutionPerFrameCallback(T = Float32)
+
+Callback that stores the solver's `solution` at each iteration, grouped by frame.
+Results are stored in the `solutions` field. Aggregated solutions are a vector (frames) of vectors (iterations) of Vector{T} (solution data).
+"""
 mutable struct StoreSolutionPerFrameCallback{T}
   solutions::Vector{Vector{Vector{T}}}
   frame::Int64
