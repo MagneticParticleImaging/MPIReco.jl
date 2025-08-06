@@ -15,7 +15,7 @@ positions(ffPos::CustomFocusFieldPositions) = ffPos.positions
 
 Base.@kwdef mutable struct MultiPatchParameters{PR<:AbstractMPIPreProcessingParameters,
      R<:AbstractMultiPatchReconstructionParameters, PT<:AbstractMPIPostProcessingParameters} <: AbstractMultiPatchAlgorithmParameters
-  pre::Union{PR, ProcessResultCache{PR}}
+  pre::Union{PR, AbstractUtilityReconstructionParameters{PR}}
   reco::R
   post::PT = NoPostProcessing() 
 end
@@ -26,6 +26,10 @@ function process(algo::T, params::MultiPatchParameters, data::MPIFile, frequenci
   result = process(algo, params.post, result)
   return result
 end
+function process(algo::T, params::MultiPatchParameters, data::AbstractArray, args...) where {T<:AbstractMultiPatchReconstructionAlgorithm}
+  throw(ArgumentError("MultiPatchAlgorithms are not defined for the given arguments, expected <: MPIFile, found $(typeof(data))"))
+end
+
 
 
 include("MultiPatchAlgorithm.jl")

@@ -5,7 +5,8 @@ module MPIReco
   @reexport using ImageUtils
   @reexport using MPIFiles
   const shape = MPIFiles.shape
-  using AbstractImageReconstruction
+  @reexport using AbstractImageReconstruction
+  using AbstractImageReconstruction.AbstractTrees
   using LRUCache
   using Adapt
   @reexport using DSP
@@ -25,6 +26,7 @@ module MPIReco
   import AbstractImageReconstruction: process, parameter, reconstruct
   using FFTW
   using LinearOperatorCollection
+  using RelocatableFolders
 
 
   include("AlgorithmInterface.jl")
@@ -42,4 +44,16 @@ module MPIReco
   include("MotionCompensation/MotionCompensation.jl")
   include("Algorithms/Algorithms.jl")
   include("Serialisation.jl")
+  include("Callbacks.jl")
+
+  function __init__()
+    if haskey(ENV, "MPIRECO_PLAN_DIRS")
+      dirs = ENV["MPIRECO_PLAN_DIRS"]
+      for dir in filter(!isempty, split(dirs, ","))
+        @debug "Adding RecoPlan directory $dir"
+        addRecoPlanPath(dir)
+      end
+    end
+  end
+  
 end # module

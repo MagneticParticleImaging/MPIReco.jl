@@ -10,7 +10,7 @@ Base.@kwdef struct PeriodicMotionPreProcessing{BG<:AbstractMPIBackgroundCorrecti
   sf::MultiMPIFile
   tfCorrection::Bool = false
   bgParams::BG = NoBackgroundCorrectionParameters()
-  weightingParams::Union{W, ProcessResultCache{W}} = NoWeightingParameters()
+  weightingParams::Union{W, AbstractUtilityReconstructionParameters{W}} = NoWeightingParameters()
 end
 
 Base.@kwdef struct PeriodicMotionReconstructionParameter{F<:AbstractFrequencyFilterParameter, S<:AbstractSolverParameters, R <: AbstractRegularization, arrT <: AbstractArray} <: AbstractMultiPatchReconstructionParameters
@@ -28,17 +28,19 @@ function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:Period
 end
 
 function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {R, T, PT <: PeriodicMotionPreProcessing}
-  result = process(algo, algo.params, data, algo.freqs)
-
-  # Create Image (maybe image parameter as post params?)
-  # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
-  pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
-  offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
-  dt = acqNumAverages(data) * dfCycle(data) * 1 * 1u"s" # Motion has no averages
-  im = makeAxisArray(result, pixspacing, offset, dt)
-  result = ImageMeta(im, generateHeaderDict(algo.sf, data))
-
-  Base.put!(algo.output, result)
+  lock(algo) do 
+    result = process(algo, algo.params, data, algo.freqs)
+    
+    # Create Image (maybe image parameter as post params?)
+    # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
+    pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
+    offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
+    dt = acqNumAverages(data) * dfCycle(data) * 1 * 1u"s" # Motion has no averages
+    im = makeAxisArray(result, pixspacing, offset, dt)
+    result = ImageMeta(im, generateHeaderDict(algo.sf, data))
+    
+    Base.put!(algo.output, result)
+  end
 end
 
 function process(algo::MultiPatchReconstructionAlgorithm, params::Union{OP, ProcessResultCache{OP}}, 

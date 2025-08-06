@@ -7,6 +7,8 @@ using ImageMagick
 using ImageQualityIndexes
 using LazyArtifacts
 using Unitful
+using Dagger
+using DaggerImageReconstruction
 
 const datadir = joinpath(artifact"data")
 @info "The test data is located at $datadir."
@@ -31,14 +33,16 @@ end
 function exportImage(filename, I::AbstractMatrix)
   Iabs = abs.(I)
   Icolored = colorview(Gray, Iabs./maximum(Iabs))
-  save(filename, Icolored )
+  ImageMagick.save(filename, Icolored )
 end
 
 areTypesDefined = @isdefined arrayTypes
-arrayTypes = areTypesDefined ? arrayTypes : [JLArray]
+arrayTypes = areTypesDefined ? arrayTypes : []
 
 @testset "MPIReco" begin
   if !areTypesDefined
+    include("Caching.jl")
+    include("RecoPlan.jl")
     #include("LoadSaveMDF.jl")
     include("Reconstruction.jl") # FussedLasso causes segfault atm
     include("Solvers.jl")
@@ -51,6 +55,8 @@ arrayTypes = areTypesDefined ? arrayTypes : [JLArray]
     include("Sparse.jl")
     include("SMExtrapolation.jl")
     include("ReconstructionGPU.jl")
+    include("LowLevel.jl")
+    include("Callbacks.jl")
     #include("SMCenter.jl")
     #include("SMRecovery.jl") # will be moved to SMTools
   else

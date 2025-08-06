@@ -42,36 +42,74 @@ struct MixedAlgorithm <: ReconstructionAlgorithmType end
 # TODO recoAlgorithmType
 # TODO undefined for certain "Algorithm" components
 #recoAlgorithmTypes(::Type{ConcreteRecoAlgorithm}) = SystemMatrixBasedAlgorithm()
-export planpath, plandir
-plandir() = abspath(homedir(), ".mpi", "RecoPlans")
+export addRecoPlanPath, getRecoPlanList
+const DEFAULT_PLANS_PATH = @path joinpath(@__DIR__, "..", "config")
+const recoPlanPaths = AbstractString[DEFAULT_PLANS_PATH]
+"""
+    addRecoPlanPath(path)
+
+Add all `RecoPlans` within the given directory as potential 
+"""
+addRecoPlanPath(path) = !(path in recoPlanPaths) ? pushfirst!(recoPlanPaths, path) : nothing
+"""
+    getRecoPlanList(; full = false)
+
+Retrieve a list of currently known `RecoPlan`s. If `full` is `true` then full paths are returned. 
+"""
+function getRecoPlanList(; full = false)
+  result = String[]
+  for path in recoPlanPaths
+    if isdir(path)
+      push!(result, [plan for plan in filter(a->contains(a,".toml"),readdir(path, join =  full))]...)
+    end
+  end
+  return result
+end
+
+export addRecoPlanModule, getRecoPlanModules
+const recoPlanModules::Vector{Module} = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]
+"""
+    addRecoPlanPath(mod::Module)
+
+Add the `mod` module to the list of modules which are used for plan loading 
+"""
+addRecoPlanModule(mod::Module) = !(mod in recoPlanModules) ? push!(recoPlanModules, mod) : nothing
+"""
+    getRecoPlanModules()
+
+Retrieve a list of currently used modules for plan loading 
+"""
+getRecoPlanModules() = recoPlanModules
 
 function planpath(name::AbstractString)
   if isfile(name)
     return name
   end
 
-  for dir in [plandir(), joinpath(@__DIR__, "..", "config")]
+  for dir in recoPlanPaths
     filename = joinpath(dir, string(name, ".toml"))
     if isfile(filename)
       return filename
     end
   end
-  throw(ArgumentError("Could not find a suitable MPI reconstruction plan with name $name. Custom plans can be stored in $(plandir())."))
+  throw(ArgumentError("Could not find a suitable MPI reconstruction plan with name $name. Custom plans can be stored in the following directories $(join(recoPlanPaths, ", "))."))
 end
 
-const recoPlans = LRU{UInt64, RecoPlan}(maxsize = 3)
+const recoPlans = LRU{UInt64, RecoPlan}(maxsize = parse(Int, get(ENV, "MPIRECO_CACHE_SIZE", "3")))
 
 export reconstruct
 """
-    reconstruct(name::AbstractString, data::MPIFile, cache::Bool = true; kwargs...)
+    reconstruct(name::AbstractString, data::MPIFile, cache::Bool = false, modules = getRecoPlanModules(); kwargs...)
 
-Perform a reconstruction with the `RecoPlan` specified by `name` and given `data`. If `cache` is `true` the reconstruction plan is cached and reused if the plan file has not changed.
+Perform a reconstruction with the `RecoPlan` specified by `name` and given `data`.
 Additional keyword arguments can be passed to the reconstruction plan.
 
-`RecoPlans` can be stored in the directory `$(plandir())` or in the MPIReco package config folder. The first plan found is used. The cache considers the last modification time of the plan file.
-If a keyword argument changes the structure of the plan the cache is bypassed. Alternatively, name can be a path to specific plan file.
+`RecoPlans` can be stored in the in the MPIReco package config folder or in a custom folder. New folder can be added with `addRecoPlanPath`. The first plan found is used.
+Alternatively, name can be a path to specific plan file.
 
-The cache can be emptied with `emptyRecoCache!()`.
+If `cache` is `true` the reconstruction plan is cached and reused if the plan file has not changed. If a keyword argument changes the structure of the plan the cache is also bypassed.
+The cache considers the last modification time of the plan file and can be manually be emptied with `emptyRecoCache!()`.
+The cache size (in number of plans) can be changed with by setting the `MPIRECO_CACHE_SIZE` environment variable.
 
 # Examples
 ```julia
@@ -80,26 +118,83 @@ julia> mdf = MPIFile("data.mdf");
 julia> reconstruct("SinglePatch", mdf; solver = Kaczmarz, reg = [L2Regularization(0.3f0)], iterations = 10, frames = 1:10, ...)
 ```
 """
-function reconstruct(name::AbstractString, data::MPIFile, cache::Bool = true, modules = [AbstractImageReconstruction, MPIFiles, MPIReco, RegularizedLeastSquares]; kwargs...)
+function reconstruct(name::AbstractString, data::Union{MPIFile, AbstractArray}, cache::Bool = false, modules = getRecoPlanModules(); kwargs...)
   plan = loadRecoPlan(name, cache, modules; kwargs...)
-  setAll!(plan; kwargs...)
   return reconstruct(build(plan), data)
 end
+"""
+    reconstruct(f::Base.Callable, args...; kwargs...)
+
+Attach a callback `f(solver, frame, iteration)` to the reconstruction. Callbacks are passed as a `callbacks` keyword argument to the underlying algorithm
+For more information on solver callbacks, see the RegularizedLeastSquares documentation.
+"""
+function reconstruct(f, name::AbstractString, args...; kwargs...)
+  frame = 0
+  function frame_counter_callback(solver, iteration)
+    if iteration == 0
+      frame += 1
+    end
+    f(solver, frame, iteration)
+  end
+  reconstruct(name, args...; kwargs..., callbacks = frame_counter_callback)
+end
+# Load plan with RecoCache consideration
 function loadRecoPlan(name::AbstractString, cache::Bool, modules; kwargs...)
-  planfile = AbstractImageReconstruction.planpath(MPIReco, name)
+  planfile = planpath(name)
 
   # If the user disables caching or changes the plan structure we bypass the cache
   kwargValues = values(values(kwargs))
-  if !cache || any(val -> isa(val, RecoPlan) || isa(val, AbstractImageReconstructionParameters), kwargValues)
-    return loadRecoPlan(planfile, modules)
+  if !cache || any(val -> isa(val, AbstractRecoPlan) || isa(val, AbstractImageReconstructionParameters), kwargValues)
+    plan = loadRecoPlan(planfile, modules; kwargs...)
+  else 
+    key = hash(planfile, hash(mtime(planfile)))
+    plan = get!(recoPlans, key) do
+      loadRecoPlan(planfile, modules)
+    end
+    # Set kwargs outside of cache to make sure they are correctly updated
+    setKwargs!(plan; kwargs...)
   end
 
-  key = hash(planfile, hash(mtime(planfile)))
-  return get!(recoPlans, key) do
-    loadRecoPlan(planfile, modules)
+  return plan
+end
+function setKwargs!(plan; kwargs...)
+  setFirst = filter(kw->kw[2] isa Union{<:AbstractImageReconstructionAlgorithm, <:AbstractImageReconstructionParameters, <:AbstractRecoPlan}, kwargs)
+  setAll!(plan; setFirst...)
+  setAll!(plan; [kw for kw in kwargs if kw ∉ setFirst]...)
+end
+# Load plan from a .toml file
+function loadRecoPlan(planfile::AbstractString, modules; kwargs...)
+  return open(planfile, "r") do io
+    return loadRecoPlan(io, modules; kwargs...)
   end
 end
-loadRecoPlan(planfile::AbstractString, modules) = loadPlan(planfile, modules)
+# Load plan from an io (could be file or iobuffer backed string)
+function loadRecoPlan(io, modules; kwargs...)
+  plan = loadPlan(io, modules)
+  setKwargs!(plan; kwargs...)
+  return plan
+end
+export MPIRecoPlan
+"""
+    MPIRecoPlan(value, modules = getRecoPlanModules(); kwargs...)
+
+Load a `RecoPlan` and set the keyword arguments if applicable. Value can be the name of a plan or path to plan file or an MDF or a path to one.
+"""
+function MPIRecoPlan(value::AbstractString, modules = getRecoPlanModules(); kwargs...)
+  if isfile(value) && endswith(value, ".toml")
+    return loadRecoPlan(value, modules; kwargs...)
+  elseif isfile(value)
+    return MPIRecoPlan(MDFFile(value), modules; kwargs...)
+  else
+    return loadRecoPlan(planpath(value), modules; kwargs...)
+  end
+end
+function MPIRecoPlan(file::MDFFileV2, modules; kwargs...)
+  error("Loading reconstruction from MDF not yet supported")
+  planstr = ""
+  io = IOBuffer(planstr)
+  return loadRecoPlan(io, modules; kwargs...) 
+end
 
 export emptyRecoCache!
 """
@@ -108,6 +203,18 @@ export emptyRecoCache!
 Empty the cache of `RecoPlans`. This is useful if the cache is too large.
 """
 emptyRecoCache!() = Base.empty!(recoPlans)
+"""
+    emptyRecoCache!(plan::RecoPlan)
+
+Empty all caches within the `RecoPlan`
+"""
+function emptyRecoCache!(plan::RecoPlan)
+  for p in PostOrderDFS(plan)
+    if p isa ProcessResultCache || p isa  RecoPlan{ProcessResultCache}
+      empty!(p)
+    end
+  end
+end
 
 # Check if contains
 isSystemMatrixBased(::T) where T <: AbstractImageReconstructionAlgorithm = recoAlgorithmTypes(T) isa SystemMatrixBasedAlgorithm

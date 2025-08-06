@@ -228,3 +228,11 @@ function constraint!(x, enforcePositive, enforceReal)
 end
 
 softThreshold(x,sigma) = (abs(x) > sigma)*sign(x)*(abs(x)-sigma)
+
+function calcSpacingAndOffset(sf::MPIFile, data::MPIFile, grid)
+  gradientRatio = acqGradient(sf)[1] / acqGradient(data)[1]
+  pixspacing = (spacing(grid) * gradientRatio) * 1000u"mm"
+  fov = round.(calibFov(sf), digits=9) # everything below nm is a numerical error
+  offset = (ffPos(data) .- 0.5fov) * gradientRatio * 1000u"mm" .+ 0.5pixspacing
+  return pixspacing, offset
+end

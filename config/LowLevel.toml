@@ -1,0 +1,10 @@
+_module = "MPIReco"
+_type = "RecoPlan{LowLevelReconstructionAlgorithm}"
+
+[parameter]
+_module = "MPIReco"
+_type = "RecoPlan{LeastSquaresParameters}"
+
+    [parameter.solverParams]
+    _module = "MPIReco"
+    _type = "RecoPlan{ElaborateSolverParameters}"
