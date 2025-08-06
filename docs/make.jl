@@ -42,6 +42,7 @@ makedocs(
         "How to" => Any[
             "Change and Configure Solvers" => "generated/howtos/solvers.md",
             "Enable Caching" => "generated/howtos/caching.md",
+            "Use Callbacks" => "generated/howtos/callbacks.md",
             "Implement Custom Data Processing" => "generated/howtos/custom.md",
             "Implement Reconstruction Packages" => "generated/howtos/extensions.md",
         ],
