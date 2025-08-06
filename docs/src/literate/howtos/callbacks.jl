@@ -36,7 +36,7 @@ end
 cb2.results[1]
 
 # Note that callbacks are used directly in the solver and thus reflect its value domain. 
-# This means that in sparse reconstruction, the current solution approximation is not in the image domain.
+# This means that in sparse reconstruction, the current solution approximation is not in the image domain. Likewise, the solution might still be a complex number.
 
 # Both variants shown above get passed as a callbacks keyword argument to the algorithm.
 # When using the callback directly like this, the interface changes from f(solver, frame, iteration) to f(solver, iteration).
