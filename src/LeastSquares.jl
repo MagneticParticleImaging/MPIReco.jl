@@ -49,9 +49,10 @@ Base.@kwdef mutable struct ElaborateSolverParameters{SL} <: AbstractSolverParame
   tolInner::Union{Nothing, Float64} = nothing
   iterationsCG::Union{Nothing, Int64} = nothing
   iterationsInner::Union{Nothing, Int64} = nothing
+  callbacks::Union{Nothing, Any} = nothing
 end
-Base.propertynames(params::ElaborateSolverParameters{SL}) where SL = union([:solver, :iterations, :enforceReal, :enforcePositive], getSolverKwargs(SL))
-Base.propertynames(params::RecoPlan{ElaborateSolverParameters}) = union([:solver, :iterations, :enforceReal, :enforcePositive], ismissing(params.solver) ? getSolverKwargs(Kaczmarz) : getSolverKwargs(params.solver))
+Base.propertynames(params::ElaborateSolverParameters{SL}) where SL = union([:solver, :iterations, :enforceReal, :enforcePositive, :callbacks], getSolverKwargs(SL))
+Base.propertynames(params::RecoPlan{ElaborateSolverParameters}) = union([:solver, :iterations, :enforceReal, :enforcePositive, :callbacks], ismissing(params.solver) ? getSolverKwargs(Kaczmarz) : getSolverKwargs(params.solver))
 
 getSolverKwargs(::Type{SL}) where SL <: AbstractLinearSolver = intersect(union(Base.kwarg_decl.(methods(SL))...), fieldnames(ElaborateSolverParameters))
 
@@ -63,7 +64,7 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
   u = reshape(u, M, L)
   c = zeros(N, L)
 
-  reg, args = prepareRegularization(params.reg, params)
+  reg, callbacks, args = prepareRegularization(params.reg, params)
   args[:reg] = reg
 
   S = params.S
@@ -76,8 +77,12 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParame
 
   solv = createLinearSolver(SL, S; filter(entry -> !isnothing(entry.second), args)...)
 
+  if isnothing(callbacks)
+    callbacks = (_, _) -> nothing
+  end
+
   for l=1:L
-    d = solve!(solv, u[:, l])
+    d = solve!(solv, u[:, l], callbacks = callbacks)
     if !isnothing(params.op)
       d[:] = params.op*d
     end
@@ -119,7 +124,9 @@ function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) wh
     result = map(r -> TransformedRegularization(r, regLS.op), result)
   end
 
-  return result, args
+  callbacks = pop!(args, :callbacks)
+
+  return result, callbacks, args
 end
 #=
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters, threadInput::MultiThreadedInput)
