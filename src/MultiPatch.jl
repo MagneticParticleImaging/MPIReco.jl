@@ -107,8 +107,20 @@ mutable struct DenseMultiPatchOperator{T, V <: AbstractArray{T, 3}, U<:Positions
   nPatches::I
   patchToSMIdx::vecI
 end
-
-Adapt.adapt_structure(::Type{Array}, op::AbstractMultiPatchOperator) = op
+Adapt.adapt_structure(::Type{arrT}, op::MultiPatchOperator{T, <:arrT}) where {T, arrT} = op
+function Adapt.adapt_structure(arr, op::MultiPatchOperator)
+  S = adapt.(arr, op.S)
+  grid = op.grid
+  N = op.N
+  M = op.M
+  RowToPatch = adapt(arr, op.RowToPatch)
+  xcc = adapt.(arr, op.xcc)
+  xss = adapt.(arr, op.xss)
+  sign = adapt(arr, op.sign)
+  nPatches = op.nPatches
+  patchToSMIdx = adapt(arr, op.patchToSMIdx)
+  return MultiPatchOperator(S, grid, N, M, RowToPatch, xcc, xss, sign, nPatches, patchToSMIdx)
+end
 LinearOperators.storage_type(op::MultiPatchOperator) = LinearOperators.storage_type(first(op.S))
 LinearOperators.storage_type(op::DenseMultiPatchOperator) = typeof(similar(op.S, 0))
 
