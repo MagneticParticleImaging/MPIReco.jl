@@ -20,6 +20,7 @@ _module = "MPIReco"
         [parameter.reco.opParams]
         _module = "AbstractImageReconstruction"
         _type = "RecoPlan{ProcessResultCache}"
+        maxsize = 3
 
             [parameter.reco.opParams.param]
             _type = "RecoPlan{RegularMultiPatchOperatorParameter}"
