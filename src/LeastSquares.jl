@@ -124,7 +124,7 @@ function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) wh
     result = map(r -> TransformedRegularization(r, regLS.op), result)
   end
 
-  callbacks = pop!(args, :callbacks)
+  callbacks = pop!(args, :callbacks, nothing)
 
   return result, callbacks, args
 end
