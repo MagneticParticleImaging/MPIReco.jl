@@ -98,6 +98,10 @@ _type = "RecoPlan{SinglePatchParameters}"
         _module = "MPIReco"
         _type = "RecoPlan{CommonPreProcessingParameters}"
 
+            [parameter.pre.param.bgParams]
+            _module = "MPIReco"
+            _type = "RecoPlan{NoBackgroundCorrectionParameters}"
+
     [parameter.post]
     _module = "MPIReco"
     _type = "RecoPlan{NoPostProcessing}"
