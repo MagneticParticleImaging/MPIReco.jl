@@ -238,7 +238,6 @@ function gradientRatio(sf::MPIFile, data::MPIFile)
 end
 
 function calcSpacingAndOffset(sf::MPIFile, data::MPIFile, grid)
-  gradientRatio = acqGradient(sf)[1] / acqGradient(data)[1]
   pixspacing = (spacing(grid) * gradientRatio(sf, data)) * 1000u"mm"
   fov = round.(calibFov(sf), digits=9) # everything below nm is a numerical error
   offset = (ffPos(data) .- 0.5fov) * gradientRatio(sf, data) * 1000u"mm" .+ 0.5pixspacing
