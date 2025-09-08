@@ -229,10 +229,18 @@ end
 
 softThreshold(x,sigma) = (abs(x) > sigma)*sign(x)*(abs(x)-sigma)
 
+function gradientRatio(sf::MPIFile, data::MPIFile)
+  if ismissing(acqGradient(sf)) || isnothing(acqGradient(sf)) || ismissing(acqGradient(data)) || isnothing(acqGradient(data))
+    return 1.0
+  else 
+    return acqGradient(sf)[1] / acqGradient(data)[1]
+  end
+end
+
 function calcSpacingAndOffset(sf::MPIFile, data::MPIFile, grid)
   gradientRatio = acqGradient(sf)[1] / acqGradient(data)[1]
-  pixspacing = (spacing(grid) * gradientRatio) * 1000u"mm"
+  pixspacing = (spacing(grid) * gradientRatio(sf, data)) * 1000u"mm"
   fov = round.(calibFov(sf), digits=9) # everything below nm is a numerical error
-  offset = (ffPos(data) .- 0.5fov) * gradientRatio * 1000u"mm" .+ 0.5pixspacing
+  offset = (ffPos(data) .- 0.5fov) * gradientRatio(sf, data) * 1000u"mm" .+ 0.5pixspacing
   return pixspacing, offset
 end
