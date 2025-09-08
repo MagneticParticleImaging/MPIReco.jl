@@ -240,6 +240,10 @@ end
 function calcSpacingAndOffset(sf::MPIFile, data::MPIFile, grid)
   pixspacing = (spacing(grid) * gradientRatio(sf, data)) * 1000u"mm"
   fov = round.(calibFov(sf), digits=9) # everything below nm is a numerical error
-  offset = (ffPos(data) .- 0.5fov) * gradientRatio(sf, data) * 1000u"mm" .+ 0.5pixspacing
+  if !isnothing(acqGradient(data))
+    offset = (ffPos(data) .- 0.5fov) * gradientRatio(sf, data) * 1000u"mm" .+ 0.5pixspacing
+  else
+    offset = (-0.5fov) * 1000u"mm" .+ 0.5pixspacing
+  end
   return pixspacing, offset
 end
