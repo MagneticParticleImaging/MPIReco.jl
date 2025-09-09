@@ -62,7 +62,7 @@ function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorith
 
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
-  pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
+  pixspacing = (voxelSize(algo.sf) .* gradientRatio(algo.sf, data)) * 1000u"mm"
   offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
   dt = acqNumAverages(data) * dfCycle(data) * numAverages(algo.params.pre) * 1u"s"
   im = makeAxisArray(result, pixspacing, offset, dt)
