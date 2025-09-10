@@ -11,6 +11,15 @@ end
 AbstractImageReconstruction.fromTOML(t::Type{<:MPIFile}, x::Dict) = AbstractImageReconstruction.fromTOML(t, x[AbstractImageReconstruction.VALUE_TAG])
 AbstractImageReconstruction.fromTOML(::Type{<:MPIFile}, x::AbstractString) = MPIFile(x)
 AbstractImageReconstruction.fromTOML(::Type{<:MultiMPIFile}, x::Vector) = MultiMPIFile(MPIFile.(x))
+function AbstractImageReconstruction.loadPlanValue(::Type{Vector{T} where T <: AbstractRegularization}, value::Vector, modDict)
+  result = Any[]
+  for val in value
+    type = modDict[val[AbstractImageReconstruction.MODULE_TAG]][val[AbstractImageReconstruction.TYPE_TAG]]
+    push!(result, AbstractImageReconstruction.fromTOML(type, val))
+  end
+  # Narrow vector
+  return identity.(result)
+end
 function AbstractImageReconstruction.fromTOML(::Type{T}, dict::Dict{String, Any}) where {T<: AbstractRegularization}
   λ = dict["λ"]
   filteredKeys = filter(x-> !(isequal("λ",x) || startswith(x, ".")), keys(dict))
