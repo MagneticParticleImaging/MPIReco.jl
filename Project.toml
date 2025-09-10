@@ -1,7 +1,7 @@
 name = "MPIReco"
 uuid = "e4246700-6248-511e-8146-a1d1f47669d2"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.9.1"
+version = "0.9.2"
 
 [deps]
 AbstractImageReconstruction = "a4b4fdbf-6459-4ec9-990d-77e1fa24a91b"
