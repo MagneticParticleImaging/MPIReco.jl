@@ -17,21 +17,22 @@ steps:
       include("test/gpu/cuda.jl")'
     timeout_in_minutes: 30
 
-  # - label: "AMD GPUs -- MPIReco.jl"
-  #   plugins:
-  #     - JuliaCI/julia#v1:
-  #         version: "1.10"
-  #   agents:
-  #     queue: "juliagpu"
-  #     rocm: "*"
-  #     rocmgpu: "*"
-  #   command: |
-  #     julia --color=yes --project -e '
-  #     using Pkg
-  #     Pkg.add("TestEnv")
-  #     using TestEnv
-  #     TestEnv.activate();
-  #     Pkg.add("AMDGPU")
-  #     Pkg.instantiate()
-  #     include("test/gpu/rocm.jl")'
-  #   timeout_in_minutes: 30
+   - label: "AMD GPUs -- MPIReco.jl"
+     plugins:
+       - JuliaCI/julia#v1:
+           version: "1.10"
+     agents:
+       queue: "juliagpu"
+       rocm: "*"
+       rocmgpu: "*"
+     command: |
+       julia --color=yes --project -e '
+       using Pkg
+       Pkg.add("TestEnv")
+       using TestEnv
+       TestEnv.activate();
+       Pkg.add("AMDGPU")
+       Pkg.instantiate()
+       include("test/gpu/rocm.jl")'
+     timeout_in_minutes: 30
+     soft_fail: true
