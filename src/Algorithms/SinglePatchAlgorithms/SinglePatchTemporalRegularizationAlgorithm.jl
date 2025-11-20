@@ -1,5 +1,5 @@
 export SinglePatchTemporalRegularizationAlgorithm, SinglePatchTemporalRegularizationReconstructionParameter
-Base.@kwdef struct SinglePatchTemporalRegularizationReconstructionParameter{L<:DenseSystemMatixLoadingParameter,
+Base.@kwdef struct SinglePatchTemporalRegularizationReconstructionParameter{L<:DenseSystemMatrixLoadingParameter,
   SP<:AbstractSolverParameters, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile

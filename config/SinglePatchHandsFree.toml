@@ -15,7 +15,7 @@ _type = "RecoPlan{SinglePatchParameters}"
 
             [parameter.reco.sfLoad.param]
             _module = "MPIReco"
-            _type = "RecoPlan{DenseSystemMatixLoadingParameter}"
+            _type = "RecoPlan{DenseSystemMatrixLoadingParameter}"
 
                 [parameter.reco.sfLoad.param.freqFilter]
                 _module = "MPIReco"
