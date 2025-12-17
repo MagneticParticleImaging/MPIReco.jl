@@ -115,6 +115,10 @@
   c8 = reconstruct("SinglePatch", b; params...)
   exportImage(joinpath(imgdir, "Reconstruction8.png"), Array(c8[1,:,:,1,1]))
   @test compareImg("Reconstruction8.png")
+  
+  params[:weightingParams] = SMWhiteningWeightingParameters()
+  c8a = reconstruct("SinglePatch", b; params...)
+  @test isapprox(arraydata(c8), arraydata(c8a))
 
   c9a = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = NoWeightingParameters())
   c9b = reconstruct("SinglePatch", b; params..., reg = [L2Regularization(0.0)], weightingParams = RowNormWeightingParameters())
