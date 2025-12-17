@@ -2,8 +2,8 @@ export getWeights, WeightingType, setFreqToZero
 
 export AbstractWeightingParameters
 abstract type AbstractWeightingParameters <: AbstractMPIRecoParameters end
-function process(type::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractWeightingParameters, freqs, op = nothing, u = nothing, arrayType = Array)
-  result = process(type, params, freqs, op, u)
+function process(type::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractWeightingParameters, freqs, sf = nothing, S = nothing, u = nothing, arrayType = Array)
+  result = process(type, params, freqs, sf, S, u, arrayType)
   if !isnothing(result)
     result = map(real(eltype(algo.S)), result)
   end
@@ -37,6 +37,16 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::WhiteningWeightingP
                            frequencies=freqs, frames=measBGFrameIdx(params.whiteningMeas), bgCorrection = false)
   bg_std = std(u_bg, dims=3)
   weights = minimum(abs.(vec(bg_std))) ./ abs.(vec(bg_std))
+  return weights
+end
+
+export SMWhiteningWeightingParameters
+Base.@kwdef struct SMWhiteningWeightingParameters <: AbstractWeightingParameters
+  # NOP
+end
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::SMWhiteningWeightingParameters, freqs::Vector{CartesianIndex{2}}, sf, args...)
+  noise = noiseEstimate(sf,frequencies=freqs)
+  weights = minimum(abs.(vec(noise))) ./ abs.(vec(noise))
   return weights
 end
 
