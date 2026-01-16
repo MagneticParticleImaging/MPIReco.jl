@@ -10,26 +10,26 @@ typeof(S_efficient)</code></pre><pre class="documenter-example-output"><code cla
 mul!(u, S, c)
 isapprox(u, S * c)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>This inplace variant of a matrix-vector product is used within in RegularizedLeastSquares and also needs to be provided for custom operators.</p><h2 id="Matrix-Free"><a class="docs-heading-anchor" href="#Matrix-Free">Matrix-Free</a><a id="Matrix-Free-1"></a><a class="docs-heading-anchor-permalink" href="#Matrix-Free" title="Permalink"></a></h2><p>LinearAlgebra also provides a function to compute the adjoint of a matrix-vector product:</p><pre><code class="language-julia hljs">mul!(c, adjoint(S), u)
 isapprox(c, adjoint(S) * u)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>This function creates a lazy adjoint, i.e. it does not create a new array. Instead it only changes the way the size and indexing into the underyling array works.</p><pre><code class="language-julia hljs">S_adj = adjoint(S)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">256×256 adjoint(::Matrix{Float64}) with eltype Float64:
-  0.19565    -0.174393   -1.16434    …  -1.6505     -2.18838    -0.0265448
- -0.955109   -0.330394    1.30581        1.37807     0.894846    1.45195
-  0.117546   -1.27082    -1.06426        0.502532   -0.419237    1.17586
-  0.505994    0.374573    1.84988        2.16114    -0.738995    0.490464
- -1.10325     0.634089    0.39642       -0.0669328  -0.0720594  -0.0209087
- -2.38079    -1.31316     0.160509   …  -0.140616    0.50849     0.090635
-  0.260173    0.41205     0.367311       0.193438   -0.9237      0.808746
- -0.345035   -0.0691735  -0.646902      -0.607613    0.468183   -0.479833
-  0.0359033  -1.80921     0.461308       0.941254    1.99749    -0.127335
-  0.621419    1.07419    -0.21277        1.16414    -0.0904977  -0.49131
-  ⋮                                  ⋱                           ⋮
-  0.877712   -0.436724   -0.633057       0.556327   -1.21488     0.572425
- -1.17855    -1.65057    -0.197999      -1.33418    -1.10987     0.127792
- -0.308342   -1.03148     0.203308       1.30292    -0.52785    -0.266069
- -1.24595    -0.788106    0.0419764  …   0.715551    0.120725   -0.574927
-  0.75704    -0.103386   -0.644655       0.249882    1.68136    -0.22687
-  1.69334     1.08849    -0.4597        -1.21837     0.787       0.777189
-  1.03981    -1.49034    -0.940828      -0.13367     1.69851    -0.226669
- -0.79019     1.56548    -0.973506      -0.831333   -0.672259    2.07287
-  0.190918   -2.44747    -0.388097   …  -0.405371    0.219936   -0.120993</code></pre><p>A related concepts are matrix-free operators. These are operators which behave like a matrix in a(n adjoint) matrix-vector product, but don&#39;t have an underlying dense matrix.</p><p>There are several different Julia packages with which one can create such matrix-free operators such as LinearOperators.jl or LinearMaps.jl. MPIReco uses the <a href="https://github.com/JuliaImageRecon/LinearOperatorCollection.jl">LinearOperatorCollection.jl</a> package to create matrix-free operators for and with <span>$\mathbf{S}$</span>.</p><pre><code class="language-julia hljs">using MPIReco.LinearOperatorCollection
+ -0.789175   -1.07332     1.02285   …  -1.16121      -0.559391   1.06145
+  0.848757   -0.946518   -1.22794       0.130689     -1.02683    0.475218
+  0.798104   -0.0380976  -1.11334       1.88223      -0.746891  -0.0182336
+ -0.533485   -1.10456     0.117297     -0.637591      0.370825   0.672742
+ -2.18215     1.62583     0.776292     -0.517357      0.40624    0.0179193
+ -0.524054   -1.08424     0.408047  …  -2.54099      -0.811593   1.35272
+  0.348266    1.45537     0.572426      1.95729       0.433274  -0.381385
+ -1.66692     0.132047   -0.242236     -0.712731      0.993564   1.71106
+  0.422288   -1.17714     0.304719     -0.380098     -0.710815   1.03423
+  1.00891    -0.774859    0.536992     -0.823158     -1.77142    0.664737
+  ⋮                                 ⋱                            ⋮
+  0.253125   -0.586851    1.22676      -1.3896       -1.85675   -0.740602
+  0.379086    0.836307   -0.612298     -0.0858804     0.91538   -0.903619
+  0.589899    0.325058    0.994938     -0.361433     -1.62467    0.366531
+ -0.0136478   0.547562   -0.315408  …   1.14539      -0.958289  -0.892595
+  0.841037   -0.0347337   0.641098     -1.20786       0.971586   0.0647367
+  1.07902     0.964164   -0.45746      -0.0317118    -0.311199  -0.2066
+  1.07214     0.279055   -1.09154      -0.000333313   0.857551   0.633506
+  0.622081    0.546735   -2.60373      -0.917843     -0.652572  -0.302645
+ -0.257167   -2.07252    -0.286578  …   1.10456       0.176071  -0.144617</code></pre><p>A related concepts are matrix-free operators. These are operators which behave like a matrix in a(n adjoint) matrix-vector product, but don&#39;t have an underlying dense matrix.</p><p>There are several different Julia packages with which one can create such matrix-free operators such as LinearOperators.jl or LinearMaps.jl. MPIReco uses the <a href="https://github.com/JuliaImageRecon/LinearOperatorCollection.jl">LinearOperatorCollection.jl</a> package to create matrix-free operators for and with <span>$\mathbf{S}$</span>.</p><pre><code class="language-julia hljs">using MPIReco.LinearOperatorCollection
 weights = rand(256)
 wop = WeightingOp(weights)
 size(wop)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(256, 256)</code></pre><p>For example, LinearOperatorCollection provides a weighting operator. This operator acts as if it is a diagonal matrix, but only requires the elements of the diagonal. We can also do matrix-free matrix product to create <span>$\mathbf{WS}$</span> without calculating the matrix-matrix product:</p><pre><code class="language-julia hljs">WS = ProdOp(wop, S)
