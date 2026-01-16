@@ -93,14 +93,16 @@ function loadsparsedata(f,data,indices,l,nPos,numCoeff,loadasreal::Bool)
   return SparseMatrixCSC(N,M,indptr,I[:],S[:])
 end
 
+# transforms selected frequencies, do compression end return sparse matrix for each contrast
+# Either applies thresh or redFactor to all contrasts. Scalar values are applied for all, use vectors to control value of each
 function transformAndGetSparseSF(bSF::MultiContrastFile,frequencies,sparseTrafo::String, thresh::Float64, redFactor::Float64; kwargs...)
-  return transformAndGetSparseSF(bSF, frequencies, sparseTrafo, fill(thresh, length(bSF)), fill(redFactor, length(bSF)))
+  return transformAndGetSparseSF(bSF, frequencies, sparseTrafo, fill(thresh, length(bSF)), fill(redFactor, length(bSF)); kwargs...)
 end
 function transformAndGetSparseSF(bSF::MultiContrastFile,frequencies,sparseTrafo::String, thresh::Float64, redFactor::Vector{Float64}; kwargs...)
-  return transformAndGetSparseSF(bSF, frequencies, sparseTrafo, fill(thresh, length(bSF)), redFactor)
+  return transformAndGetSparseSF(bSF, frequencies, sparseTrafo, fill(thresh, length(bSF)), redFactor; kwargs...)
 end
 function transformAndGetSparseSF(bSF::MultiContrastFile,frequencies,sparseTrafo::String, thresh::Vector{Float64}, redFactor::Float64; kwargs...)
-  return transformAndGetSparseSF(bSF, frequencies, sparseTrafo, thresh, fill(redFactor, length(bSF)))
+  return transformAndGetSparseSF(bSF, frequencies, sparseTrafo, thresh, fill(redFactor, length(bSF)); kwargs...)
 end
 
 function transformAndGetSparseSF(bSF::MultiContrastFile,frequencies,sparseTrafo::String, thresh::Vector{Float64}, redFactor::Vector{Float64}; kwargs...)
