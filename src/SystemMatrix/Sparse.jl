@@ -2,18 +2,15 @@ export getSparseSF
 
 
 ##### Sparse getSF #########
-function getSF(bSF::MPIFile, frequencies, sparseTrafo::AbstractString;
-               redFactor=0.1,  kargs...)
-
-	return transformAndGetSparseSF(bSF, frequencies, sparseTrafo;
-     redFactor=redFactor, kargs...)
+function getSF(bSF::MPIFile, frequencies, sparseTrafo::AbstractString; thresh = 0.0, redFactor = 0.1, kargs...)
+	return transformAndGetSparseSF(bSF, frequencies, sparseTrafo, thresh, redFactor; kargs...)
 end
+
 
 # transforms selected frequencies, do compression end return sparse matrix
 # parameter globalComp: if true, each frequency gets the same number of non-zero entries
 #						if false, the number of non-zero entries is determined by a changing threshold
-function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String;
-    thresh=0.0, redFactor=0.1, bgcorrection=false, bgCorrection=bgcorrection,
+function transformAndGetSparseSF(bSF::MPIFile,frequencies,sparseTrafo::String, thresh::Float64, redFactor::Float64; bgcorrection=false, bgCorrection=bgcorrection,
     loadasreal=false, compAna=nothing, combine=true, useCOM=false, depth=4, useDFFoV=false, kargs...)
 
     if useDFFoV
@@ -94,4 +91,42 @@ function loadsparsedata(f,data,indices,l,nPos,numCoeff,loadasreal::Bool)
     indptr = cumsum([0;numCoeff]) .+ 1
   end
   return SparseMatrixCSC(N,M,indptr,I[:],S[:])
+end
+
+# transforms selected frequencies, do compression end return sparse matrix for each contrast
+# Either applies thresh or redFactor to all contrasts. Scalar values are applied for all, use vectors to control value of each
+function transformAndGetSparseSF(bSF::MultiContrastFile,frequencies,sparseTrafo::String, thresh::Float64, redFactor::Float64; kwargs...)
+  return transformAndGetSparseSF(bSF, frequencies, sparseTrafo, fill(thresh, length(bSF)), fill(redFactor, length(bSF)); kwargs...)
+end
+function transformAndGetSparseSF(bSF::MultiContrastFile,frequencies,sparseTrafo::String, thresh::Float64, redFactor::Vector{Float64}; kwargs...)
+  return transformAndGetSparseSF(bSF, frequencies, sparseTrafo, fill(thresh, length(bSF)), redFactor; kwargs...)
+end
+function transformAndGetSparseSF(bSF::MultiContrastFile,frequencies,sparseTrafo::String, thresh::Vector{Float64}, redFactor::Float64; kwargs...)
+  return transformAndGetSparseSF(bSF, frequencies, sparseTrafo, thresh, fill(redFactor, length(bSF)); kwargs...)
+end
+
+function transformAndGetSparseSF(bSF::MultiContrastFile,frequencies,sparseTrafo::String, thresh::Vector{Float64}, redFactor::Vector{Float64}; kwargs...)
+  # Check thresh
+  if !all(iszero, thresh)
+    if length(thresh) != length(bSF)
+      throw(ArgumentError("Multi-Contrast Compression via thresholding requires as many thresholds as system matrix, found $(length(thresh)), expected $(length(bSF))"))
+    else
+      # Set the "other" parameter to zero
+      redFactor = zeros(Float64, length(thresh))
+    end
+  end
+
+  # Check reduction factor
+  if all(iszero, thresh) 
+    if length(redFactor) != length(bSF)
+      throw(ArgumentError("Multi-Contrast Compression via reduction factors requires as many thresholds as system matrix, found $(length(thresh)), expected $(length(bSF))"))
+    else
+      # Set the "other" parameter to zero
+      thresh = zeros(Float64, length(redFactor))
+    end
+  end
+
+  sparseSMsAndGrids = [transformAndGetSparseSF(bSF[i], frequencies, sparseTrafo, thresh[i], redFactor[i]; kwargs...) for i = 1:length(bSF)]
+  sparseSMs = first.(sparseSMsAndGrids)
+  return cat(sparseSMs..., dims = 1), first(sparseSMsAndGrids)[end]
 end

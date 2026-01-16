@@ -75,9 +75,9 @@ end
 export SparseSystemMatrixLoadingParameter
 Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilterParameter} <: AbstractSystemMatrixLoadingParameter
   freqFilter::F
-  sparseTrafo::Union{Nothing, String} = nothing # TODO concrete options here?
-  thresh::Float64 = 0.0
-  redFactor::Float64 = 0.1
+  sparseTrafo::String
+  thresh::Union{Float64, Vector{Float64}} = 0.0
+  redFactor::Union{Float64, Vector{Float64}} = 0.1
   bgCorrection::Bool = false
   tfCorrection::Union{Bool, Nothing} = nothing
   loadasreal::Bool=false
@@ -92,8 +92,12 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrix
   S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(sf)))...)
   return S, grid
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
   return createLinearOperator(params.sparseTrafo, elType; shape, S = typeof(arrayType{elType}(undef, 0)))
+end
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MultiContrastFile, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
+  ops = [createLinearOperator(params.sparseTrafo, elType; shape, S = typeof(arrayType{elType}(undef, 0))) for i = 1:length(sf)]
+  return DiagOp(ops)
 end
 
 function converttoreal(S::AbstractArray{Complex{T}},f) where T
@@ -174,10 +178,6 @@ prepareNormalSF(solver::Union{Type{FISTA}, Type{OptISTA}, Type{POGM}, Type{CGNR}
 function getSF(bSF::Union{T,Vector{T}}, frequencies, sparseTrafo::Nothing; kargs...) where {T<:MPIFile}
   return getSF(bSF, frequencies; kargs...)
 end
-
-# TK: The following is a hack since colored and sparse trafo are currently not supported
-getSF(bSF::Vector{T}, frequencies, sparseTrafo::AbstractString; kargs...) where {T<:MPIFile} =
-  getSF(bSF[1], frequencies, sparseTrafo; kargs...)
 
 getSF(bSFs::MultiContrastFile, frequencies; kargs...) =
    getSF(bSFs.files, frequencies; kargs...)
