@@ -1,5 +1,5 @@
 loadasreal = true
-numAverages = 44
+numAverages = 20
 _module = "MPIReco"
 _type = "RecoPlan{CommonPreProcessingParameters}"
 
