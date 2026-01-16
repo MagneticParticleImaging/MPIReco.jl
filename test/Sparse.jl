@@ -86,4 +86,97 @@ using MPIReco
   @test axisvalues(c7) == valuesDF
   exportImage(joinpath(imgdir, "Sparse7.png"), Array(c7[1,:,:,1,1]))
   @test compareImg("Sparse7.png")
+
+  @testset "Multi Contrast" begin
+    params = Dict{Symbol, Any}()
+    params[:SNRThresh] = 2
+    params[:frames] = 1:100
+    params[:minFreq] = 80e3
+    params[:recChannels] = 1:2
+    params[:iterations] = 3
+    params[:spectralLeakageCorrection] = false
+    params[:sf] = MultiContrastFile([bSF, bSF])
+    params[:reg] = [L2Regularization(0.1f0)]
+    params[:numAverages] = 100
+    params[:solver] = Kaczmarz
+    params[:redFactor] = redFactor
+
+    c = reconstruct("SinglePatchSparse", b; params..., sparseTrafo = "FFT", useDFFoV = false)
+    @test size(c, 1) == length(params[:sf])
+    @test size(c2)[2:end] == size(c)[2:end]
+
+    c = reconstruct("SinglePatchSparse", b; params..., sparseTrafo = "FFT", useDFFoV = true)
+    @test size(c, 1) == length(params[:sf])
+    @test size(c3)[2:end] == size(c)[2:end]
+
+    params[:SNRThresh] = 3
+    params[:iterations] = 1
+    params[:reg] = [L2Regularization(0.01f0)]
+    c = reconstruct("SinglePatchSparse", b; params..., sparseTrafo = "DCT-IV", useDFFoV = false)
+    @test size(c, 1) == length(params[:sf])
+    @test size(c4)[2:end] == size(c)[2:end]
+
+    c = reconstruct("SinglePatchSparse", b; params..., sparseTrafo = "DCT-IV", useDFFoV = true, spectralLeakageCorrection = true)
+    @test size(c, 1) == length(params[:sf])
+    @test size(c5)[2:end] == size(c)[2:end]
+
+    c = reconstruct("SinglePatchSparse", b; params..., sparseTrafo = "DST", useDFFoV = false)
+    @test size(c, 1) == length(params[:sf])
+    @test size(c6)[2:end] == size(c)[2:end]
+
+    c = reconstruct("SinglePatchSparse", b; params..., sparseTrafo = "DST", useDFFoV = true, spectralLeakageCorrection = true)
+    @test size(c, 1) == length(params[:sf])
+    @test size(c7)[2:end] == size(c)[2:end]
+
+    @testset "Constructors" begin
+      params = Dict{Symbol, Any}()
+      params[:SNRThresh] = 2
+      params[:frames] = 1:100
+      params[:minFreq] = 80e3
+      params[:recChannels] = 1:2
+      params[:iterations] = 3
+      params[:spectralLeakageCorrection] = false
+      params[:sf] = MultiContrastFile([bSF, bSF])
+      params[:reg] = [L2Regularization(0.1f0)]
+      params[:numAverages] = 100
+      params[:solver] = Kaczmarz
+      params[:sparseTrafo] = "FFT"
+
+      # Fitting scalar and vector values are accepted:
+      plan = MPIRecoPlan("SinglePatchSparse"; params..., redFactor = 0.1)
+      algo = build(plan)
+      @test length(algo.S.parent.nzval)/prod(size(algo.S)) < 0.1
+
+      plan = MPIRecoPlan("SinglePatchSparse"; params..., redFactor = [0.1, 0.1])
+      algo = build(plan)
+      @test length(algo.S.parent.nzval)/prod(size(algo.S)) < 0.1
+
+      plan = MPIRecoPlan("SinglePatchSparse"; params..., redFactor = [0.1, 0.1, 0.1])
+      @test_throws ArgumentError build(plan)
+
+      plan = MPIRecoPlan("SinglePatchSparse"; params..., redFactor = [0.1, 0.05])
+      algo = build(plan)
+      @test length(algo.S.parent.nzval)/prod(size(algo.S)) < 0.08
+
+      plan = MPIRecoPlan("SinglePatchSparse"; params..., redFactor = [0.05, 0.1])
+      algo = build(plan)
+      @test length(algo.S.parent.nzval)/prod(size(algo.S)) < 0.08
+
+      # Same for threshold
+      plan = MPIRecoPlan("SinglePatchSparse"; params..., thresh = 0.1)
+      @test build(plan) isa SinglePatchReconstructionAlgorithm
+
+      plan = MPIRecoPlan("SinglePatchSparse"; params..., thresh = [0.1, 0.1])
+      @test build(plan) isa SinglePatchReconstructionAlgorithm
+
+      plan = MPIRecoPlan("SinglePatchSparse"; params..., thresh = [0.1, 0.1, 0.1])
+      @test_throws ArgumentError build(plan)
+
+      plan = MPIRecoPlan("SinglePatchSparse"; params..., thresh = [0.1, 0.05])
+      @test build(plan) isa SinglePatchReconstructionAlgorithm
+
+      plan = MPIRecoPlan("SinglePatchSparse"; params..., thresh = [0.05, 0.1])
+      @test build(plan) isa SinglePatchReconstructionAlgorithm
+    end
+  end
 end
