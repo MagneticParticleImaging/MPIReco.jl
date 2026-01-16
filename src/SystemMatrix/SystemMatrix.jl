@@ -92,8 +92,12 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrix
   S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(sf)))...)
   return S, grid
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
   return createLinearOperator(params.sparseTrafo, elType; shape, S = typeof(arrayType{elType}(undef, 0)))
+end
+function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MultiContrastFile, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
+  ops = [createLinearOperator(params.sparseTrafo, elType; shape, S = typeof(arrayType{elType}(undef, 0))) for i = 1:length(sf)]
+  return DiagOp(ops)
 end
 
 function converttoreal(S::AbstractArray{Complex{T}},f) where T
