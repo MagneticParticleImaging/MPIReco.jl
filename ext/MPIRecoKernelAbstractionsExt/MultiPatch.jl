@@ -5,14 +5,21 @@ function Adapt.adapt_structure(::Type{arrT}, op::MultiPatchOperator) where {arrT
 
   # Ideally we create a DenseMultiPatchOperator on the GPU
   if validSMs && validXCC && validXSS
-    S = stack(adapt.(arrT, transpose.(op.S)))
-    #S = permutedims(S, [2, 1, 3])
     # We want to use Int32 for better GPU performance
     xcc = Int32.(stack(adapt.(arrT, op.xcc)))
     xss = Int32.(stack(adapt.(arrT, op.xss)))
     sign = Int32.(adapt(arrT, op.sign))
     RowToPatch = Int32.(adapt(arrT, op.RowToPatch))
     patchToSMIdx = Int32.(adapt(arrT, op.patchToSMIdx))
+
+    backend = KernelAbstractions.get_backend(xcc)
+    S = KernelAbstractions.allocate(backend, eltype(first(op.S)), size(transpose(first(op.S)))..., length(op.S))
+    cache = GPUArrays.AllocCache()
+    for (i, sm) in enumerate(op.S)
+      GPUArrays.@cached cache S[:, :, i] .= transpose(adapt(arrT, sm))
+    end
+    GPUArrays.unsafe_free!(cache)
+
     return DenseMultiPatchOperator(S, op.grid, op.N, op.M, RowToPatch, xcc, xss, sign, Int32(op.nPatches), patchToSMIdx)
   else
     throw(ArgumentError("Cannot adapt MultiPatchOperator to $arrT, since it cannot be represented as a DenseMultiPatchOperator"))
