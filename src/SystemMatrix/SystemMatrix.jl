@@ -225,9 +225,10 @@ function getSF(bSF::MPIFile,saveto::String;recChannels=1:numReceivers(bSF),kargs
     bG = params[:measData][acqNumFGFrames(bSF)+1:end,:,:,:]
     params[:measData]=vcat(reshape(S,size(S,1),Int(size(S,2)/3),3,1),bG)
     params[:acqNumFrames]=size(vcat(reshape(S,size(S,1),Int(size(S,2)/3),3,1),bG),1)
-    params[:calibFov]=grid.fov
-    params[:calibSize]=grid.shape
-    params[:calibFovCenter]=grid.center
+    # Turn SVectors to Vectors for HDF5 write
+    params[:calibFov]=Vector(grid.fov)
+    params[:calibSize]=Vector(grid.shape)
+    params[:calibFovCenter]=Vector(grid.center)
     # Wann ist diese Zuordnung nicht einfach fortlaufend..dieser Fall ist so nicht abgedeckt
     params[:measIsBGFrame]=(i-> i in collect(size(S,1)+1:size(S,1)+size(bG,1))).(collect(1:size(S,1)+size(bG,1)))
     saveasMDF(saveto, params)
