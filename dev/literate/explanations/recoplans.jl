@@ -27,7 +27,7 @@ plan = toPlan(parameter)
 plan.frames = missing
 
 # Or use the `clear!` method, which preserves the structure of a blueprint by default:
-clear!(plan)
+AbstractImageReconstruction.clear!(plan)
 
 # `RecoPlans` can be written to and read from files:
 plan.frames = 1:42
