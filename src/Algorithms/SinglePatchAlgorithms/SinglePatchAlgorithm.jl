@@ -84,6 +84,6 @@ function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::Sin
   return nothing
 end
 
-function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:SparseSystemMatrixLoadingParameter, S}) where {S}
+function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchReconstructionParameter{<:SparseSystemMatrixLoadingParameter})
   return process(algo, params.sfLoad, algo.sf, eltype(algo.S), algo.arrayType, tuple(shape(algo.grid)...))
 end
