@@ -10,8 +10,8 @@ Base.@kwdef struct SinglePatchReconstructionParameter{L<:AbstractSystemMatrixLoa
   weightingParams::Union{W, AbstractUtilityReconstructionParameters{W}} = NoWeightingParameters()
 end
 
-Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P, SM, arrT <: AbstractArray, vecT <: arrT} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
-  params::P
+@reconstruction constructor = false mutable struct SinglePatchReconstructionAlgorithm{P <: AbstractSinglePatchAlgorithmParameters, SM, arrT <: AbstractArray, vecT <: arrT} <: AbstractSinglePatchReconstructionAlgorithm
+  @parameter params::P
   # Could also do reconstruction progress meter here
   sf::Union{MPIFile, Vector{MPIFile}}
   S::SM
@@ -19,7 +19,6 @@ Base.@kwdef mutable struct SinglePatchReconstructionAlgorithm{P, SM, arrT <: Abs
   arrayType::Type{arrT}
   grid::RegularGridPositions
   freqs::Vector{CartesianIndex{2}}
-  output::Channel{Any}
 end
 
 function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractMPIPostProcessingParameters}
@@ -28,10 +27,9 @@ end
 function SinglePatchReconstructionAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters, R, PT}) where {R<:AbstractSinglePatchReconstructionParameters, PT <:AbstractMPIPostProcessingParameters}
   freqs, S, grid, arrayType = prepareSystemMatrix(params.reco)
   weights = prepareWeights(params.reco, freqs, S)
-  return SinglePatchReconstructionAlgorithm{typeof(params), typeof(S), arrayType, typeof(arrayType{real(eltype(S))}(undef, 0))}(params, params.reco.sf, S, weights, arrayType, grid, freqs, Channel{Any}(Inf))
+  return SinglePatchReconstructionAlgorithm{typeof(params), typeof(S), arrayType, typeof(arrayType{real(eltype(S))}(undef, 0))}(params, params.reco.sf, S, weights, arrayType, grid, freqs, @reconstruction_internals SinglePatchReconstructionAlgorithm)
 end
 recoAlgorithmTypes(::Type{SinglePatchReconstruction}) = SystemMatrixBasedAlgorithm()
-AbstractImageReconstruction.parameter(algo::SinglePatchReconstructionAlgorithm) = algo.params
 
 function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) where {L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver}
   freqs, sf, grid = reco.sfLoad(AbstractMPIRecoAlgorithm, reco.sf, S, reco.arrayType)
@@ -42,11 +40,9 @@ function prepareWeights(reco::SinglePatchReconstructionParameter{L,S,arrT,SP,R,W
   return reco.weightingParams(AbstractMPIRecoAlgorithm, freqs, sf, nothing, reco.arrayType)
 end
 
-Base.lock(algo::SinglePatchReconstructionAlgorithm) = lock(algo.output)
-Base.unlock(algo::SinglePatchReconstructionAlgorithm) = unlock(algo.output)
-Base.isready(algo::SinglePatchReconstructionAlgorithm) = isready(algo.output)
-Base.wait(algo::SinglePatchReconstructionAlgorithm) = wait(algo.output)
-AbstractImageReconstruction.take!(algo::SinglePatchReconstructionAlgorithm) = Base.take!(algo.output)
+function (params::SinglePatchParameters)(algo::SinglePatchReconstructionAlgorithm, data::MPIFile)
+  return params(algo, data, algo.freqs)
+end
 
 function (params::Union{A, ProcessResultCache{<:A}})(algo::SinglePatchReconstructionAlgorithm, f::MPIFile, args...) where A <: AbstractMPIPreProcessingParameters
   result = params(typeof(algo), f, args...)

@@ -27,20 +27,16 @@ function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:Period
   return MultiPatchReconstructionAlgorithm{typeof(params), reco.arrayType, typeof(reco.arrayType{Float32}(undef, 0))}(params, nothing, reco.sf, nothing, reco.arrayType, nothing, nothing, nothing, freqs, Channel{Any}(Inf))
 end
 
-function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {R, T, PT <: PeriodicMotionPreProcessing}
-  lock(algo) do 
-    result = algo.params(algo, data, algo.freqs)
-    
-    # Create Image (maybe image parameter as post params?)
-    # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
-    pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
-    offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
-    dt = acqNumAverages(data) * dfCycle(data) * 1 * 1u"s" # Motion has no averages
-    im = makeAxisArray(result, pixspacing, offset, dt)
-    result = ImageMeta(im, generateHeaderDict(algo.sf, data))
-    
-    Base.put!(algo.output, result)
-  end
+function (params::MultiPatchParameters{PT, R, T})(algo::MultiPatchReconstructionAlgorithm{P}, data::MPIFile) where {R, T, PT <: PeriodicMotionPreProcessing, P <: MultiPatchOperator{PT, R, T}}
+  result = params(algo, data, algo.freqs)
+  
+  # Create Image (maybe image parameter as post params?)
+  # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
+  pixspacing = (voxelSize(algo.sf) ./ sfGradient(data,3) .* sfGradient(algo.sf,3)) * 1000u"mm"
+  offset = (fieldOfViewCenter(algo.ffOp.grid) .- 0.5.*fieldOfView(algo.ffOp.grid) .+ 0.5.*spacing(algo.ffOp.grid)) * 1000u"mm"
+  dt = acqNumAverages(data) * dfCycle(data) * 1 * 1u"s" # Motion has no averages
+  im = makeAxisArray(result, pixspacing, offset, dt)
+  result = ImageMeta(im, generateHeaderDict(algo.sf, data))
 end
 
 function (params::Union{OP, ProcessResultCache{OP}})(algo::MultiPatchReconstructionAlgorithm, 

@@ -12,8 +12,8 @@ Base.@kwdef struct MultiPatchReconstructionParameter{arrT <: AbstractArray,F<:Ab
   weightingParams::Union{W, AbstractUtilityReconstructionParameters{W}} = NoWeightingParameters()
 end
 
-Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P, arrT <: AbstractArray, vecT <: AbstractArray} <: AbstractMultiPatchReconstructionAlgorithm where {P<:AbstractMultiPatchAlgorithmParameters}
-  params::P
+@reconstruction constructor = false mutable struct MultiPatchReconstructionAlgorithm{P <: AbstractMultiPatchAlgorithmParameters, arrT <: AbstractArray, vecT <: AbstractArray} <: AbstractMultiPatchReconstructionAlgorithm
+  @parameter params::P
   # Could also do reconstruction progress meter here
   opParams::Union{AbstractMultiPatchOperatorParameter, AbstractUtilityReconstructionParameters{<:AbstractMultiPatchOperatorParameter},Nothing} = nothing
   sf::MultiMPIFile
@@ -23,7 +23,6 @@ Base.@kwdef mutable struct MultiPatchReconstructionAlgorithm{P, arrT <: Abstract
   ffPos::Union{Nothing,AbstractArray}
   ffPosSF::Union{Nothing,AbstractArray}
   freqs::Vector{CartesianIndex{2}}
-  output::Channel{Any}
 end
 
 function MultiPatchReconstruction(params::MultiPatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:AbstractMultiPatchReconstructionParameters,PT<:AbstractMPIPostProcessingParameters}
@@ -41,24 +40,14 @@ function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:Abstra
     ffPosSF = [vec(ffPos(SF))[l] for l=1:L, SF in reco.sf]
   end
 
-  return MultiPatchReconstructionAlgorithm{typeof(params), reco.arrayType, typeof(reco.arrayType{Float32}(undef, 0))}(params, reco.opParams, reco.sf, nothing, reco.arrayType, nothing, ffPos_, ffPosSF, freqs, Channel{Any}(Inf))
+  return MultiPatchReconstructionAlgorithm{typeof(params), reco.arrayType, typeof(reco.arrayType{Float32}(undef, 0))}(params, reco.opParams, reco.sf, nothing, reco.arrayType, nothing, ffPos_, ffPosSF, freqs, @reconstruction_internals MultiPatchReconstructionAlgorithm)
 end
 recoAlgorithmTypes(::Type{MultiPatchReconstruction}) = SystemMatrixBasedAlgorithm()
-AbstractImageReconstruction.parameter(algo::MultiPatchReconstructionAlgorithm) = algo.origParam
 
-Base.lock(algo::MultiPatchReconstructionAlgorithm) = lock(algo.output)
-Base.unlock(algo::MultiPatchReconstructionAlgorithm) = unlock(algo.output)
-Base.isready(algo::MultiPatchReconstructionAlgorithm) = isready(algo.output)
-Base.wait(algo::MultiPatchReconstructionAlgorithm) = wait(algo.output)
-AbstractImageReconstruction.take!(algo::MultiPatchReconstructionAlgorithm) = Base.take!(algo.output)
-
-function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm, data::MPIFile)
-  lock(algo) do 
-    #consistenceCheck(algo.sf, data)
-
-    algo.ffOp, algo.weights = algo.opParams(algo, data, algo.freqs, algo.params.reco.weightingParams)
+function (params::MultiPatchParameters)(algo::MultiPatchReconstructionAlgorithm, data::MPIFile)
+  algo.ffOp, algo.weights = algo.opParams(algo, data, algo.freqs, algo.params.reco.weightingParams)
     
-    result = algo.params(algo, data, algo.freqs)
+  result = params(algo, data, algo.freqs)
 
   # Create Image (maybe image parameter as post params?)
   # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
@@ -67,9 +56,7 @@ function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorith
   dt = acqNumAverages(data) * dfCycle(data) * numAverages(algo.params.pre) * 1u"s"
   im = makeAxisArray(result, pixspacing, offset, dt)
   result = ImageMeta(im, generateHeaderDict(algo.sf, data))
-
-    Base.put!(algo.output, result)
-  end
+  return result
 end
 
 function (params::Union{OP, ProcessResultCache{OP}})(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, frequencies::Vector{CartesianIndex{2}}, weightingParams) where OP <: AbstractMultiPatchOperatorParameter

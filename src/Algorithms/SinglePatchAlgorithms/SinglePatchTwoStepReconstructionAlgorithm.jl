@@ -13,12 +13,11 @@ Base.@kwdef struct SinglePatchTwoStepReconstructionParameters{L_H<:AbstractSyste
   reg_high::Vector{R_H} = AbstractRegularization[]
   reg_low::Vector{R_L} = AbstractRegularization[]
 end
-Base.@kwdef mutable struct SinglePatchTwoStepReconstructionAlgorithm{P} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
-  params::P
+@reconstruction constructor = false mutable struct SinglePatchTwoStepReconstructionAlgorithm{P<:AbstractSinglePatchAlgorithmParameters} <: AbstractSinglePatchReconstructionAlgorithm
+  @parameter params::P
   # Could also do reconstruction progress meter here
   algoHigh::SinglePatchReconstructionAlgorithm
   algoLow::SinglePatchReconstructionAlgorithm
-  output::Channel{Any}
 end
 
 # Bit hacky: Create transparent parameter to give to inner algorithm
@@ -74,40 +73,31 @@ function SinglePatchTwoStepReconstructionAlgorithm(params::SinglePatchParameters
   # Then construct "custom" SinglePatchAlgorithm
   paramsLow = SinglePatchParameters(TwoStepSubstractionPreProcessingParameter(;pre = algoLow.params.pre), algoLow.params.reco, algoLow.params.post)
   algoLow = SinglePatchReconstructionAlgorithm(paramsLow, params.reco.sf, algoLow.S, algoLow.grid, algoLow.freqs, algoLow.output)
-  return SinglePatchTwoStepReconstructionAlgorithm(params, algoHigh, algoLow, Channel{Any}(Inf))
+  return SinglePatchTwoStepReconstructionAlgorithm(params, algoHigh, algoLow, @reconstruction_internals SinglePatchTwoStepReconstructionAlgorithm)
 end
-AbstractImageReconstruction.parameter(algo::SinglePatchTwoStepReconstructionAlgorithm) = algo.params
-AbstractImageReconstruction.take!(algo::SinglePatchTwoStepReconstructionAlgorithm) = Base.take!(algo.output)
-function Base.put!(algo::SinglePatchTwoStepReconstructionAlgorithm, data)
-  lock(algo.output) do
-    # First reco
-    cPre = reconstruct(algo.algoHigh, data)
 
-    # Thresholding
-    thresh = maximum(abs.(cPre))*algo.params.reco.Γ
-    cThresh = map(x-> abs(x) < thresh ? 0.0 : x, cPre.data)
+function (params::AbstractSinglePatchAlgorithmParameters)(algo::SinglePatchTwoStepReconstructionAlgorithm, data)
+  # First reco
+  cPre = reconstruct(algo.algoHigh, data)
 
-    # Projection into raw data space
-    uProj = zeros(ComplexF32, size(algo.algoLow.S, 1), 1, size(cThresh)[end])
-    cMapped = map(ComplexF32, cThresh)
-    for frame = 1:size(uProj, 3)
-      uProj[:, 1, frame] = algo.algoLow.S*vec(cMapped[1, :, :, :, frame])
-    end
-
-    # Prepare subtraction
-    algo.algoLow.params.pre.proj = uProj
-
-    # Second reconstruction
-    cPost = reconstruct(algo.algoLow, data)
-
-    # Addition
-    result = AxisArray(cPost.data + cThresh, cPost.data.axes)
-    result = ImageMeta(result, properties(cPost))
-
-    Base.put!(algo.output, result)
+  # Thresholding
+  thresh = maximum(abs.(cPre))*algo.params.reco.Γ
+  cThresh = map(x-> abs(x) < thresh ? 0.0 : x, cPre.data)
+  
+  # Projection into raw data space
+  uProj = zeros(ComplexF32, size(algo.algoLow.S, 1), 1, size(cThresh)[end])
+  cMapped = map(ComplexF32, cThresh)
+  for frame = 1:size(uProj, 3)
+    uProj[:, 1, frame] = algo.algoLow.S*vec(cMapped[1, :, :, :, frame])
   end
+
+  # Prepare subtraction
+  algo.algoLow.params.pre.proj = uProj
+
+  # Second reconstruction
+  cPost = reconstruct(algo.algoLow, data)
+
+  # Addition
+  result = AxisArray(cPost.data + cThresh, cPost.data.axes)
+  result = ImageMeta(result, properties(cPost))
 end
-Base.lock(algo::SinglePatchTwoStepReconstructionAlgorithm) = lock(algo.output)
-Base.unlock(algo::SinglePatchTwoStepReconstructionAlgorithm) = unlock(algo.output)
-Base.isready(algo::SinglePatchTwoStepReconstructionAlgorithm) = isready(algo.output)
-Base.wait(algo::SinglePatchTwoStepReconstructionAlgorithm) = wait(algo.output)

@@ -15,22 +15,11 @@ function (params::SinglePatchParameters)(algo::T, data::MPIFile, frequencies::Un
   result = params.pre(algo, data, frequencies)
   result = params.reco(algo, result)
   result = params.post(algo, result)
+  result = finalizeResult(algo, result, data)
   return result
 end
 function (params::SinglePatchParameters)(algo::T, data::AbstractArray, args...) where {T<:AbstractSinglePatchReconstructionAlgorithm}
   throw(ArgumentError("SinglePatchAlgorithms are not defined for the given arguments, expected <: MPIFile, found $(typeof(data))"))
-end
-
-function AbstractImageReconstruction.put!(algo::AbstractSinglePatchReconstructionAlgorithm, data)
-  lock(algo) do
-    #consistenceCheck(algo.sf, data)
-    
-    result = algo.params(algo, data, algo.freqs)
-
-    result = finalizeResult(algo, result, data)
-
-    Base.put!(algo.output, result)
-  end
 end
 
 function finalizeResult(algo::AbstractSinglePatchReconstructionAlgorithm, result, data::MPIFile)

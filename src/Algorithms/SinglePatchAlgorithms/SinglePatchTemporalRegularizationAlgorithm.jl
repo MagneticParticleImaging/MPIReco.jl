@@ -15,8 +15,8 @@ Base.@kwdef struct SinglePatchTemporalRegularizationReconstructionParameter{L<:D
   bgDict::BGDictParameter
 end
 
-Base.@kwdef mutable struct SinglePatchTemporalRegularizationAlgorithm{P, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
-  params::P
+@reconstruction constructor = false mutable struct SinglePatchTemporalRegularizationAlgorithm{P <: AbstractSinglePatchAlgorithmParameters, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm
+  @parameter params::P
   sf::Union{MPIFile,Vector{MPIFile}}
   S::AbstractArray
   arrayType::Type{arrT}
@@ -25,7 +25,6 @@ Base.@kwdef mutable struct SinglePatchTemporalRegularizationAlgorithm{P, arrT <:
   idxFG::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
   grid::RegularGridPositions
   freqs::Vector{CartesianIndex{2}}
-  output::Channel{Any}
 end
 
 function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,<:SinglePatchTemporalRegularizationReconstructionParameter,PT}) where {PT<:AbstractMPIPostProcessingParameters}
@@ -34,21 +33,14 @@ end
 function SinglePatchTemporalRegularizationAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:SinglePatchTemporalRegularizationReconstructionParameter,PT<:AbstractMPIPostProcessingParameters}
   freqs, S, grid, arrayType = prepareSystemMatrix(params.reco)
   return SinglePatchTemporalRegularizationAlgorithm(params, params.reco.sf, S, arrayType, params.reco.bgDict(SinglePatchTemporalRegularizationAlgorithm, freqs)
-    ,params.reco.idxFG, params.reco.idxBG, grid, freqs, Channel{Any}(Inf))
+    ,params.reco.idxFG, params.reco.idxBG, grid, freqs, @reconstruction_internals SinglePatchTemporalRegularizationAlgorithm)
 end
 recoAlgorithmTypes(::Type{SinglePatchTemporalRegularizationAlgorithm}) = SystemMatrixBasedAlgorithm()
-AbstractImageReconstruction.parameter(algo::SinglePatchTemporalRegularizationAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchTemporalRegularizationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
   freqs, sf, grid = reco.sfLoad(AbstractMPIRecoAlgorithm, reco.sf, Kaczmarz, reco.arrayType)
   return freqs, sf, grid, reco.arrayType
 end
-
-Base.lock(algo::SinglePatchTemporalRegularizationAlgorithm) = lock(algo.output)
-Base.unlock(algo::SinglePatchTemporalRegularizationAlgorithm) = unlock(algo.output)
-Base.isready(algo::SinglePatchTemporalRegularizationAlgorithm) = isready(algo.output)
-Base.wait(algo::SinglePatchTemporalRegularizationAlgorithm) = wait(algo.output)
-AbstractImageReconstruction.take!(algo::SinglePatchTemporalRegularizationAlgorithm) = Base.take!(algo.output)
 
 function (params::AbstractMPIPreProcessingParameters)(algo::SinglePatchTemporalRegularizationAlgorithm, f::MPIFile)
   result = params(typeof(algo), f)
