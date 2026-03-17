@@ -5,7 +5,7 @@ export NoFrequencyFilterParameter
 # TODO This requires numPeriodAverages and numPeriodGrouping and should use a freq. loading function from MPIFiles
 struct NoFrequencyFilterParameter <: AbstractFrequencyFilterParameter end
 
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoFrequencyFilterParameter, file::MPIFile)
+function (params::NoFrequencyFilterParameter)(::Type{<:AbstractMPIRecoAlgorithm}, file::MPIFile)
   return collect(vec(CartesianIndices((rxNumFrequencies(file), rxNumChannels(file)))))
 end
 
@@ -23,12 +23,12 @@ struct DirectSelectionFrequencyFilterParameters{T <: Union{Integer, CartesianInd
     new{el, v}(freqIndices)
   end
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters{T}, file::MPIFile) where T <: Integer
+function (params::DirectSelectionFrequencyFilterParameters)(::Type{<:AbstractMPIRecoAlgorithm}, file::MPIFile) where T <: Integer
   nFreq = params.freqIndices
   nReceivers = rxNumChannels(file)
   return vec([CartesianIndex{2}(i, j) for i in nFreq, j in nReceivers])
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::DirectSelectionFrequencyFilterParameters{T}, file::MPIFile) where T <: CartesianIndex{2}
+function (params::DirectSelectionFrequencyFilterParameters{T})(::Type{<:AbstractMPIRecoAlgorithm}, file::MPIFile) where T <: CartesianIndex{2}
   return params.freqIndices
 end
 
@@ -74,7 +74,7 @@ Base.@kwdef struct FreqNumThresholdFrequencyFilterParameter <: AbstractFrequency
   numSidebandFreqs::Int64 = -1
 end
 
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractFrequencyFilterParameter, file::MPIFile)
+function (params::AbstractFrequencyFilterParameter)(::Type{<:AbstractMPIRecoAlgorithm}, file::MPIFile)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:maxFreq => rxBandwidth(file), :recChannels => 1:rxNumChannels(file))) 
   filterFrequencies(file; kwargs...)
 end
@@ -83,8 +83,8 @@ export CompositeFrequencyFilterParameters
 Base.@kwdef struct CompositeFrequencyFilterParameters <: AbstractFrequencyFilterParameter
   filters::Vector{AbstractFrequencyFilterParameter}
 end
-function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::CompositeFrequencyFilterParameters, file::MPIFile)
-  return reduce(intersect, filter(!isnothing, map(p -> process(algoT, p, file), params.filters)))
+function (params::CompositeFrequencyFilterParameters)(algoT::Type{<:AbstractMPIRecoAlgorithm}, file::MPIFile)
+  return reduce(intersect, filter(!isnothing, map(p -> p(algoT, file), params.filters)))
 end
 
 #=
@@ -101,7 +101,7 @@ Base.@kwdef struct NoiseLevelFrequencyFilterParameter <: AbstractFrequencyFilter
   maxMixingOrder::Int64 = -1
   numSidebandFreqs::Int64 = -1
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoiseLevelFrequencyFilterParameter, file::MPIFile)
+function (params::NoiseLevelFrequencyFilterParameter)(::Type{<:AbstractMPIRecoAlgorithm}, file::MPIFile)
   noiseLevel = getNoiseLevel(params.noiseMeas, params.frames, params.recChannels)
   kwargs = toKwargs(params, ignore = [:noiseMeas, :frames], default = Dict{Symbol, Any}(:maxFreq => rxBandwidth(file), :recChannels => 1:rxNumChannels(file)))
   return filterFrequencies(file; kwargs..., SNRThresh = params.levelFactor * noiseLevel)

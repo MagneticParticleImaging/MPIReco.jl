@@ -12,16 +12,16 @@ Base.@kwdef struct SinglePatchHandsFreeReconstructionParameter{L<:AbstractSystem
 end
 
 function prepareSystemMatrix(reco::SinglePatchHandsFreeReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
-  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf, Kaczmarz, reco.arrayType)
+  freqs, sf, grid = reco.sfLoad(AbstractMPIRecoAlgorithm, reco.sf, Kaczmarz, reco.arrayType)
   return freqs, sf, grid, reco.arrayType
 end
 
 function prepareWeights(reco::SinglePatchHandsFreeReconstructionParameter{L,arrT,SP,W}, freqs, sf) where {L, arrT, SP, W<:AbstractWeightingParameters}
-  return process(AbstractMPIRecoAlgorithm, reco.weightingParams, freqs, sf, nothing, reco.arrayType)
+  return reco.weightingParams(AbstractMPIRecoAlgorithm, reco.weightingParams, freqs, sf, nothing, reco.arrayType)
 end
 
-function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHandsFreeReconstructionParameter, u)
-  weights = process(algo, params.weightingParams, u, WeightingType(params.weightingParams))
+function (params::SinglePatchHandsFreeReconstructionParameter)(algo::SinglePatchReconstructionAlgorithm, u)
+  weights = params.weightingParams(algo, u, WeightingType(params.weightingParams))
 
   B = getLinearOperator(algo, params)
 
@@ -29,7 +29,7 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHa
 
   snr = real(eltype(algo.S)).(vec(MPIFiles.getCalibSNR(algo.sf)[algo.freqs, 1]))
 
-  result = process(algo, solver, u, snr)
+  result = solver(algo, u, snr)
 
   return gridresult(result, algo.grid, algo.sf)
 end
@@ -39,5 +39,5 @@ function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::Sin
 end
 
 function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHandsFreeReconstructionParameter{<:SparseSystemMatrixLoadingParameter})
-  return process(algo, params.sfLoad, eltype(algo.S), algo.arrayType, tuple(shape(algo.grid)...))
+  return params.sfLoad(algo, eltype(algo.S), algo.arrayType, tuple(shape(algo.grid)...))
 end

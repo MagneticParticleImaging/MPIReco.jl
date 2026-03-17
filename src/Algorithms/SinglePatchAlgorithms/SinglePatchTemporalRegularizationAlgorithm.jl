@@ -33,14 +33,14 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPr
 end
 function SinglePatchTemporalRegularizationAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:SinglePatchTemporalRegularizationReconstructionParameter,PT<:AbstractMPIPostProcessingParameters}
   freqs, S, grid, arrayType = prepareSystemMatrix(params.reco)
-  return SinglePatchTemporalRegularizationAlgorithm(params, params.reco.sf, S, arrayType, process(SinglePatchTemporalRegularizationAlgorithm, params.reco.bgDict, freqs)
+  return SinglePatchTemporalRegularizationAlgorithm(params, params.reco.sf, S, arrayType, params.reco.bgDict(SinglePatchTemporalRegularizationAlgorithm, freqs)
     ,params.reco.idxFG, params.reco.idxBG, grid, freqs, Channel{Any}(Inf))
 end
 recoAlgorithmTypes(::Type{SinglePatchTemporalRegularizationAlgorithm}) = SystemMatrixBasedAlgorithm()
 AbstractImageReconstruction.parameter(algo::SinglePatchTemporalRegularizationAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchTemporalRegularizationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
-  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf, Kaczmarz, reco.arrayType)
+  freqs, sf, grid = reco.sfLoad(AbstractMPIRecoAlgorithm, reco.sf, Kaczmarz, reco.arrayType)
   return freqs, sf, grid, reco.arrayType
 end
 
@@ -50,8 +50,8 @@ Base.isready(algo::SinglePatchTemporalRegularizationAlgorithm) = isready(algo.ou
 Base.wait(algo::SinglePatchTemporalRegularizationAlgorithm) = wait(algo.output)
 AbstractImageReconstruction.take!(algo::SinglePatchTemporalRegularizationAlgorithm) = Base.take!(algo.output)
 
-function process(algo::SinglePatchTemporalRegularizationAlgorithm, params::AbstractMPIPreProcessingParameters, f::MPIFile)
-  result = process(typeof(algo), f, params)
+function (params::AbstractMPIPreProcessingParameters)(algo::SinglePatchTemporalRegularizationAlgorithm, f::MPIFile)
+  result = params(typeof(algo), f)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
     result = map(eltype(algo.S), result)
@@ -61,7 +61,7 @@ function process(algo::SinglePatchTemporalRegularizationAlgorithm, params::Abstr
 end
 
 
-function process(algo::SinglePatchTemporalRegularizationAlgorithm, params::SinglePatchTemporalRegularizationReconstructionParameter, u::Array)
+function (params::SinglePatchTemporalRegularizationReconstructionParameter)(algo::SinglePatchTemporalRegularizationAlgorithm, u::Array)
   weights = nothing # getWeights(...)
 
   L = size(u)[end]
@@ -87,7 +87,7 @@ function process(algo::SinglePatchTemporalRegularizationAlgorithm, params::Singl
 
   solver = LeastSquaresParameters(solver = Kaczmarz, S = op, reg = [reg], solverParams = solverParams)
 
-  temp = process(algo, solver, u)
+  temp = solver(algo, u)
   temp = real.( reshape(temp[1:(NSub*J),:],NSub,J) ./ sqrt(λ) ) 
 
   cInterp = similar(temp, size(c,1), op.L)

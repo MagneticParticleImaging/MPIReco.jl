@@ -13,5 +13,5 @@ Base.wait(algo::LowLevelReconstructionAlgorithm) = wait(algo.output)
 AbstractImageReconstruction.take!(algo::LowLevelReconstructionAlgorithm) = Base.take!(algo.output)
 
 function AbstractImageReconstruction.put!(algo::LowLevelReconstructionAlgorithm, u::AbstractArray)
-  put!(algo.output, process(algo, algo.params, u))
+  put!(algo.output, algo.params(algo, u))
 end

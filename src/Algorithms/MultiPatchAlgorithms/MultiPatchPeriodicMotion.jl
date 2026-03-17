@@ -23,13 +23,13 @@ end
 
 function MultiPatchReconstructionAlgorithm(params::MultiPatchParameters{<:PeriodicMotionPreProcessing,<:PeriodicMotionReconstructionParameter,<:AbstractMPIPostProcessingParameters})
   reco = params.reco
-  freqs = process(MultiPatchReconstructionAlgorithm, reco.freqFilter, reco.sf)
+  freqs = reco.freqFilter(MultiPatchReconstructionAlgorithm, reco.sf)
   return MultiPatchReconstructionAlgorithm{typeof(params), reco.arrayType, typeof(reco.arrayType{Float32}(undef, 0))}(params, nothing, reco.sf, nothing, reco.arrayType, nothing, nothing, nothing, freqs, Channel{Any}(Inf))
 end
 
 function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorithm{MultiPatchParameters{PT, R, T}}, data::MPIFile) where {R, T, PT <: PeriodicMotionPreProcessing}
   lock(algo) do 
-    result = process(algo, algo.params, data, algo.freqs)
+    result = algo.params(algo, data, algo.freqs)
     
     # Create Image (maybe image parameter as post params?)
     # TODO make more generic to apply to other pre/reco params as well (pre.numAverage main issue atm)
@@ -43,15 +43,15 @@ function AbstractImageReconstruction.put!(algo::MultiPatchReconstructionAlgorith
   end
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, params::Union{OP, ProcessResultCache{OP}}, 
+function (params::Union{OP, ProcessResultCache{OP}})(algo::MultiPatchReconstructionAlgorithm, 
   f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where OP <: PeriodicMotionPreProcessing
-  uReco, ffOp, weights = process(typeof(algo), params, f, algo.sf, frequencies)
+  uReco, ffOp, weights = params(typeof(algo), f, algo.sf, frequencies)
   algo.ffOp = adapt(algo.arrayType, ffOp)
   algo.weights = adapt(algo.arrayType, weights)
   return adapt(algo.arrayType, uReco)
 end
 
-function process(algoT::Type{<:MultiPatchReconstructionAlgorithm}, params::PeriodicMotionPreProcessing{NoBackgroundCorrectionParameters},
+function (params::PeriodicMotionPreProcessing{NoBackgroundCorrectionParameters})(algoT::Type{<:MultiPatchReconstructionAlgorithm},
         f::MPIFile, sf::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   @info "Loading Multi Patch motion operator"
   ffPos_ = ffPos(f)
@@ -76,24 +76,24 @@ function process(algoT::Type{<:MultiPatchReconstructionAlgorithm}, params::Perio
         FFPos=ffPos_[:,resortedInd[:,1]], mapping=mapping,
         FFPosSF=ffPos_[:,resortedInd[:,1]], bgCorrection = false, tfCorrection = params.tfCorrection)
 
-  weights = process(algoT, params.weightingParams, frequencies, ffOp, nothing, Array)
+  weights = params.weightingParams(algoT, frequencies, ffOp, nothing, Array)
   return uReco, ffOp, weights
 end
 
-function process(algoT::Type{<:MultiPatchReconstructionAlgorithm},
-  params::PeriodicMotionPreProcessing{SimpleExternalBackgroundCorrectionParameters}, f::MPIFile, sf::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
+function (params::PeriodicMotionPreProcessing{SimpleExternalBackgroundCorrectionParameters})(algoT::Type{<:MultiPatchReconstructionAlgorithm}, f::MPIFile,
+  sf::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   # Foreground
   fgParams = fromKwargs(PeriodicMotionPreProcessing; toKwargs(params)..., bgParams = NoBackgroundCorrectionParameters())
-  result, ffOp, weights = process(algoT, fgParams, f, sf, frequencies)
+  result, ffOp, weights = fgParams(algoT, f, sf, frequencies)
   # Background
   bgParams = fromKwargs(ExternalPreProcessedBackgroundCorrectionParameters; toKwargs(params)..., bgParams = params.bgParams, spectralLeakageCorrection=true)
-  return process(algoT, bgParams, result, frequencies), ffOp, weights
+  return bgParams(algoT, result, frequencies), ffOp, weights
 end
 
-function process(algo::MultiPatchReconstructionAlgorithm, params::PeriodicMotionReconstructionParameter, u::Array)
+function (params::PeriodicMotionReconstructionParameter)(algo::MultiPatchReconstructionAlgorithm, u::Array)
   solver = LeastSquaresParameters(S = algo.ffOp, reg = params.reg, solverParams = params.solverParams, weights = algo.weights)
 
-  result = process(algo, solver, u)
+  result = solver(algo, u)
 
   return gridresult(result, algo.ffOp.grid, algo.sf)
 end

@@ -56,7 +56,7 @@ Base.propertynames(params::RecoPlan{ElaborateSolverParameters}) = union([:solver
 
 getSolverKwargs(::Type{SL}) where SL <: AbstractLinearSolver = intersect(union(Base.kwarg_decl.(methods(SL))...), fieldnames(ElaborateSolverParameters))
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{SL}, u::AbstractArray) where SL
+function (params::LeastSquaresParameters{SL})(t::Type{<:AbstractMPIRecoAlgorithm}, u::AbstractArray) where SL
 
   N = size(params.S, 2)
   M = div(length(params.S), N)
@@ -129,7 +129,7 @@ function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) wh
   return result, callbacks, args
 end
 #=
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters, threadInput::MultiThreadedInput)
+function (params::LeastSquaresParameters)(t::Type{<:AbstractMPIRecoAlgorithm}, threadInput::MultiThreadedInput)
   
   scheduler = threadInput.scheduler
   data = threadInput.inputs

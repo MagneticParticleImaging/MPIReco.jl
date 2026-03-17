@@ -20,13 +20,13 @@ Base.@kwdef mutable struct MultiPatchParameters{PR<:AbstractMPIPreProcessingPara
   post::PT = NoPostProcessing() 
 end
   
-function process(algo::T, params::MultiPatchParameters, data::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where {T<:AbstractMultiPatchReconstructionAlgorithm}
-  result = process(algo, params.pre, data, frequencies)
-  result = process(algo, params.reco, result)
-  result = process(algo, params.post, result)
+function (params::MultiPatchParameters)(algo::T, data::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where {T<:AbstractMultiPatchReconstructionAlgorithm}
+  result = params.pre(algo, data, frequencies)
+  result = params.reco(algo, result)
+  result = params.post(algo, result)
   return result
 end
-function process(algo::T, params::MultiPatchParameters, data::AbstractArray, args...) where {T<:AbstractMultiPatchReconstructionAlgorithm}
+function (params::MultiPatchParameters)(algo::T, data::AbstractArray, args...) where {T<:AbstractMultiPatchReconstructionAlgorithm}
   throw(ArgumentError("MultiPatchAlgorithms are not defined for the given arguments, expected <: MPIFile, found $(typeof(data))"))
 end
 

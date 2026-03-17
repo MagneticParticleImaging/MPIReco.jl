@@ -51,14 +51,14 @@ function AbstractImageReconstruction.fromKwargs(type::Type{TwoStepSubstractionPr
   return type(;pre = inner, proj = proj)
 end
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::TwoStepSubstractionPreProcessingParameter, args...)
-  meas = process(t, params.pre, args...)
+function (params::TwoStepSubstractionPreProcessingParameter)(t::Type{<:AbstractMPIRecoAlgorithm}, args...)
+  meas = params.pre(t, args...)
   return meas .- params.proj
 end
 
 # Specify multi threaded variant, s.t. substraction happens on collected results
-#function process(algo::T, params::TwoStepSubstractionPreProcessingParameter, threadedInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where T <: SinglePatchReconstructionAlgorithm
-#  meas = process(algo, params.pre, threadedInput, frequencies)
+#function (params::TwoStepSubstractionPreProcessingParameter)(algo::T, threadedInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where T <: SinglePatchReconstructionAlgorithm
+#  meas = params.pre(algo, threadedInput, frequencies)
 #  return meas .- params.proj
 #end
 
