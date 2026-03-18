@@ -4,14 +4,14 @@ export NoBackgroundCorrectionParameters
 struct NoBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters end
 
 export InternalBackgroundCorrectionParameters
-Base.@kwdef struct InternalBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters
+@parameter struct InternalBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters
   interpolateBG::Bool = false
 end
 
 export ExternalBackgroundCorrection
 abstract type ExternalBackgroundCorrection <: AbstractMPIBackgroundCorrectionParameters end
 
-Base.@kwdef struct ExternalPreProcessedBackgroundCorrectionParameters{T} <: AbstractMPIBackgroundCorrectionParameters where {T<:ExternalBackgroundCorrection}
+@parameter struct ExternalPreProcessedBackgroundCorrectionParameters{T} <: AbstractMPIBackgroundCorrectionParameters where {T<:ExternalBackgroundCorrection}
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
   spectralLeakageCorrection::Bool = false
@@ -22,7 +22,7 @@ end
 # TODO Shorter struct names?
 
 export SimpleExternalBackgroundCorrectionParameters
-Base.@kwdef struct SimpleExternalBackgroundCorrectionParameters <: ExternalBackgroundCorrection
+@parameter struct SimpleExternalBackgroundCorrectionParameters <: ExternalBackgroundCorrection
   emptyMeas::MPIFile
   bgFrames::Union{Vector{Int64}, UnitRange{Int64}} = [1]
 end
@@ -39,7 +39,7 @@ function (params::ExternalPreProcessedBackgroundCorrectionParameters{SimpleExter
 end
 
 export LinearInterpolatedExternalBackgroundCorrectionParameters
-Base.@kwdef struct LinearInterpolatedExternalBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters
+@parameter struct LinearInterpolatedExternalBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters
   emptyMeas::MPIFile
   bgFrames::UnitRange{Int64} = 1:1
   bgFramesPost::UnitRange{Int64} = 1:1
@@ -73,7 +73,7 @@ end
 export AbstractBGDictLoader
 abstract type AbstractBGDictLoader <: AbstractMPIRecoParameters end
 export MeasurementBGDictLoader
-Base.@kwdef struct MeasurementBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
+@parameter struct MeasurementBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
   file::T
   bgFrames::Union{UnitRange{Int64}, Vector{Int64}} = measBGFrameIdx(file)
   numPeriodGrouping::Int64 = acqNumPeriodsPerFrame(file)
@@ -85,7 +85,7 @@ function (params::MeasurementBGDictLoader)(algoT::Type{<:AbstractMPIRecoAlgorith
   return transpose(reshape(uEmpty, :, div(length(params.bgFrames),params.bgAverages)))
 end
 export SystemMatrixBGDictLoader
-Base.@kwdef struct SystemMatrixBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
+@parameter struct SystemMatrixBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
   file::T
 end
 function (params::SystemMatrixBGDictLoader)(algoT::Type{<:AbstractMPIRecoAlgorithm}, freqs::Vector{CartesianIndex{2}})
@@ -115,7 +115,7 @@ function getBackgroundDictionaryComplete(fSF::MPIFile, f::MPIFile, frequencies,
 end
 
 export BGDictParameter
-Base.@kwdef struct BGDictParameter <: AbstractMPIRecoParameters
+@parameter struct BGDictParameter <: AbstractMPIRecoParameters
   loader::Vector{AbstractBGDictLoader}
   dictSize::Int64 = 2
 end

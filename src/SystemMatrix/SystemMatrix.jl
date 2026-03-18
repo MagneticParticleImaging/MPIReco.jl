@@ -17,7 +17,7 @@ export NoGridding
 struct NoGridding <: AbstractSystemMatrixGriddingParameter end
 
 export SystemMatrixGriddingParameter
-Base.@kwdef struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGriddingParameter
+@parameter struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGriddingParameter
   gridsize::Vector{Int64} = [1, 1, 1]
   fov::Vector{Float64} = [0.0, 0.0, 0.0]
   center::Vector{Float64} = [0.0,0.0,0.0]
@@ -54,7 +54,7 @@ export AbstractSystemMatrixLoadingParameter
 abstract type AbstractSystemMatrixLoadingParameter <: AbstractSystemMatrixParameter end
 
 export DenseSystemMatixLoadingParameter
-Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
+@parameter struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
   freqFilter::F
   gridding::G
   bgCorrection::Bool = false
@@ -73,7 +73,7 @@ function (params::DenseSystemMatixLoadingParameter)(t::Type{<:AbstractMPIRecoAlg
 end
 
 export SparseSystemMatrixLoadingParameter
-Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilterParameter} <: AbstractSystemMatrixLoadingParameter
+@parameter struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilterParameter} <: AbstractSystemMatrixLoadingParameter
   freqFilter::F
   sparseTrafo::String
   thresh::Union{Float64, Vector{Float64}} = 0.0

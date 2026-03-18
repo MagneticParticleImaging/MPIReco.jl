@@ -4,7 +4,7 @@ abstract type AbstractSinglePatchReconstructionAlgorithm <: AbstractMPIRecoAlgor
 abstract type AbstractSinglePatchReconstructionParameters <: AbstractMPIReconstructionParameters end
 abstract type AbstractSinglePatchAlgorithmParameters <: AbstractMPIRecoParameters end
 
-Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractMPIPreProcessingParameters,
+@parameter mutable struct SinglePatchParameters{PR<:AbstractMPIPreProcessingParameters,
      R<:AbstractSinglePatchReconstructionParameters, PT<:AbstractMPIPostProcessingParameters} <: AbstractSinglePatchAlgorithmParameters
   pre::Union{PR, AbstractUtilityReconstructionParameters{PR}}
   reco::R

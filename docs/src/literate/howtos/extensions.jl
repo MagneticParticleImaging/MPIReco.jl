@@ -10,7 +10,7 @@ module CustomWeighting
   using MPIReco.AbstractImageReconstruction
 
   export AlternatingWeightingParameters
-  Base.@kwdef struct AlternatingWeightingParameters <: AbstractWeightingParameters
+  @parameter struct AlternatingWeightingParameters <: AbstractWeightingParameters
     alternatingWeights::Vector{Float64}
   end
 

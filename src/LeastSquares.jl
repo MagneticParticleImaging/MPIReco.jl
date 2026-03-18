@@ -3,7 +3,7 @@ export LeastSquaresParameters
 abstract type AbstractSolverParameters{AbstractLinearSolver} <: AbstractMPIRecoParameters end
 
 export LeastSquaresParameters
-Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters{L}, W} <: AbstractMPIRecoParameters
+@parameter struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters{L}, W} <: AbstractMPIRecoParameters
   op::O = nothing
   S::M
   reg::Vector{R} 
@@ -14,19 +14,19 @@ end
 # TODO place weights and more
 
 export SimpleSolverParameters
-Base.@kwdef struct SimpleSolverParameters <: AbstractSolverParameters{Kaczmarz}
+@parameter struct SimpleSolverParameters <: AbstractSolverParameters{Kaczmarz}
   iterations::Int64=10
   enforceReal::Bool=true
   enforcePositive::Bool=true
   normalizeReg::AbstractRegularizationNormalization = SystemMatrixBasedNormalization()
 end
 export ConstraintMaskedSolverParameters
-Base.@kwdef struct ConstraintMaskedSolverParameters{S, P<:AbstractSolverParameters{S}} <: AbstractSolverParameters{S}
+@parameter struct ConstraintMaskedSolverParameters{S, P<:AbstractSolverParameters{S}} <: AbstractSolverParameters{S}
   constraintMask::Vector{Bool}
   params::P
 end
 export ElaborateSolverParameters
-Base.@kwdef mutable struct ElaborateSolverParameters{SL} <: AbstractSolverParameters{SL}
+@parameter mutable struct ElaborateSolverParameters{SL} <: AbstractSolverParameters{SL}
   solver::Type{SL} = Kaczmarz
   iterations::Int64 = 10
   enforceReal::Bool = true

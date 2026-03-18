@@ -1,5 +1,5 @@
 export SinglePatchBGEstimationAlgorithm, SinglePatchBGEstimationReconstructionParameter
-Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystemMatixLoadingParameter,
+@parameter struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystemMatixLoadingParameter,
   SP<:AbstractSolverParameters, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile

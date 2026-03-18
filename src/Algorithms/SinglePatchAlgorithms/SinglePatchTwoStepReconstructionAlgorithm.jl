@@ -1,5 +1,5 @@
 export SinglePatchTwoStepReconstructionParameters, SinglePatchTwoStepReconstructionAlgorithm
-Base.@kwdef struct SinglePatchTwoStepReconstructionParameters{L_H<:AbstractSystemMatrixLoadingParameter, L_L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver, SP_H<:AbstractSolverParameters, SP_L<:AbstractSolverParameters, R_H<:AbstractRegularization, R_L<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
+@parameter struct SinglePatchTwoStepReconstructionParameters{L_H<:AbstractSystemMatrixLoadingParameter, L_L<:AbstractSystemMatrixLoadingParameter, S<:AbstractLinearSolver, SP_H<:AbstractSolverParameters, SP_L<:AbstractSolverParameters, R_H<:AbstractRegularization, R_L<:AbstractRegularization} <: AbstractSinglePatchReconstructionParameters
   # Threshhold
   Γ::Float64
   # File
@@ -21,7 +21,7 @@ end
 end
 
 # Bit hacky: Create transparent parameter to give to inner algorithm
-Base.@kwdef mutable struct TwoStepSubstractionPreProcessingParameter{B, PR<:AbstractMPIPreProcessingParameters{B}} <: AbstractMPIPreProcessingParameters{B}
+@parameter mutable struct TwoStepSubstractionPreProcessingParameter{B, PR<:AbstractMPIPreProcessingParameters{B}} <: AbstractMPIPreProcessingParameters{B}
   pre::PR
   proj::Array{ComplexF32} = zeros(ComplexF32, 0, 0)
 end

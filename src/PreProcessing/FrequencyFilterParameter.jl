@@ -34,7 +34,7 @@ end
 
 # Could possible also be nested
 export SNRThresholdFrequencyFilterParameter
-Base.@kwdef struct SNRThresholdFrequencyFilterParameter <: AbstractFrequencyFilterParameter
+@parameter struct SNRThresholdFrequencyFilterParameter <: AbstractFrequencyFilterParameter
   minFreq::Float64 = 0.0
   maxFreq::Union{Float64, Nothing} = nothing
   recChannels::Union{Vector{Int64}, UnitRange{Int64}, Nothing} = nothing
@@ -62,7 +62,7 @@ defaultParameterRecChannels(new::Missing) = missing
 #  return SNRThresholdFrequencyFilterParameter(;maxFreq = maxFreq, recChannels = recChannels)
 #end
 export FreqNumThresholdFrequencyFilterParameter
-Base.@kwdef struct FreqNumThresholdFrequencyFilterParameter <: AbstractFrequencyFilterParameter
+@parameter struct FreqNumThresholdFrequencyFilterParameter <: AbstractFrequencyFilterParameter
   minFreq::Float64 = 0.0
   maxFreq::Union{Float64, Nothing} = nothing
   recChannels::Union{UnitRange{Int64}, Nothing} = nothing
@@ -80,7 +80,7 @@ function (params::AbstractFrequencyFilterParameter)(::Type{<:AbstractMPIRecoAlgo
 end
 
 export CompositeFrequencyFilterParameters
-Base.@kwdef struct CompositeFrequencyFilterParameters <: AbstractFrequencyFilterParameter
+@parameter struct CompositeFrequencyFilterParameters <: AbstractFrequencyFilterParameter
   filters::Vector{AbstractFrequencyFilterParameter}
 end
 function (params::CompositeFrequencyFilterParameters)(algoT::Type{<:AbstractMPIRecoAlgorithm}, file::MPIFile)
@@ -89,7 +89,7 @@ end
 
 #=
 export NoiseLevelFrequencyFilterParameter
-Base.@kwdef struct NoiseLevelFrequencyFilterParameter <: AbstractFrequencyFilterParameter
+@parameter struct NoiseLevelFrequencyFilterParameter <: AbstractFrequencyFilterParameter
   noiseMeas::MPIFile
   levelFactor::Float64
   noiseFrames::Union{Vector{Int64}, UnitRange{Int64}} = measBGFrameIdx(noiseMeas)

@@ -22,13 +22,13 @@ struct NoWeightingParameters <: AbstractWeightingParameters end
 (params::NoWeightingParameters)(::Type{<:AbstractMPIRecoAlgorithm}, args...) = nothing
 
 export ChannelWeightingParameters
-Base.@kwdef struct ChannelWeightingParameters <: AbstractWeightingParameters
+@parameter struct ChannelWeightingParameters <: AbstractWeightingParameters
   channelWeights::Vector{Float64} = [1.0, 1.0, 1.0]
 end
 (params::ChannelWeightingParameters)(::Type{<:AbstractMPIRecoAlgorithm}, freqs::Vector{CartesianIndex{2}}, args...) = map(x-> params.channelWeights[x[2]], freqs)
 
 export WhiteningWeightingParameters
-Base.@kwdef struct WhiteningWeightingParameters <: AbstractWeightingParameters
+@parameter struct WhiteningWeightingParameters <: AbstractWeightingParameters
   whiteningMeas::MPIFile
   tfCorrection::Union{Bool, Nothing} = nothing
 end
@@ -41,7 +41,7 @@ function (params::WhiteningWeightingParameters)(::Type{<:AbstractMPIRecoAlgorith
 end
 
 export RowNormWeightingParameters
-Base.@kwdef struct RowNormWeightingParameters <: AbstractWeightingParameters
+@parameter struct RowNormWeightingParameters <: AbstractWeightingParameters
   # NOP
 end
 function (params::RowNormWeightingParameters)(::Type{<:AbstractMPIRecoAlgorithm}, freqs, op, args...)

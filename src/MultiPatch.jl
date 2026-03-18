@@ -229,7 +229,7 @@ Thus, the mapping is automatically set to $mapping."
 end
 
 export ExplicitMultiPatchParameter
-Base.@kwdef struct ExplicitMultiPatchParameter <: AbstractMultiPatchOperatorParameter
+@parameter struct ExplicitMultiPatchParameter <: AbstractMultiPatchOperatorParameter
   bgCorrection::Bool = false
   tfCorrection::Bool = true
   SFGridCenter::AbstractArray = zeros(0,0)
@@ -354,7 +354,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
 end
 
 export RegularMultiPatchOperatorParameter
-Base.@kwdef struct RegularMultiPatchOperatorParameter <: AbstractMultiPatchOperatorParameter
+@parameter struct RegularMultiPatchOperatorParameter <: AbstractMultiPatchOperatorParameter
   bgCorrection::Bool = false
   denoiseWeight::Float64=0.0
   roundPatches::Bool = false

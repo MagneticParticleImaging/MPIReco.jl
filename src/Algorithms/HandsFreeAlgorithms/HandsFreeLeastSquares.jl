@@ -1,5 +1,5 @@
 export HandsFreeSolverParameters
-Base.@kwdef struct HandsFreeSolverParameters <: AbstractSolverParameters{Kaczmarz}
+@parameter struct HandsFreeSolverParameters <: AbstractSolverParameters{Kaczmarz}
   iterbounds::Tuple{Int64, Int64}=(1, 25)
   enforceReal::Bool=true
   enforcePositive::Bool=true

@@ -1,5 +1,5 @@
 export SinglePatchHandsFreeReconstructionParameter
-Base.@kwdef struct SinglePatchHandsFreeReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter,
+@parameter struct SinglePatchHandsFreeReconstructionParameter{L<:AbstractSystemMatrixLoadingParameter,
   arrT <: AbstractArray, SP<:HandsFreeSolverParameters, W<:AbstractWeightingParameters} <: AbstractSinglePatchReconstructionParameters
  # File
  sf::MPIFile

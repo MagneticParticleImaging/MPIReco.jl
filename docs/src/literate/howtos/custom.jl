@@ -9,10 +9,10 @@ b = MPIFile(joinpath(datadir, "measurements", "20211226_203916_MultiPatch", "1.m
 # ## Custom Processing Steps
 # To implement a custom processing step, we need to add a new parameter struct, in our case we want to extend `AbstractWeightingParameters`.
 # As a toy-example, we will implement a weighting strategy in which frequencies are weighting with an alternating sequence of weights:
-Base.@kwdef struct AlternatingWeightingParameters <: AbstractWeightingParameters
+@parameter struct AlternatingWeightingParameters <: AbstractWeightingParameters
   alternatingWeights::Vector{Float64}
 end
-# The `Base.@kwdef` macro generates a keyword-argment constructor with optional default values. Next, we can implement the actual processing function.
+# The `@parameter` macro generates a keyword-argment constructor with optional default values. Next, we can implement the actual processing function.
 
 # Different algorithms can have different implementations of a given weighting strategy and we can specialise a function on the type of algorithm or an algorithm instance itself.
 # The former is helpful for pure functions, i.e. processing steps which solely depend on the given parameter and processing-arguments, not the state of the algorithm.

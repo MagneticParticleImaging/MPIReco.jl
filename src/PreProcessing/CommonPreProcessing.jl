@@ -5,7 +5,7 @@ export CommonPreProcessingParameters
 """
 Parameters for retrieving MPI measurement data in frequency domain
 """
-Base.@kwdef struct CommonPreProcessingParameters{T<:AbstractMPIBackgroundCorrectionParameters} <: AbstractMPIPreProcessingParameters{T}
+@parameter struct CommonPreProcessingParameters{T<:AbstractMPIBackgroundCorrectionParameters} <: AbstractMPIPreProcessingParameters{T}
   "Type of background correction"
   bgParams::T = NoBackgroundCorrectionParameters()
   "Frames to be retrieved from the data"

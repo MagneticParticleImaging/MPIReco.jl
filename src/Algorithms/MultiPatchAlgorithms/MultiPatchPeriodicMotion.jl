@@ -1,5 +1,5 @@
 export PeriodicMotionPreProcessing, PeriodicMotionReconstructionParameter
-Base.@kwdef struct PeriodicMotionPreProcessing{BG<:AbstractMPIBackgroundCorrectionParameters, W <: AbstractWeightingParameters} <: AbstractMPIPreProcessingParameters{BG}
+@parameter struct PeriodicMotionPreProcessing{BG<:AbstractMPIBackgroundCorrectionParameters, W <: AbstractWeightingParameters} <: AbstractMPIPreProcessingParameters{BG}
   # Periodic Motion
   frames::Union{Nothing, UnitRange{Int64}, Vector{Int64}} = nothing
   alpha::Float64 = 3.0
@@ -13,7 +13,7 @@ Base.@kwdef struct PeriodicMotionPreProcessing{BG<:AbstractMPIBackgroundCorrecti
   weightingParams::Union{W, AbstractUtilityReconstructionParameters{W}} = NoWeightingParameters()
 end
 
-Base.@kwdef struct PeriodicMotionReconstructionParameter{F<:AbstractFrequencyFilterParameter, S<:AbstractSolverParameters, R <: AbstractRegularization, arrT <: AbstractArray} <: AbstractMultiPatchReconstructionParameters
+@parameter struct PeriodicMotionReconstructionParameter{F<:AbstractFrequencyFilterParameter, S<:AbstractSolverParameters, R <: AbstractRegularization, arrT <: AbstractArray} <: AbstractMultiPatchReconstructionParameters
   sf::MultiMPIFile
   freqFilter::F
   solverParams::S
@@ -39,7 +39,7 @@ function (params::MultiPatchParameters{PT, R, T})(algo::MultiPatchReconstruction
   result = ImageMeta(im, generateHeaderDict(algo.sf, data))
 end
 
-function (params::Union{OP, ProcessResultCache{OP}})(algo::MultiPatchReconstructionAlgorithm, 
+function (params::Union{OP, AbstractUtilityReconstructionParameters{OP}})(algo::MultiPatchReconstructionAlgorithm, 
   f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where OP <: PeriodicMotionPreProcessing
   uReco, ffOp, weights = params(typeof(algo), f, algo.sf, frequencies)
   algo.ffOp = adapt(algo.arrayType, ffOp)
