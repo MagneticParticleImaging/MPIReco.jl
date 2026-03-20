@@ -59,7 +59,7 @@ function (params::MultiPatchParameters)(algo::MultiPatchReconstructionAlgorithm,
   return result
 end
 
-function (params::Union{OP, AbstractUtilityReconstructionParameters{OP}})(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, frequencies::Vector{CartesianIndex{2}}, weightingParams) where OP <: AbstractMultiPatchOperatorParameter
+function (params::Union{OP, ProcessResultCache{OP}})(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, frequencies::Vector{CartesianIndex{2}}, weightingParams) where OP <: AbstractMultiPatchOperatorParameter
   ffPos_ = ffPos(f)
   periodsSortedbyFFPos = unflattenOffsetFieldShift(ffPos_)
   idxFirstPeriod = getindex.(periodsSortedbyFFPos,1)
@@ -79,7 +79,7 @@ function (params::Union{OP, AbstractUtilityReconstructionParameters{OP}})(algo::
   return resultXPU, weights
 end
 
-function (params::Union{A, AbstractUtilityReconstructionParameters{<:A}})(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, args...) where A <: AbstractMPIPreProcessingParameters
+function (params::Union{A, ProcessResultCache{<:A}})(algo::MultiPatchReconstructionAlgorithm, f::MPIFile, args...) where A <: AbstractMPIPreProcessingParameters
   result = params(typeof(algo), f, args...)
   result = adapt(algo.arrayType, result)
   return result
