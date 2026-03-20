@@ -39,7 +39,7 @@ function (params::MultiPatchParameters{PT, R, T})(algo::MultiPatchReconstruction
   result = ImageMeta(im, generateHeaderDict(algo.sf, data))
 end
 
-function (params::Union{OP, AbstractUtilityReconstructionParameters{OP}})(algo::MultiPatchReconstructionAlgorithm, 
+function (params::Union{OP, ProcessResultCache{OP}})(algo::MultiPatchReconstructionAlgorithm, 
   f::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where OP <: PeriodicMotionPreProcessing
   uReco, ffOp, weights = params(typeof(algo), f, algo.sf, frequencies)
   algo.ffOp = adapt(algo.arrayType, ffOp)
