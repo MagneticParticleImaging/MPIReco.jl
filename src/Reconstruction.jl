@@ -218,7 +218,7 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
   #weightType=WeightingType.None, weightingLimit = 0, 
   solver = Kaczmarz,
   spectralCleaning=true, spectralLeakageCorrection=spectralCleaning,
-  fgFrames=1:10, bgCorrectionInternal=false,
+  fgFrames=1:10, bgCorrectionInternal=false, tfCorrectionInternal=rxHasTransferFunction(bMeas),
   noiseFreqThresh=0.0, channelWeights=ones(3), 
   numPeriodAverages=1, numPeriodGrouping=1, kargs...) where {T<:MPIFile}
 
@@ -234,10 +234,10 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
     #else
       uEmpty = getMeasurementsFD(emptyMeas, frequencies=freq, frames=bgFrames, numAverages=length(bgFrames),
       loadasreal = loadasreal,spectralLeakageCorrection=spectralLeakageCorrection, bgCorrection=bgCorrectionInternal,
-      numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping)
+      tfCorrection=tfCorrectionInternal, numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping)
       if bgFramesPost != nothing
         uEmptyPost = getMeasurementsFD(emptyMeas, false, frequencies=freq, frames=bgFramesPost,
-                    numAverages = length(bgFramesPost), bgCorrection=bgCorrectionInternal,
+                    numAverages = length(bgFramesPost), bgCorrection=bgCorrectionInternal, tfCorrection=tfCorrectionInternal,
                     loadasreal = loadasreal, spectralLeakageCorrection=spectralLeakageCorrection,
                     numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping)
       end
@@ -267,7 +267,8 @@ function reconstruction(S, bSF::Union{T,Vector{T}}, bMeas::MPIFile, freq::Array,
     @debug "Loading measurements ..."
     u = getMeasurementsFD(bMeas, frequencies=freq, frames=partframes, numAverages=numAverages,
                           loadasreal=loadasreal, spectralLeakageCorrection=spectralLeakageCorrection,
-                          bgCorrection=bgCorrectionInternal, numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping)
+                          bgCorrection=bgCorrectionInternal, tfCorrection=tfCorrectionInternal,
+                          numPeriodAverages=numPeriodAverages, numPeriodGrouping=numPeriodGrouping)
     if emptyMeas!=nothing
       if bgFramesPost == nothing
         u = u .- uEmpty
