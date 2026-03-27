@@ -2,8 +2,8 @@ export getWeights, WeightingType, setFreqToZero
 
 export AbstractWeightingParameters
 abstract type AbstractWeightingParameters <: AbstractMPIRecoParameters end
-function process(type::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractWeightingParameters, freqs, op = nothing, u = nothing, arrayType = Array)
-  result = process(type, params, freqs, op, u)
+function (params::AbstractWeightingParameters)(type::Type{<:AbstractMPIRecoAlgorithm}, freqs, op = nothing, u = nothing, arrayType = Array)
+  result = params(type, freqs, op, u)
   if !isnothing(result)
     result = map(real(eltype(algo.S)), result)
   end
@@ -19,20 +19,20 @@ WeightingType(cache::ProcessResultCache) = WeightingType(cache.param)
 
 export NoWeightingParameters
 struct NoWeightingParameters <: AbstractWeightingParameters end
-process(::Type{<:AbstractMPIRecoAlgorithm}, params::NoWeightingParameters, args...) = nothing
+(params::NoWeightingParameters)(::Type{<:AbstractMPIRecoAlgorithm}, args...) = nothing
 
 export ChannelWeightingParameters
-Base.@kwdef struct ChannelWeightingParameters <: AbstractWeightingParameters
+@parameter struct ChannelWeightingParameters <: AbstractWeightingParameters
   channelWeights::Vector{Float64} = [1.0, 1.0, 1.0]
 end
-process(::Type{<:AbstractMPIRecoAlgorithm}, params::ChannelWeightingParameters, freqs::Vector{CartesianIndex{2}}, args...) = map(x-> params.channelWeights[x[2]], freqs)
+(params::ChannelWeightingParameters)(::Type{<:AbstractMPIRecoAlgorithm}, freqs::Vector{CartesianIndex{2}}, args...) = map(x-> params.channelWeights[x[2]], freqs)
 
 export WhiteningWeightingParameters
-Base.@kwdef struct WhiteningWeightingParameters <: AbstractWeightingParameters
+@parameter struct WhiteningWeightingParameters <: AbstractWeightingParameters
   whiteningMeas::MPIFile
   tfCorrection::Union{Bool, Nothing} = nothing
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::WhiteningWeightingParameters, freqs::Vector{CartesianIndex{2}}, args...)
+function (params::WhiteningWeightingParameters)(::Type{<:AbstractMPIRecoAlgorithm}, freqs::Vector{CartesianIndex{2}}, args...)
   u_bg = getMeasurementsFD(params.whiteningMeas, false, tfCorrection = isnothing(params.tfCorrection) ? rxHasTransferFunction(params.whiteningMeas) : params.tfCorrection, 
                            frequencies=freqs, frames=measBGFrameIdx(params.whiteningMeas), bgCorrection = false)
   bg_std = std(u_bg, dims=3)
@@ -41,10 +41,10 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::WhiteningWeightingP
 end
 
 export RowNormWeightingParameters
-Base.@kwdef struct RowNormWeightingParameters <: AbstractWeightingParameters
+@parameter struct RowNormWeightingParameters <: AbstractWeightingParameters
   # NOP
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::RowNormWeightingParameters, freqs, op, args...)
+function (params::RowNormWeightingParameters)(::Type{<:AbstractMPIRecoAlgorithm}, freqs, op, args...)
   weights = map(r -> 1/sqrt(rownorm²(op, r)), 1:size(op, 1))
   return weights
 end
@@ -62,8 +62,8 @@ struct CompositeWeightingParameters{C} <: AbstractWeightingParameters where {C <
     return new{eltype(weightingParameters)}(weightingParameters)
   end
 end
-function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::CompositeWeightingParameters, args...)
-  weights = map(p -> process(algoT, p, args...), params.weightingParameters)
+function (params::CompositeWeightingParameters)(algoT::Type{<:AbstractMPIRecoAlgorithm}, args...)
+  weights = map(p -> p(algoT, args...), params.weightingParameters)
   return reduce(.*, weights)
 end
 #=

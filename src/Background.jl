@@ -4,14 +4,14 @@ export NoBackgroundCorrectionParameters
 struct NoBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters end
 
 export InternalBackgroundCorrectionParameters
-Base.@kwdef struct InternalBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters
+@parameter struct InternalBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters
   interpolateBG::Bool = false
 end
 
 export ExternalBackgroundCorrection
 abstract type ExternalBackgroundCorrection <: AbstractMPIBackgroundCorrectionParameters end
 
-Base.@kwdef struct ExternalPreProcessedBackgroundCorrectionParameters{T} <: AbstractMPIBackgroundCorrectionParameters where {T<:ExternalBackgroundCorrection}
+@parameter struct ExternalPreProcessedBackgroundCorrectionParameters{T} <: AbstractMPIBackgroundCorrectionParameters where {T<:ExternalBackgroundCorrection}
   numPeriodAverages::Int64 = 1
   numPeriodGrouping::Int64 = 1
   spectralLeakageCorrection::Bool = false
@@ -22,16 +22,16 @@ end
 # TODO Shorter struct names?
 
 export SimpleExternalBackgroundCorrectionParameters
-Base.@kwdef struct SimpleExternalBackgroundCorrectionParameters <: ExternalBackgroundCorrection
+@parameter struct SimpleExternalBackgroundCorrectionParameters <: ExternalBackgroundCorrection
   emptyMeas::MPIFile
   bgFrames::Union{Vector{Int64}, UnitRange{Int64}} = [1]
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::SimpleExternalBackgroundCorrectionParameters, data::Array)
+function (params::SimpleExternalBackgroundCorrectionParameters)(::Type{<:AbstractMPIRecoAlgorithm}, data::Array)
   kwargs = toKwargs(params, overwrite = Dict{Symbol, Any}(:frames => params.bgFrames))
   empty = getMeasurementsFD(params.emptyMeas, false; bgCorrection = false, numAverages=length(bgFrames), kwargs...)
   return data .-empty
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::ExternalPreProcessedBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters}, data::Array, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
+function (params::ExternalPreProcessedBackgroundCorrectionParameters{SimpleExternalBackgroundCorrectionParameters})(::Type{<:AbstractMPIRecoAlgorithm}, data::Array, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(params.bgParams.emptyMeas)),
                     overwrite = Dict{Symbol, Any}(:frames => params.bgParams.bgFrames), ignore = [:bgParams])
   empty = getMeasurementsFD(params.bgParams.emptyMeas, false; bgCorrection = false, numAverages=length(params.bgParams.bgFrames), kwargs..., frequencies = frequencies)
@@ -39,12 +39,12 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::ExternalPreProcesse
 end
 
 export LinearInterpolatedExternalBackgroundCorrectionParameters
-Base.@kwdef struct LinearInterpolatedExternalBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters
+@parameter struct LinearInterpolatedExternalBackgroundCorrectionParameters <: AbstractMPIBackgroundCorrectionParameters
   emptyMeas::MPIFile
   bgFrames::UnitRange{Int64} = 1:1
   bgFramesPost::UnitRange{Int64} = 1:1
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::LinearInterpolatedExternalBackgroundCorrectionParameters, data::Array)
+function (params::LinearInterpolatedExternalBackgroundCorrectionParameters)(::Type{<:AbstractMPIRecoAlgorithm}, data::Array)
   kwargs = toKwargs(params)
   kwargs[:frames] = params.bgFrames
   empty = getMeasurementsFD(bgParams.emptyMeas, false; bgCorrection = false, numAverages=length(params.bgFrames), kwargs...)
@@ -56,7 +56,7 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::LinearInterpolatedE
   end
   return result
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::ExternalPreProcessedBackgroundCorrectionParameters{LinearInterpolatedExternalBackgroundCorrectionParameters}, data::Array, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
+function (params::ExternalPreProcessedBackgroundCorrectionParameters{LinearInterpolatedExternalBackgroundCorrectionParameters})(::Type{<:AbstractMPIRecoAlgorithm}, data::Array, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing)
   bgParams = params.bgParams
   kwargs = toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(bgParams.emptyMeas)), ignore = [:bgParams])
   kwargs[:frames] = bgParams.bgFrames
@@ -73,22 +73,22 @@ end
 export AbstractBGDictLoader
 abstract type AbstractBGDictLoader <: AbstractMPIRecoParameters end
 export MeasurementBGDictLoader
-Base.@kwdef struct MeasurementBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
+@parameter struct MeasurementBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
   file::T
   bgFrames::Union{UnitRange{Int64}, Vector{Int64}} = measBGFrameIdx(file)
   numPeriodGrouping::Int64 = acqNumPeriodsPerFrame(file)
   numPeriodAverages::Int64 = 1
   bgAverages::Int64 = 1
 end
-function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::MeasurementBGDictLoader, freqs::Vector{CartesianIndex{2}})
+function (params::MeasurementBGDictLoader)(algoT::Type{<:AbstractMPIRecoAlgorithm}, freqs::Vector{CartesianIndex{2}})
   uEmpty = getMeasurementsFD(params.file, false, frequencies=freqs, frames=params.bgFrames, numAverages=params.bgAverages, spectralLeakageCorrection=false, bgCorrection=false, numPeriodGrouping = params.numPeriodGrouping, numPeriodAverages = params.numPeriodAverages)
   return transpose(reshape(uEmpty, :, div(length(params.bgFrames),params.bgAverages)))
 end
 export SystemMatrixBGDictLoader
-Base.@kwdef struct SystemMatrixBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
+@parameter struct SystemMatrixBGDictLoader{T} <: AbstractBGDictLoader where {T<:MPIFile}
   file::T
 end
-function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::SystemMatrixBGDictLoader, freqs::Vector{CartesianIndex{2}})
+function (params::SystemMatrixBGDictLoader)(algoT::Type{<:AbstractMPIRecoAlgorithm}, freqs::Vector{CartesianIndex{2}})
   idxBGFrames = measBGFrameIdx(params.file)
   D = measData(params.file, idxBGFrames)
   D_ = reshape(D, size(D,1), size(D,2), size(D,3), size(D,4))
@@ -115,23 +115,23 @@ function getBackgroundDictionaryComplete(fSF::MPIFile, f::MPIFile, frequencies,
 end
 
 export BGDictParameter
-Base.@kwdef struct BGDictParameter <: AbstractMPIRecoParameters
+@parameter struct BGDictParameter <: AbstractMPIRecoParameters
   loader::Vector{AbstractBGDictLoader}
   dictSize::Int64 = 2
 end
 
-function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, params::BGDictParameter, freqs)
-  U,S,V = process(algoT, freqs, params.loader)
+function (params::BGDictParameter)(algoT::Type{<:AbstractMPIRecoAlgorithm}, freqs)
+  U,S,V = params.loader(algoT, freqs)
   for l=1:params.dictSize
     U[:,l] *= (S[l] / S[1])^(1/2)
   end
   return U[:,1:params.dictSize]
 end
 
-function process(algoT::Type{<:AbstractMPIRecoAlgorithm}, loader::Vector{T}, freqs) where {T<:AbstractBGDictLoader}
+function (loader::Vector{T})(algoT::Type{<:AbstractMPIRecoAlgorithm}, freqs) where {T<:AbstractBGDictLoader}
   tempBGs = []
   for load in loader
-    push!(tempBGs, process(algoT, freqs, load))
+    push!(tempBGs, load(algoT, freqs))
   end
   return svd(transpose(cat(tempBGs..., dims=1)))
 end

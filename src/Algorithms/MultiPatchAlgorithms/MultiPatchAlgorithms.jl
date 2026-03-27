@@ -8,25 +8,19 @@ export AbstractFocusFieldPositions, DefaultFocusFieldPositions, CustomFocusField
 abstract type AbstractFocusFieldPositions <: AbstractMPIRecoParameters end
 struct DefaultFocusFieldPositions <: AbstractFocusFieldPositions end
 positions(ffPos::DefaultFocusFieldPositions) = nothing
-Base.@kwdef struct CustomFocusFieldPositions{T<:AbstractArray} <: AbstractFocusFieldPositions
+@parameter struct CustomFocusFieldPositions{T<:AbstractArray} <: AbstractFocusFieldPositions
   positions::T
 end
 positions(ffPos::CustomFocusFieldPositions) = ffPos.positions
 
-Base.@kwdef mutable struct MultiPatchParameters{PR<:AbstractMPIPreProcessingParameters,
+@chain mutable struct MultiPatchParameters{PR<:AbstractMPIPreProcessingParameters,
      R<:AbstractMultiPatchReconstructionParameters, PT<:AbstractMPIPostProcessingParameters} <: AbstractMultiPatchAlgorithmParameters
   pre::Union{PR, AbstractUtilityReconstructionParameters{PR}}
   reco::R
   post::PT = NoPostProcessing() 
 end
   
-function process(algo::T, params::MultiPatchParameters, data::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where {T<:AbstractMultiPatchReconstructionAlgorithm}
-  result = process(algo, params.pre, data, frequencies)
-  result = process(algo, params.reco, result)
-  result = process(algo, params.post, result)
-  return result
-end
-function process(algo::T, params::MultiPatchParameters, data::AbstractArray, args...) where {T<:AbstractMultiPatchReconstructionAlgorithm}
+function (params::MultiPatchParameters)(algo::T, data::AbstractArray, args...) where {T<:AbstractMultiPatchReconstructionAlgorithm}
   throw(ArgumentError("MultiPatchAlgorithms are not defined for the given arguments, expected <: MPIFile, found $(typeof(data))"))
 end
 

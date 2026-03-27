@@ -17,7 +17,7 @@ export NoGridding
 struct NoGridding <: AbstractSystemMatrixGriddingParameter end
 
 export SystemMatrixGriddingParameter
-Base.@kwdef struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGriddingParameter
+@parameter struct SystemMatrixGriddingParameter <: AbstractSystemMatrixGriddingParameter
   gridsize::Vector{Int64} = [1, 1, 1]
   fov::Vector{Float64} = [0.0, 0.0, 0.0]
   center::Vector{Float64} = [0.0,0.0,0.0]
@@ -54,26 +54,26 @@ export AbstractSystemMatrixLoadingParameter
 abstract type AbstractSystemMatrixLoadingParameter <: AbstractSystemMatrixParameter end
 
 export DenseSystemMatixLoadingParameter
-Base.@kwdef struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
+@parameter struct DenseSystemMatixLoadingParameter{F<:AbstractFrequencyFilterParameter, G<:AbstractSystemMatrixGriddingParameter} <: AbstractSystemMatrixLoadingParameter
   freqFilter::F
   gridding::G
   bgCorrection::Bool = false
   tfCorrection::Union{Bool, Nothing} = nothing
   loadasreal::Bool = false
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile)
+function (params::DenseSystemMatixLoadingParameter)(t::Type{<:AbstractMPIRecoAlgorithm}, sf::MPIFile)
   # Construct freqFilter
-  frequencies = process(t, params.freqFilter, sf)
-  return frequencies, process(t, params, sf, frequencies)...
+  frequencies = params.freqFilter(t, sf)
+  return frequencies, params(t, sf, frequencies)...
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
+function (params::DenseSystemMatixLoadingParameter)(t::Type{<:AbstractMPIRecoAlgorithm}, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
   S, grid = getSF(sf, frequencies, nothing; toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(sf)))...)
   @info "Loading SM"
   return S, grid
 end
 
 export SparseSystemMatrixLoadingParameter
-Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilterParameter} <: AbstractSystemMatrixLoadingParameter
+@parameter struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilterParameter} <: AbstractSystemMatrixLoadingParameter
   freqFilter::F
   sparseTrafo::String
   thresh::Union{Float64, Vector{Float64}} = 0.0
@@ -83,19 +83,19 @@ Base.@kwdef struct SparseSystemMatrixLoadingParameter{F<:AbstractFrequencyFilter
   loadasreal::Bool=false
   useDFFoV::Bool = false
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile)
+function (params::SparseSystemMatrixLoadingParameter)(t::Type{<:AbstractMPIRecoAlgorithm}, sf::MPIFile)
   # Construct freqFilter
-  frequencies = process(t, params.freqFilter, sf)
-  return frequencies, process(t, params, sf, frequencies)...
+  frequencies = params.freqFilter(t, sf)
+  return frequencies, params(t, sf, frequencies)...
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
+function (params::SparseSystemMatrixLoadingParameter)(t::Type{<:AbstractMPIRecoAlgorithm}, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
   S, grid = getSF(sf, frequencies, params.sparseTrafo; toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(sf)))...)
   return S, grid
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MPIFile, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
+function (params::SparseSystemMatrixLoadingParameter)(t::Type{<:AbstractMPIRecoAlgorithm}, sf::MPIFile, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
   return createLinearOperator(params.sparseTrafo, elType; shape, S = typeof(arrayType{elType}(undef, 0)))
 end
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::SparseSystemMatrixLoadingParameter, sf::MultiContrastFile, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
+function (params::SparseSystemMatrixLoadingParameter)(t::Type{<:AbstractMPIRecoAlgorithm}, sf::MultiContrastFile, elType::Type{<:Number}, arrayType, shape::NTuple{N, Int64}) where N
   ops = [createLinearOperator(params.sparseTrafo, elType; shape, S = typeof(arrayType{elType}(undef, 0))) for i = 1:length(sf)]
   return DiagOp(ops)
 end
@@ -139,18 +139,18 @@ end
 
 # In this instance we want to dispatch before the cache and call individual steps processing steps which in turn can use the cache. This is only effective if the cache size is >= number of sub-processes
 # Alternative solutions require us to nest our parameters with caches in between
-function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::Union{L, ProcessResultCache{L}}, sf::MPIFile, solverT, arrayType = Array) where L <: AbstractSystemMatrixLoadingParameter
+function (params::Union{L, ProcessResultCache{L}})(type::Type{<:AbstractMPIRecoAlgorithm}, sf::MPIFile, solverT, arrayType = Array) where L <: AbstractSystemMatrixLoadingParameter
   # Each process step can access the cache
-  freqs, sf, grid = process(type, params, sf)
-  sf, grid = process(type, params, sf, solverT, grid)
-  sf = process(type, params, sf, arrayType)
+  freqs, sf, grid = params(type, sf)
+  sf, grid = params(type, sf, solverT, grid)
+  sf = params(type, sf, arrayType)
   return freqs, sf, grid
 end
-function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::L, sf::AbstractArray, solverT::Type{<:AbstractLinearSolver}, grid) where L <: AbstractSystemMatrixLoadingParameter
+function (params::AbstractSystemMatrixLoadingParameter)(type::Type{<:AbstractMPIRecoAlgorithm}, sf::AbstractArray, solverT::Type{<:AbstractLinearSolver}, grid)
   @info "Preparing SF"
   return prepareSF(solverT, sf, grid)
 end
-function AbstractImageReconstruction.process(type::Type{<:AbstractMPIRecoAlgorithm}, params::L, sf::AbstractArray, arrayType::Type{<:AbstractArray}) where L <: AbstractSystemMatrixLoadingParameter
+function (params::AbstractSystemMatrixLoadingParameter)(type::Type{<:AbstractMPIRecoAlgorithm}, sf::AbstractArray, arrayType::Type{<:AbstractArray})
   @info "Adapting SF"
   return adaptSF(arrayType, sf)
 end

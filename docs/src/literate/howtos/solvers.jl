@@ -72,7 +72,7 @@ hidedecorations!(fig.axis)
 fig
 
 # If our custom solver requires custom parameters, we could implement custom solver parameters in MPIReco:
-Base.@kwdef struct OurSolverParameters <: MPIReco.AbstractSolverParameters{OurSolver}
+@parameter struct OurSolverParameters <: MPIReco.AbstractSolverParameters{OurSolver}
   notification::String
   enforceReal::Bool=true
   enforcePositive::Bool=true
