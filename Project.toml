@@ -38,7 +38,7 @@ MPIRecoDaggerExt = ["Dagger", "DaggerImageReconstruction"]
 MPIRecoKernelAbstractionsExt = ["Atomix", "KernelAbstractions", "GPUArrays"]
 
 [compat]
-AbstractImageReconstruction = "0.5"
+AbstractImageReconstruction = "0.5, 0.6"
 Adapt = "3, 4"
 Atomix = "1"
 DSP = "0.6, 0.7, 0.8"
