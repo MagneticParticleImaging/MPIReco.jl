@@ -67,8 +67,9 @@ function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLo
   return frequencies, process(t, params, sf, frequencies)...
 end
 function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::DenseSystemMatixLoadingParameter, sf::MPIFile, frequencies::Vector{CartesianIndex{2}})
+  @info "Start Loading SM"
   S, grid = getSF(sf, frequencies, nothing; toKwargs(params, default = Dict{Symbol, Any}(:tfCorrection => rxHasTransferFunction(sf)))...)
-  @info "Loading SM"
+  @info "Done Loading SM"
   return S, grid
 end
 
