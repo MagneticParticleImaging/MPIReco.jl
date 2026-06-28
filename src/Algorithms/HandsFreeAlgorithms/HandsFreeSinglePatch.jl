@@ -34,10 +34,10 @@ function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHa
   return gridresult(result, algo.grid, algo.sf)
 end
 
-function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHandsFreeReconstructionParameter{<:DenseSystemMatixLoadingParameter, S}) where {S}
+function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHandsFreeReconstructionParameter)
   return nothing
 end
 
-function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHandsFreeReconstructionParameter{<:SparseSystemMatrixLoadingParameter, S}) where {S}
+function getLinearOperator(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHandsFreeReconstructionParameter{<:SparseSystemMatrixLoadingParameter})
   return process(algo, params.sfLoad, eltype(algo.S), algo.arrayType, tuple(shape(algo.grid)...))
 end
