@@ -38,8 +38,8 @@ function prepareSystemMatrix(reco::SinglePatchReconstructionParameter{L,S}) wher
   return freqs, sf, grid, reco.arrayType
 end
 
-function prepareWeights(reco::SinglePatchReconstructionParameter{L,S,arrT,SP,R,W}, freqs, sf) where {L, S, arrT, SP, R, W<:AbstractWeightingParameters}
-  return process(AbstractMPIRecoAlgorithm, reco.weightingParams, freqs, sf, nothing, reco.arrayType)
+function prepareWeights(reco::SinglePatchReconstructionParameter{L,S,arrT,SP,R,W}, freqs, S_) where {L, S, arrT, SP, R, W<:AbstractWeightingParameters}
+  return process(AbstractMPIRecoAlgorithm, reco.weightingParams, freqs, reco.sf, S_, nothing, reco.arrayType)
 end
 
 Base.lock(algo::SinglePatchReconstructionAlgorithm) = lock(algo.output)

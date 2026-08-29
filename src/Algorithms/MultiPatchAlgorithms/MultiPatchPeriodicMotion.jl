@@ -76,7 +76,7 @@ function process(algoT::Type{<:MultiPatchReconstructionAlgorithm}, params::Perio
         FFPos=ffPos_[:,resortedInd[:,1]], mapping=mapping,
         FFPosSF=ffPos_[:,resortedInd[:,1]], bgCorrection = false, tfCorrection = params.tfCorrection)
 
-  weights = process(algoT, params.weightingParams, frequencies, ffOp, nothing, Array)
+  weights = process(algoT, params.weightingParams, frequencies, sf, ffOp, nothing, Array)
   return uReco, ffOp, weights
 end
 

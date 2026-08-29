@@ -16,8 +16,8 @@ function prepareSystemMatrix(reco::SinglePatchHandsFreeReconstructionParameter{L
   return freqs, sf, grid, reco.arrayType
 end
 
-function prepareWeights(reco::SinglePatchHandsFreeReconstructionParameter{L,arrT,SP,W}, freqs, sf) where {L, arrT, SP, W<:AbstractWeightingParameters}
-  return process(AbstractMPIRecoAlgorithm, reco.weightingParams, freqs, sf, nothing, reco.arrayType)
+function prepareWeights(reco::SinglePatchHandsFreeReconstructionParameter{L,arrT,SP,W}, freqs, S) where {L, arrT, SP, W<:AbstractWeightingParameters}
+  return process(AbstractMPIRecoAlgorithm, reco.weightingParams, freqs, reco.sf, S, nothing, reco.arrayType)
 end
 
 function process(algo::SinglePatchReconstructionAlgorithm, params::SinglePatchHandsFreeReconstructionParameter, u)
