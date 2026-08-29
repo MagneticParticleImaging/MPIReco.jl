@@ -23,7 +23,7 @@ abstract type AbstractMPIPreProcessingParameters{T<:AbstractMPIBackgroundCorrect
 export AbstractMPIPostProcessingParameters, NoPostProcessing
 abstract type AbstractMPIPostProcessingParameters <: AbstractMPIRecoParameters end
 struct NoPostProcessing <: AbstractMPIPostProcessingParameters end # TODO remove later
-process(algo::AbstractMPIRecoAlgorithm, ::NoPostProcessing, data) = data
+(::NoPostProcessing)(algo::AbstractMPIRecoAlgorithm, data) = data
 
 export AbstractMPIReconstructionParameters
 abstract type AbstractMPIReconstructionParameters <: AbstractMPIRecoParameters end
@@ -42,6 +42,9 @@ struct MixedAlgorithm <: ReconstructionAlgorithmType end
 # TODO recoAlgorithmType
 # TODO undefined for certain "Algorithm" components
 #recoAlgorithmTypes(::Type{ConcreteRecoAlgorithm}) = SystemMatrixBasedAlgorithm()
+export MPIRecoStyle
+struct MPIRecoStyle <: CustomPlanStyle end
+
 export addRecoPlanPath, getRecoPlanList
 const DEFAULT_PLANS_PATH = @path joinpath(@__DIR__, "..", "config")
 const recoPlanPaths = AbstractString[DEFAULT_PLANS_PATH]
@@ -170,7 +173,7 @@ function loadRecoPlan(planfile::AbstractString, modules; kwargs...)
 end
 # Load plan from an io (could be file or iobuffer backed string)
 function loadRecoPlan(io, modules; kwargs...)
-  plan = loadPlan(io, modules)
+  plan = loadPlan(io, modules; field_style = MPIRecoStyle())
   setKwargs!(plan; kwargs...)
   return plan
 end

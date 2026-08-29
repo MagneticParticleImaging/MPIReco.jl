@@ -4,33 +4,22 @@ abstract type AbstractSinglePatchReconstructionAlgorithm <: AbstractMPIRecoAlgor
 abstract type AbstractSinglePatchReconstructionParameters <: AbstractMPIReconstructionParameters end
 abstract type AbstractSinglePatchAlgorithmParameters <: AbstractMPIRecoParameters end
 
-Base.@kwdef mutable struct SinglePatchParameters{PR<:AbstractMPIPreProcessingParameters,
+@parameter mutable struct SinglePatchParameters{PR<:AbstractMPIPreProcessingParameters,
      R<:AbstractSinglePatchReconstructionParameters, PT<:AbstractMPIPostProcessingParameters} <: AbstractSinglePatchAlgorithmParameters
   pre::Union{PR, AbstractUtilityReconstructionParameters{PR}}
   reco::R
   post::PT = NoPostProcessing() 
 end
   
-function process(algo::T, params::SinglePatchParameters, data::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where {T<:AbstractSinglePatchReconstructionAlgorithm}
-  result = process(algo, params.pre, data, frequencies)
-  result = process(algo, params.reco, result)
-  result = process(algo, params.post, result)
+function (params::SinglePatchParameters)(algo::T, data::MPIFile, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where {T<:AbstractSinglePatchReconstructionAlgorithm}
+  result = params.pre(algo, data, frequencies)
+  result = params.reco(algo, result)
+  result = params.post(algo, result)
+  result = finalizeResult(algo, result, data)
   return result
 end
-function process(algo::T, params::SinglePatchParameters, data::AbstractArray, args...) where {T<:AbstractSinglePatchReconstructionAlgorithm}
+function (params::SinglePatchParameters)(algo::T, data::AbstractArray, args...) where {T<:AbstractSinglePatchReconstructionAlgorithm}
   throw(ArgumentError("SinglePatchAlgorithms are not defined for the given arguments, expected <: MPIFile, found $(typeof(data))"))
-end
-
-function AbstractImageReconstruction.put!(algo::AbstractSinglePatchReconstructionAlgorithm, data)
-  lock(algo) do
-    #consistenceCheck(algo.sf, data)
-    
-    result = process(algo, algo.params, data, algo.freqs)
-
-    result = finalizeResult(algo, result, data)
-
-    Base.put!(algo.output, result)
-  end
 end
 
 function finalizeResult(algo::AbstractSinglePatchReconstructionAlgorithm, result, data::MPIFile)
@@ -54,14 +43,14 @@ include("SinglePatchBGEstimationAlgorithm.jl")
 consistenceCheck(sf::MPIFile, threaded::MultiThreadedInput) = consistenceCheck(sf, threaded.inputs[1]) 
 finalizeResult(algo::AbstractSinglePatchReconstructionAlgorithm, result, threadedInput::MultiThreadedInput) = finalizeResult(algo, result, threadedInput.inputs[1])
 
-function process(algo::T, params::SinglePatchParameters, threadedInput::MultiThreadedInput, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where {T<:AbstractSinglePatchReconstructionAlgorithm}
-  result = process(algo, params.pre, threadedInput, frequencies)
-  result = process(algo, params.reco, MultiThreadedInput(threadedInput.scheduler, (result,)))
-  result = process(algo, params.post, MultiThreadedInput(threadedInput.scheduler, (result,)))
+function (params::SinglePatchParameters)(algo::T, threadedInput::MultiThreadedInput, frequencies::Union{Vector{CartesianIndex{2}}, Nothing} = nothing) where {T<:AbstractSinglePatchReconstructionAlgorithm}
+  result = params.pre(algo, threadedInput, frequencies)
+  result = params.reco(algo, MultiThreadedInput(threadedInput.scheduler, (result,)))
+  result = params.post(algo, MultiThreadedInput(threadedInput.scheduler, (result,)))
   return result
 end
 
-function process(algo::T, params::P, threadInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}, P <: AbstractMPIPreProcessingParameters}
+function (params::P)(algo::T, threadInput::MultiThreadedInput, frequencies::Vector{CartesianIndex{2}}) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}, P <: AbstractMPIPreProcessingParameters}
   scheduler = threadInput.scheduler
   data = threadInput.inputs
 
@@ -96,7 +85,7 @@ function process(algo::T, params::P, threadInput::MultiThreadedInput, frequencie
   return result
 end
 
-function process(algo::T, params::LeastSquaresParameters, threadInput::MultiThreadedInput) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}}
+function (params::LeastSquaresParameters)(algo::T, threadInput::MultiThreadedInput) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}}
   scheduler = threadInput.scheduler
   data = threadInput.inputs
   u = threadInput.inputs[1]
@@ -123,5 +112,5 @@ function process(algo::T, params::LeastSquaresParameters, threadInput::MultiThre
   return result
 end
 
-process(algo::T, params::NoPostProcessing, threadInput::MultiThreadedInput) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}} = process(algo, params, threadInput.inputs...)
+(params::NoPostProcessing)(algo::T, threadInput::MultiThreadedInput) where {T<:Union{SinglePatchReconstructionAlgorithm, SinglePatchBGEstimationAlgorithm}} = params(algo, threadInput.inputs...)
 =#

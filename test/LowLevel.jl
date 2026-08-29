@@ -19,7 +19,7 @@
     cHigh = reconstruct(high, b)
     
     S = high.S
-    u = process(high, high.params.pre, b, high.freqs)
+    u = high.params.pre(high, b, high.freqs)
     cLow = reconstruct("LowLevel", u; S = S, iterations = params[:iterations], reg = params[:reg], solver = params[:solver])
     
     cLow = reshape(cLow, size(cHigh))
@@ -31,7 +31,7 @@
     cHigh = reconstruct(high, b)
     
     S = high.S
-    u = process(high, high.params.pre, b, high.freqs)
+    u = high.params.pre(high, b, high.freqs)
     weights = high.weights
     cLow = reconstruct("LowLevel", u; S = S, iterations = params[:iterations], reg = params[:reg], solver = params[:solver], weights = weights)
     
@@ -61,7 +61,7 @@
     cHigh = reconstruct(high, b)
     
     S = high.S
-    u = process(high, high.params.pre, b, high.freqs)
+    u = high.params.pre(high, b, high.freqs)
     op = MPIReco.getLinearOperator(high, high.params.reco)
     cLow = reconstruct("LowLevel", u; S = S, op = op, iterations = params[:iterations], reg = params[:reg], solver = params[:solver])
     
@@ -74,7 +74,7 @@
     cHigh = reconstruct(high, b)
     
     S = high.S
-    u = process(high, high.params.pre, b, high.freqs)
+    u = high.params.pre(high, b, high.freqs)
     op = MPIReco.getLinearOperator(high, high.params.reco)
     weights = high.weights
     cLow = reconstruct("LowLevel", u; S = S, op = op, iterations = params[:iterations], reg = params[:reg], solver = params[:solver], weights = weights)
@@ -104,7 +104,7 @@
     cHigh = reconstruct(high, b)
     
     S = copy(high.ffOp)
-    u = process(high, high.params.pre, b, high.freqs)
+    u = high.params.pre(high, b, high.freqs)
     cLow = reconstruct("LowLevel", u; S = S, iterations = params[:iterations], reg = params[:reg], solver = params[:solver])
     
     cLow = reshape(cLow, size(cHigh))
@@ -116,7 +116,7 @@
     cHigh = reconstruct(high, b)
     
     S = copy(high.ffOp)
-    u = process(high, high.params.pre, b, high.freqs)
+    u = high.params.pre(high, b, high.freqs)
     weights = high.weights
     cLow = reconstruct("LowLevel", u; S = S, iterations = params[:iterations], reg = params[:reg], solver = params[:solver], weights = weights)
     

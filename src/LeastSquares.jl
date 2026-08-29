@@ -3,7 +3,7 @@ export LeastSquaresParameters
 abstract type AbstractSolverParameters{AbstractLinearSolver} <: AbstractMPIRecoParameters end
 
 export LeastSquaresParameters
-Base.@kwdef struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters{L}, W} <: AbstractMPIRecoParameters
+@parameter struct LeastSquaresParameters{L<:AbstractLinearSolver, O, M, R<:AbstractRegularization, P<:AbstractSolverParameters{L}, W} <: AbstractMPIRecoParameters
   op::O = nothing
   S::M
   reg::Vector{R} 
@@ -14,19 +14,19 @@ end
 # TODO place weights and more
 
 export SimpleSolverParameters
-Base.@kwdef struct SimpleSolverParameters <: AbstractSolverParameters{Kaczmarz}
+@parameter struct SimpleSolverParameters <: AbstractSolverParameters{Kaczmarz}
   iterations::Int64=10
   enforceReal::Bool=true
   enforcePositive::Bool=true
   normalizeReg::AbstractRegularizationNormalization = SystemMatrixBasedNormalization()
 end
 export ConstraintMaskedSolverParameters
-Base.@kwdef struct ConstraintMaskedSolverParameters{S, P<:AbstractSolverParameters{S}} <: AbstractSolverParameters{S}
+@parameter struct ConstraintMaskedSolverParameters{S, P<:AbstractSolverParameters{S}} <: AbstractSolverParameters{S}
   constraintMask::Vector{Bool}
   params::P
 end
 export ElaborateSolverParameters
-Base.@kwdef mutable struct ElaborateSolverParameters{SL} <: AbstractSolverParameters{SL}
+@parameter mutable struct ElaborateSolverParameters{SL} <: AbstractSolverParameters{SL}
   solver::Type{SL} = Kaczmarz
   iterations::Int64 = 10
   enforceReal::Bool = true
@@ -56,7 +56,7 @@ Base.propertynames(params::RecoPlan{ElaborateSolverParameters}) = union([:solver
 
 getSolverKwargs(::Type{SL}) where SL <: AbstractLinearSolver = intersect(union(Base.kwarg_decl.(methods(SL))...), fieldnames(ElaborateSolverParameters))
 
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters{SL}, u::AbstractArray) where SL
+function (params::LeastSquaresParameters{SL})(t::Type{<:AbstractMPIRecoAlgorithm}, u::AbstractArray) where SL
 
   N = size(params.S, 2)
   M = div(length(params.S), N)
@@ -129,7 +129,7 @@ function prepareRegularization(reg::Vector{R}, regLS::LeastSquaresParameters) wh
   return result, callbacks, args
 end
 #=
-function process(t::Type{<:AbstractMPIRecoAlgorithm}, params::LeastSquaresParameters, threadInput::MultiThreadedInput)
+function (params::LeastSquaresParameters)(t::Type{<:AbstractMPIRecoAlgorithm}, threadInput::MultiThreadedInput)
   
   scheduler = threadInput.scheduler
   data = threadInput.inputs

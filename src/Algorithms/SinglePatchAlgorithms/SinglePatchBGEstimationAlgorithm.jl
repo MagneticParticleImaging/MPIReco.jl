@@ -1,5 +1,5 @@
 export SinglePatchBGEstimationAlgorithm, SinglePatchBGEstimationReconstructionParameter
-Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystemMatixLoadingParameter,
+@parameter struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystemMatixLoadingParameter,
   SP<:AbstractSolverParameters, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionParameters
   # File
   sf::MPIFile
@@ -13,8 +13,8 @@ Base.@kwdef struct SinglePatchBGEstimationReconstructionParameter{L<:DenseSystem
   bgDict::BGDictParameter
 end
 
-Base.@kwdef mutable struct SinglePatchBGEstimationAlgorithm{P, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm where {P<:AbstractSinglePatchAlgorithmParameters}
-  params::P
+@reconstruction constructor = false mutable struct SinglePatchBGEstimationAlgorithm{P <: AbstractSinglePatchAlgorithmParameters, arrT <: AbstractArray} <: AbstractSinglePatchReconstructionAlgorithm
+  @parameter params::P
   # Could also do reconstruction progress meter here
   sf::Union{MPIFile,Vector{MPIFile}}
   S::AbstractArray
@@ -23,7 +23,6 @@ Base.@kwdef mutable struct SinglePatchBGEstimationAlgorithm{P, arrT <: AbstractA
   bgDict::AbstractArray
   grid::RegularGridPositions
   freqs::Vector{CartesianIndex{2}}
-  output::Channel{Any}
 end
 
 function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,<:SinglePatchBGEstimationReconstructionParameter,PT}) where {PT<:AbstractMPIPostProcessingParameters}
@@ -31,24 +30,17 @@ function SinglePatchReconstruction(params::SinglePatchParameters{<:AbstractMPIPr
 end
 function SinglePatchBGEstimationAlgorithm(params::SinglePatchParameters{<:AbstractMPIPreProcessingParameters,R,PT}) where {R<:SinglePatchBGEstimationReconstructionParameter,PT<:AbstractMPIPostProcessingParameters}
   freqs, S, grid, arrayType = prepareSystemMatrix(params.reco)
-  return SinglePatchBGEstimationAlgorithm(params, params.reco.sf, S, nothing, arrayType, process(SinglePatchBGEstimationAlgorithm, freqs, params.reco.bgDict), grid, freqs, Channel{Any}(Inf))
+  return SinglePatchBGEstimationAlgorithm(params, params.reco.sf, S, nothing, arrayType, params.reco.bgDict(SinglePatchBGEstimationAlgorithm, freqs), grid, freqs, @reconstruction_internals SinglePatchBGEstimationAlgorithm)
 end
 recoAlgorithmTypes(::Type{SinglePatchBGEstimationAlgorithm}) = SystemMatrixBasedAlgorithm()
-AbstractImageReconstruction.parameter(algo::SinglePatchBGEstimationAlgorithm) = algo.origParam
 
 function prepareSystemMatrix(reco::SinglePatchBGEstimationReconstructionParameter{L}) where {L<:AbstractSystemMatrixLoadingParameter}
-  freqs, sf, grid = process(AbstractMPIRecoAlgorithm, reco.sfLoad, reco.sf, Kaczmarz, reco.arrayType)
+  freqs, sf, grid = reco.sfLoad(AbstractMPIRecoAlgorithm, reco.sf, Kaczmarz, reco.arrayType)
   return freqs, sf, grid, reco.arrayType
 end
 
-Base.lock(algo::SinglePatchBGEstimationAlgorithm) = lock(algo.output)
-Base.unlock(algo::SinglePatchBGEstimationAlgorithm) = unlock(algo.output)
-Base.isready(algo::SinglePatchBGEstimationAlgorithm) = isready(algo.output)
-Base.wait(algo::SinglePatchBGEstimationAlgorithm) = wait(algo.output)
-AbstractImageReconstruction.take!(algo::SinglePatchBGEstimationAlgorithm) = Base.take!(algo.output)
-
-function process(algo::SinglePatchBGEstimationAlgorithm, params::AbstractMPIPreProcessingParameters, f::MPIFile)
-  result = process(typeof(algo), params, f)
+function (params::AbstractMPIPreProcessingParameters)(algo::SinglePatchBGEstimationAlgorithm, f::MPIFile)
+  result = params(typeof(algo), f)
   if eltype(algo.S) != eltype(result)
     @warn "System matrix and measurement have different element data type. Mapping measurment data to system matrix element type."
     result = map(eltype(algo.S), result)
@@ -58,7 +50,7 @@ function process(algo::SinglePatchBGEstimationAlgorithm, params::AbstractMPIPreP
 end
 
 
-function process(algo::SinglePatchBGEstimationAlgorithm, params::SinglePatchBGEstimationReconstructionParameter, u)
+function (params::SinglePatchBGEstimationReconstructionParameter)(algo::SinglePatchBGEstimationAlgorithm, u)
   weights = nothing # getWeights(...)
 
   # Prepare Regularization
@@ -77,7 +69,7 @@ function process(algo::SinglePatchBGEstimationAlgorithm, params::SinglePatchBGEs
 
   solver = LeastSquaresParameters(solver = Kaczmarz, S = G, reg = [reg], solverParams = solverParams)
 
-  temp = process(algo, solver, u)
+  temp = solver(algo, u)
 
   result = zeros(eltype(temp), N, size(temp, 2))
 

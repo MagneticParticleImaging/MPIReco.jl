@@ -181,11 +181,11 @@ function MultiPatchOperatorHighLevel(bSF::MultiMPIFile, bMeas, freq, bgCorrectio
   return FFOp
 end
 
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractMultiPatchOperatorParameter, bSF::MultiMPIFile, freq, gradient, FFPos, FFPosSF)
+function (params::AbstractMultiPatchOperatorParameter)(::Type{<:AbstractMPIRecoAlgorithm}, bSF::MultiMPIFile, freq, gradient, FFPos, FFPosSF)
   @info "Loading Multi Patch operator"
   return MultiPatchOperator(bSF, freq; toKwargs(params)..., FFPos = FFPos, FFPosSF = FFPosSF, gradient = gradient)
 end 
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractMultiPatchOperatorParameter, op::AbstractMultiPatchOperator, arrayType::Type{<:AbstractArray})
+function (params::AbstractMultiPatchOperatorParameter)(::Type{<:AbstractMPIRecoAlgorithm}, op::AbstractMultiPatchOperator, arrayType::Type{<:AbstractArray})
   return adapt(arrayType, op)
 end
 
@@ -229,7 +229,7 @@ Thus, the mapping is automatically set to $mapping."
 end
 
 export ExplicitMultiPatchParameter
-Base.@kwdef struct ExplicitMultiPatchParameter <: AbstractMultiPatchOperatorParameter
+@parameter struct ExplicitMultiPatchParameter <: AbstractMultiPatchOperatorParameter
   bgCorrection::Bool = false
   tfCorrection::Bool = true
   SFGridCenter::AbstractArray = zeros(0,0)
@@ -354,7 +354,7 @@ function MultiPatchOperatorExpliciteMapping(SFs::MultiMPIFile, freq; bgCorrectio
 end
 
 export RegularMultiPatchOperatorParameter
-Base.@kwdef struct RegularMultiPatchOperatorParameter <: AbstractMultiPatchOperatorParameter
+@parameter struct RegularMultiPatchOperatorParameter <: AbstractMultiPatchOperatorParameter
   bgCorrection::Bool = false
   denoiseWeight::Float64=0.0
   roundPatches::Bool = false
