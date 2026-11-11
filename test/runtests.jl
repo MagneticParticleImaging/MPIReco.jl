@@ -43,6 +43,7 @@ arrayTypes = areTypesDefined ? arrayTypes : []
   if !areTypesDefined
     include("Caching.jl")
     include("RecoPlan.jl")
+    include("Weighting.jl")
     #include("LoadSaveMDF.jl")
     include("Reconstruction.jl") # FussedLasso causes segfault atm
     include("Solvers.jl")
