@@ -42,10 +42,11 @@ end
 
 export SMWhiteningWeightingParameters
 Base.@kwdef struct SMWhiteningWeightingParameters <: AbstractWeightingParameters
+  tfCorrection::Union{Bool, Nothing} = nothing
   # NOP
 end
 function process(::Type{<:AbstractMPIRecoAlgorithm}, params::SMWhiteningWeightingParameters, freqs::Vector{CartesianIndex{2}}, sf, args...)
-  noise = noiseEstimate(sf,frequencies=freqs)
+  noise = noiseEstimate(sf,frequencies=freqs, tfCorrection = isnothing(params.tfCorrection) ? rxHasTransferFunction(sf) : params.tfCorrection)
   weights = minimum(abs.(vec(noise))) ./ abs.(vec(noise))
   return weights
 end
