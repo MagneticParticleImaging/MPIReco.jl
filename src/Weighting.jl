@@ -55,7 +55,7 @@ export RowNormWeightingParameters
 Base.@kwdef struct RowNormWeightingParameters <: AbstractWeightingParameters
   # NOP
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::RowNormWeightingParameters, freqs, op, args...)
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::RowNormWeightingParameters, freqs, _, op, args...)
   weights = map(r -> 1/sqrt(rownorm²(op, r)), 1:size(op, 1))
   return weights
 end

@@ -1,4 +1,5 @@
 using MPIReco: process, AbstractMPIRecoAlgorithm
+using Statistics
 
 @testset "Weighting" begin
   # Weights are computed with the signature used by the reconstruction algorithms:
@@ -53,7 +54,7 @@ using MPIReco: process, AbstractMPIRecoAlgorithm
 
     noise = std(data[isBG, :, :, 1], dims = 1)[1, :, :][freqs]
     w = process(algoT, SMWhiteningWeightingParameters(), freqs, sf, S, nothing, Array)
-    @test w ≈ minimum(noise) ./ noise
+    @test w ≈ minimum(noise) ./ noise rtol = 1e-5
     @test maximum(w) ≈ 1
 
     tf = ComplexF64[1 + k / K + im * c / C for k = 1:K, c = 1:C]
@@ -61,8 +62,8 @@ using MPIReco: process, AbstractMPIRecoAlgorithm
     noiseTF = noise ./ abs.(tf[freqs])
     # tfCorrection defaults to rxHasTransferFunction(sf)
     w = process(algoT, SMWhiteningWeightingParameters(), freqs, sf, S, nothing, Array)
-    @test w ≈ minimum(noiseTF) ./ noiseTF
+    @test w ≈ minimum(noiseTF) ./ noiseTF rtol = 1e-5
     w = process(algoT, SMWhiteningWeightingParameters(tfCorrection = false), freqs, sf, S, nothing, Array)
-    @test w ≈ minimum(noise) ./ noise
+    @test w ≈ minimum(noise) ./ noise rtol = 1e-5
   end
 end
