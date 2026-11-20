@@ -87,7 +87,7 @@ function process(algo::MultiPatchReconstructionAlgorithm, params::Union{OP, Proc
   # Kinda of hacky. MultiPatch parameters don't map nicely to the SinglePatch inspired pre, reco, post structure
   # Have to create weights before ffop is (potentially) moved to GPU, as GPU arrays don't have efficient hash implementations
   # Which makes this process expensive to cache
-  weights = process(typeof(algo), weightingParams, frequencies, result, nothing, algo.arrayType)
+  weights = process(typeof(algo), weightingParams, frequencies, algo.sf, result, nothing, algo.arrayType)
   resultXPU = process(typeof(algo), params, result, algo.arrayType)
   return resultXPU, weights
 end

@@ -2,8 +2,8 @@ export getWeights, WeightingType, setFreqToZero
 
 export AbstractWeightingParameters
 abstract type AbstractWeightingParameters <: AbstractMPIRecoParameters end
-function process(type::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractWeightingParameters, freqs, op = nothing, u = nothing, arrayType = Array)
-  result = process(type, params, freqs, op, u)
+function process(type::Type{<:AbstractMPIRecoAlgorithm}, params::AbstractWeightingParameters, freqs, sf = nothing, S = nothing, u = nothing, arrayType = Array)
+  result = process(type, params, freqs, sf, S, u, arrayType)
   if !isnothing(result)
     result = map(real(eltype(algo.S)), result)
   end
@@ -40,11 +40,22 @@ function process(::Type{<:AbstractMPIRecoAlgorithm}, params::WhiteningWeightingP
   return weights
 end
 
+export SMWhiteningWeightingParameters
+Base.@kwdef struct SMWhiteningWeightingParameters <: AbstractWeightingParameters
+  tfCorrection::Union{Bool, Nothing} = nothing
+  # NOP
+end
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::SMWhiteningWeightingParameters, freqs::Vector{CartesianIndex{2}}, sf, args...)
+  noise = noiseEstimate(sf,frequencies=freqs, tfCorrection = isnothing(params.tfCorrection) ? rxHasTransferFunction(sf) : params.tfCorrection)
+  weights = minimum(abs.(vec(noise))) ./ abs.(vec(noise))
+  return weights
+end
+
 export RowNormWeightingParameters
 Base.@kwdef struct RowNormWeightingParameters <: AbstractWeightingParameters
   # NOP
 end
-function process(::Type{<:AbstractMPIRecoAlgorithm}, params::RowNormWeightingParameters, freqs, op, args...)
+function process(::Type{<:AbstractMPIRecoAlgorithm}, params::RowNormWeightingParameters, freqs, _, op, args...)
   weights = map(r -> 1/sqrt(rownorm²(op, r)), 1:size(op, 1))
   return weights
 end
